@@ -13,8 +13,6 @@
 #include <dune/fem/quadrature/cornerpointset.hh>
 #include <dune/fem/io/parameter.hh>
 
-#include <dune/fem/operator/1order/localmassmatrix.hh>
-
 #include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
 #include <dune/fem/space/common/capabilities.hh>
@@ -23,6 +21,7 @@
 #include <dune/fem/space/finitevolume.hh>
 
 #include <dune/fem/function/adaptivefunction.hh>
+#include <dune/fem/function/localfunction/bindable.hh>
 
 #include <dune/fem/misc/compatibility.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
@@ -36,10 +35,10 @@
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem-dg/operator/limiter/lpreconstruction.hh>
 
-#if HAVE_DUNE_OPTIM
-#define WANT_DUNE_OPTIM 1
-//#define WANT_DUNE_OPTIM 0
-#endif
+#include <dune/fem-dg/operator/limiter/smoothness.hh>
+#include <dune/fem-dg/operator/limiter/indicatorbase.hh>
+
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 
 //*************************************************************
@@ -88,7 +87,8 @@ namespace Fem
 
       // call problem checkDirection
       const typename BaseType::EntityType &entity = intersection.inside();
-      return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
+      //return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
+      return discreteModel().checkPhysical( entity, quadrature.point( qp ), ranges_ );
     }
 
     // check whether we have inflow or outflow direction
@@ -102,7 +102,7 @@ namespace Fem
       assert( quadPoint_ == qp );
 
       // call checkDirection() on discrete model
-      return discreteModel().checkDirection( intersection, time(), quadrature.localPoint( qp ), ranges_ );
+      return discreteModel().checkDirection( intersection, quadrature.localPoint( qp ), quadrature.point( qp ), ranges_ );
     }
   protected:
     using BaseType::discreteModel;
@@ -253,7 +253,8 @@ namespace Fem
     typedef AdaptationMethod<GridType> AdaptationMethodType;
 
     //! id for choosing admissible linear functions
-    enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
+    //! _default refers to muscl(1) on simplices and LP limiter (3) on cubes and polygons
+    enum AdmissibleFunctions { dgonly = 0, muscl = 1 , muscldg = 2, lp = 3, _default = 4 };
 
     //! returns true if pass is currently active in the pass tree
     using BaseType :: active ;
@@ -261,8 +262,10 @@ namespace Fem
     //! type of Cartesian grid checker
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
+    //! function describing an external troubled cell indicator
+    typedef std::shared_ptr< TroubledCellIndicatorBase<ArgumentFunctionType> > TroubledCellIndicatorType;
+
   protected:
-#if WANT_DUNE_OPTIM
     typedef typename GridPartType :: GridViewType  GridViewType ;
 
     struct BoundaryValue
@@ -280,7 +283,78 @@ namespace Fem
     };
 
     typedef Dune::FV::LPReconstruction< GridViewType, RangeType, BoundaryValue > LinearProgramming;
-#endif
+
+    struct ConstantFunction :
+      public Dune::Fem::BindableGridFunction< GridPartType, Dune::Dim<dimRange> >
+    {
+      typedef Dune::Fem::BindableGridFunction<GridPartType, Dune::Dim<dimRange> > Base;
+      typedef typename Base::RangeType RangeType;
+      using Base::Base;
+
+      RangeType value_;
+
+      template <class Quadrature, class RangeArray>
+      void evaluateQuadrature(const Quadrature& quadrature, RangeArray &values) const
+      {
+        const int nop = quadrature.nop();
+        values.resize( nop );
+        std::fill( values.begin(), values.end(), value_ );
+      }
+
+      template <class Point>
+      void evaluate(const Point &x, typename Base::RangeType &ret) const
+      {
+        ret = value_;
+      }
+
+      bool isConstant() const { return true; }
+
+      unsigned int order() const { return 0; }
+      std::string name() const { return "LimmitPass::ConstantFunction"; } // needed for output
+    };
+
+    struct LinearFunction : public ConstantFunction
+    {
+      DomainType   center_;
+      GradientType gradient_;
+
+      typedef ConstantFunction Base;
+      typedef typename Base::RangeType RangeType;
+      using Base::Base;
+      using Base::value_;
+
+      template <class Quadrature, class RangeArray>
+      void evaluateQuadrature(const Quadrature& quadrature, RangeArray &values) const
+      {
+        const int nop = quadrature.nop();
+        values.resize( nop );
+        for( int qp = 0; qp<nop; ++qp )
+        {
+          evaluate( quadrature[ qp ], values[ qp ] );
+        }
+      }
+
+      template <class Point>
+      void evaluate(const Point &x, RangeType &ret) const
+      {
+        Base::evaluate( x, ret );
+
+        // get global coordinate
+        auto point = Base::global( x );
+        point -= center_;
+
+        // evaluate linear function
+        for( int r = 0; r < dimRange; ++r )
+        {
+          ret[ r ] += (gradient_[ r ] * point);
+        }
+      }
+
+      bool isConstant() const { return gradient_.infinity_norm() < 1e-10; }
+
+      unsigned int order() const { return 1; }
+      std::string name() const { return "LimmitPass::LinearFunction"; } // needed for output
+    };
 
 
   public:
@@ -297,20 +371,39 @@ namespace Fem
                 PreviousPassType& pass,
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
-                const int fQ = -1 ) :
+                const int fQ = -1,
+                const bool verbose = Dune::Fem::Parameter::verbose() )
+      : LimitDGPass(problem, pass, spc, Dune::Fem::Parameter::container(), vQ, fQ, verbose )
+    {}
+
+    //- Public methods
+    /** \brief constructor
+     *
+     *  \param  problem    Actual problem definition (see problem.hh)
+     *  \param  pass       Previous pass
+     *  \param  spc        Space belonging to the discrete function local to this pass
+     *  \param  parameter  Parameter reader for dynamic parameters
+     *  \param  vQ         order of volume quadrature
+     *  \param  fQ         order of face quadrature
+     */
+
+    LimitDGPass(DiscreteModelType& problem,
+                PreviousPassType& pass,
+                const DiscreteFunctionSpaceType& spc,
+                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
+                const int vQ = -1,
+                const int fQ = -1,
+                const bool verbose = Dune::Fem::Parameter::verbose() ) :
       BaseType(pass, spc),
-      caller_( 0 ),
+      caller_(),
       discreteModel_(problem),
       currentTime_(0.0),
       arg_(0),
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
-#if WANT_DUNE_OPTIM
-      linProg_( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
-                Dune::Fem::Parameter::getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )
-              ),
-#endif
+      linearFunction_( gridPart_ ),
+      linProg_(),
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       cornerPointSetContainer_(),
@@ -322,32 +415,46 @@ namespace Fem
       argOrder_( spc_.order() ),
       storedComboSets_(),
       tolFactor_( getTolFactor() ),
-      tol_1_( 1.0/getTol() ),
+      indicator_( getIndicator(parameter) ),
+      tol_1_( 2./ parameter.getValue("femdg.limiter.tolerance", double(1.0) ) ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       factors_(),
       numbers_(),
-      localMassMatrix_( spc_ , 2*spc_.order() ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(discreteModel_.calculateIndicator()),
       reconstruct_(false),
-      admissibleFunctions_( getAdmissibleFunctions() ),
-      usedAdmissibleFunctions_( admissibleFunctions_ ),
+      admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
+      usedAdmissibleFunctions_( usedAdmissibleFunctions() ),
+      extTroubledCellIndicator_( indicator_ == 3
+           ? new ModalSmoothnessIndicator< ArgumentFunctionType >() : nullptr ),
       counter_( 0 )
     {
-      if( Parameter :: verbose () )
+      if( usedAdmissibleFunctions_ == lp )
       {
-        std::cout << "LimitPass: Grid is ";
+        linProg_.reset( new LinearProgramming( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
+                        parameter.getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
+      }
+
+      if( verbose )
+      {
+        std::cout << "LimitDGPass (Grid is ";
         if( cartesianGrid_ )
-          std::cout << "cartesian";
+          std::cout << "cartesian) ";
         else
-          std::cout << "unstructured";
-        //std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
-        std::cout << "! Limiter.tolerance: "<< 1./tol_1_ << std::endl;
+          std::cout << "unstructured) ";
+
+        std::cout << "parameters: " << std::endl;
+        std::cout << "  femdg.limiter.tolerance: " << 1./tol_1_ << std::endl;
+        std::cout << "  femdg.limiter.indicator: " << indicator_ << std::endl;
+        std::string adFctName( admissibleFctNames()[ admissibleFunctions_ ] );
+        if( admissibleFunctions_ != usedAdmissibleFunctions_ )
+          adFctName += "("+admissibleFctNames()[ usedAdmissibleFunctions_ ] + ")";
+        std::cout << "  femdg.limiter.admissiblefunctions: " << adFctName << std::endl;
       }
 
       // we need the flux here
@@ -356,19 +463,24 @@ namespace Fem
 
     //! Destructor
     virtual ~LimitDGPass() {
-      std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+      // std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+    }
+
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
+    {
+      extTroubledCellIndicator_ = indicator;
     }
 
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity ));
+      return DefaultQuadrature< DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
     }
 
     //! return default face quadrature order
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity )) + 1;
+      return DefaultQuadrature< DiscreteFunctionSpaceType >::faceOrder( space.order( entity ) );
     }
 
   protected:
@@ -384,7 +496,6 @@ namespace Fem
       return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
 
-
     //! get tolerance factor for shock detector
     double getTolFactor() const
     {
@@ -395,21 +506,43 @@ namespace Fem
     }
 
     //! get tolerance for shock detector
-    double getTol() const
+    double getIndicator( const Dune::Fem::ParameterReader &parameter ) const
     {
-      double tol = 1.0;
-      tol = Parameter::getValue("femdg.limiter.tolerance", tol );
-      return tol;
+      static const std::string indicators[]  = { "user", "none", "jump" ,"modal", "always" };
+      std::string key( "femdg.limiter.indicator" );
+      return parameter.getEnum( key, indicators, 2);
+    }
+
+    static const std::string (&admissibleFctNames())[5]
+    {
+      static const std::string admissiblefct[]  = { "dgonly" , "muscl", "muscl+dg", "lp", "default" };
+      return admissiblefct;
     }
 
     //! get tolerance for shock detector
-    AdmissibleFunctions getAdmissibleFunctions() const
+    AdmissibleFunctions getAdmissibleFunctions( const Dune::Fem::ParameterReader &parameter ) const
     {
-      // default value
-      int val = 1;
-      val = Parameter::getValue("femdg.limiter.admissiblefunctions", val);
-      assert( val >= DGFunctions || val <= BothFunctions );
-      return (AdmissibleFunctions) val;
+      std::string key( "femdg.limiter.admissiblefunctions" );
+      return (AdmissibleFunctions) parameter.getEnum( key, admissibleFctNames(), _default );
+    }
+
+    AdmissibleFunctions usedAdmissibleFunctions() const
+    {
+      if( admissibleFunctions_ == _default )
+      {
+        if( ! geoInfo_.multipleGeomTypes() && geoInfo_.geomTypes(0)[0].isSimplex() )
+        {
+          // default for simplices is muscl reconstruction because it
+          // seems to work better for simplex grids
+          return muscl;
+        }
+        else
+        {
+          // default for all other element types is lp reconstruction
+          return lp;
+        }
+      }
+      return admissibleFunctions_;
     }
 
     template <class S1, class S2>
@@ -551,7 +684,7 @@ namespace Fem
       return tmp;
     }
 
-    size_t leafElements() const
+    size_t numberOfElements() const
     {
       return elementCounter_;
     }
@@ -578,12 +711,16 @@ namespace Fem
                assign( U , dest, firstThread );
 
       // if case of finite volume scheme set admissible functions to reconstructions
-      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
+      if( reconstruct_ && ! linProg_ )
+      {
+        // if linProg is not available then the only other FV reconstruction is muscl
+        usedAdmissibleFunctions_ = muscl;
+      }
 
       // in case of reconstruction
       if( reconstruct_ )
       {
-        // in case of non-adaptive scheme indicator not needed
+        // for FV scheme in case of non-adaptive scheme indicator not needed
         calcIndicator_ = adaptive_;
 
         // adjust quadrature orders
@@ -602,7 +739,7 @@ namespace Fem
       currentTime_ = this->time();
 
       // initialize caller
-      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
+      caller_.reset( new DiscreteModelCallerType( *arg_, discreteModel_ ) );
       caller_->setTime(currentTime_);
 
       // calculate maximal indicator (if necessary)
@@ -624,21 +761,12 @@ namespace Fem
         matrixCacheVec_.resize( numLevels );
       }
 
-#if WANT_DUNE_OPTIM
-      // helper class for evaluation of average value of discrete function
-      EvalAverage average( *this, U, discreteModel_);
-
-      values_.resize( size );
-      // evaluate average values on all cells
-      for( const auto& element : Dune::elements( gridPart_ ) )
+      if( linProg_ )
       {
-        average.evaluate( element, values_[ gridPart_.indexSet().index( element ) ] );
+        values_.resize( size );
+        valuesComputed_.resize( size );
+        std::fill( valuesComputed_.begin(), valuesComputed_.end(), false );
       }
-
-      gradients_.resize( size );
-      // get reconstructions
-      linProg_( gridPart_.indexSet(), values_, gradients_ );
-#endif
     }
 
     //! Some management (interface version)
@@ -667,11 +795,9 @@ namespace Fem
       }
 
       // finalize caller
-      if( caller_ )
-      {
-        delete caller_;
-        caller_ = 0;
-      }
+      caller_.reset();
+      // reset usedAdmissibleFunction value to class default
+      usedAdmissibleFunctions_ = usedAdmissibleFunctions();
     }
 
     //! apply local is virtual
@@ -739,15 +865,15 @@ namespace Fem
       // timer for shock detection
       Dune::Timer indiTime;
 
-      // extract types
-      enum { dim = EntityType :: dimension };
-
       // check argument is not zero
       assert( arg_ );
 
       //- statements
       // set entity to caller
       caller().setEntity( en );
+
+      // initialize linear function
+      linearFunction_.bind( en );
 
       // get function to limit
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
@@ -756,13 +882,17 @@ namespace Fem
       const LocalFunctionType uEn = U.localFunction(en);
 
       // get geometry
-      const Geometry& geo = en.geometry();
+      const Geometry& geo = linearFunction_.geometry();
 
       // cache geometry type
       const GeometryType geomType = geo.type();
       // get bary center of element
-      const LocalDomainType& x = geoInfo_.localCenter( geomType );
-      const DomainType enBary = geo.global( x );
+      const LocalDomainType& wLocal = geoInfo_.localCenter( geomType );
+
+      DomainType& enBary = linearFunction_.center_;
+
+      // compute barycenter of element
+      enBary = geomType.isNone() ? geo.center() : geo.global( wLocal );
 
       const IntersectionIteratorType endnit = gridPart_.iend( en );
       IntersectionIteratorType niter = gridPart_.ibegin(en);
@@ -774,7 +904,7 @@ namespace Fem
       RangeType shockIndicator(0);
       RangeType adaptIndicator(0);
 
-      RangeType enVal;
+      RangeType& enVal = linearFunction_.value_;
 
       // if limiter is true then limitation is done
       // when we want to reconstruct in any case then
@@ -796,9 +926,8 @@ namespace Fem
       // otherwise everything may be corrupted
       {
         // get barycenter of entity
-        const DomainType& enBaryLocal = (int(dimGrid) == int(dimDomain)) ?
-          geoInfo_.localCenter( geomType ) :
-          geo.local( enBary ) ;
+        const DomainType& enBaryLocal = (int(dimGrid) == int(dimDomain) && ! geomType.isNone() ) ?
+                wLocal : geo.local( enBary ) ;
 
         // check that average value is physical
         if(  discreteModel_.hasPhysical() &&
@@ -824,8 +953,8 @@ namespace Fem
       else if ( calcIndicator_ ) // otherwise compute shock indicator
       {
         // check shock indicator
-        limiter = calculateIndicator(en, uEn, geo, limiter,                   // parameter
-                                     limit, shockIndicator, adaptIndicator);  // return values
+        limiter = calculateIndicator(U, uEn, geo, limiter,                   // parameter
+                                     limit, shockIndicator, adaptIndicator); // return values
       }
       else if( !reconstruct_ )
       {
@@ -879,9 +1008,11 @@ namespace Fem
         EvalAverage average( *this, U, discreteModel_, geo.volume() );
 
         // setup neighbors barycenter and mean value for all neighbors
-        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal,
+        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, uEn,
                                                  StructuredGrid, flags, barys_, nbVals_ );
       }
+
+      const unsigned int enIndex = indexSet_.index( en );
 
       // mark entity as finished, even if not limited everything necessary was done
       assert( indexSet_.index( en ) < int(visited_.size()) );
@@ -893,15 +1024,18 @@ namespace Fem
       // increase number of limited elements
       ++limitedElements_;
 
-      const unsigned int enIndex = indexSet_.index( en );
-#if WANT_DUNE_OPTIM
-      bool useLinProg = true ;
-      if( useLinProg )
+      GradientType& gradient = linearFunction_.gradient_;
+
+      // use linear function from LP reconstruction
+      if( usedAdmissibleFunctions_ == lp )
       {
-        deoMod_ = gradients_[ enIndex ];
+        // compute average values on neighboring elements
+        fillAverageValues( en, enIndex, U, enVal );
+        assert( linProg_ );
+        // compute optimal linear reconstruction
+        linProg_->applyLocal( en, gridPart_.indexSet(), values_, gradient );
       }
       else
-#endif
       {
         // obtain combination set
         ComboSetType& comboSet = storedComboSets_[ nbVals_.size() ];
@@ -912,26 +1046,26 @@ namespace Fem
         }
 
         // reset values
-        deoMods_.clear();
+        gradients_.clear();
         comboVec_.clear();
 
-        if( usedAdmissibleFunctions_ >= ReconstructedFunctions )
+        if( usedAdmissibleFunctions_ == muscl || usedAdmissibleFunctions_ == muscldg )
         {
           // level is only needed for Cartesian grids to access the matrix caches
           const int matrixCacheLevel = ( flags.cartesian ) ? en.level() : 0 ;
           assert( matrixCacheLevel < (int) matrixCacheVec_.size() );
           MatrixCacheType& matrixCache = matrixCacheVec_[ matrixCacheLevel ];
 
-          // calculate linear functions, stored in deoMods_ and comboVec_
+          // calculate linear functions, stored in gradients_ and comboVec_
           LimiterUtilityType::calculateLinearFunctions( comboSet, geomType, flags,
                                     barys_, nbVals_,
                                     matrixCache,
-                                    deoMods_,
+                                    gradients_,
                                     comboVec_ );
         }
 
         // add DG Function
-        if( (usedAdmissibleFunctions_ % 2) == DGFunctions )
+        if( usedAdmissibleFunctions_ == dgonly || usedAdmissibleFunctions_ == muscldg )
         {
           addDGFunction( en, geo, uEn, enVal, enBary );
         }
@@ -939,10 +1073,10 @@ namespace Fem
         // Limiting
         std::vector< RangeType > factors;
         LimiterUtilityType::limitFunctions(
-            discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_, factors );
+            discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, gradients_, factors );
 
         // take maximum of limited functions
-        LimiterUtilityType::getMaxFunction(deoMods_, deoMod_, factors_[ enIndex ], numbers_[ enIndex ], factors );
+        LimiterUtilityType::getMaxFunction(gradients_, gradient, factors_[ enIndex ], numbers_[ enIndex ], factors );
       } // end if linProg
 
       ////////////////////////////////////////////////////////////////////
@@ -954,8 +1088,8 @@ namespace Fem
       // get local funnction for limited values
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
-      // project deoMod_ to limitEn
-      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn );
+      // project linearFunction onto limitEn
+      interpolate( en, geo, limit, linearFunction_, limitEn );
 
       assert( checkPhysical(en, geo, limitEn) );
 
@@ -965,6 +1099,34 @@ namespace Fem
     }
 
   protected:
+    void fillAverageValues( const EntityType& en, const unsigned int enIndex,
+                            const ArgumentFunctionType &U, const RangeType& enVal ) const
+    {
+      // helper class for evaluation of average value of discrete function
+      EvalAverage average( *this, U, discreteModel_);
+
+      if( ! valuesComputed_[ enIndex ] )
+      {
+        values_[ enIndex ] = enVal;
+        valuesComputed_[ enIndex ] = true;
+      }
+
+      const auto& indexSet = gridPart_.indexSet();
+      for (const auto& intersection : intersections(gridPart_, en) )
+      {
+        if( intersection.neighbor() )
+        {
+          const auto neighbor = intersection.outside();
+          const unsigned int nbIndex = indexSet.index( neighbor );
+          if( ! valuesComputed_[ nbIndex ] )
+          {
+            average.evaluate( neighbor, values_[ nbIndex ] );
+            valuesComputed_[ nbIndex ] = true;
+          }
+        }
+      }
+    }
+
     // add linear components of the DG function
     void addDGFunction(const EntityType& en,
                        const Geometry& geo,
@@ -1014,7 +1176,7 @@ namespace Fem
         A.mv( rhs, D[ r ]);
       }
 
-      deoMods_.push_back( D );
+      gradients_.push_back( D );
       std::vector<int> comb( nbVals_.size() );
       const size_t combSize = comb.size();
       for (size_t i=0;i<combSize; ++i) comb[ i ] = i;
@@ -1050,7 +1212,6 @@ namespace Fem
                        const Geometry& geo,
                        const LocalFunctionImp& uEn) const
     {
-      enum { dim = dimGrid };
       if( discreteModel_.hasPhysical() )
       {
         if( en.type().isNone() )
@@ -1104,63 +1265,42 @@ namespace Fem
       }
     };
 
+
     // L2 projection
     template <class LocalFunctionImp>
-    void L2project(const EntityType& en,
-       const Geometry& geo,
-       const DomainType& enBary,
-       const RangeType& enVal,
-       const FieldVector<bool,dimRange>& limit,
-       const GradientType& deoMod,
-       LocalFunctionImp& limitEn,
-       const bool constantValue = false ) const
+    void interpolate(const EntityType& en,
+                     const Geometry& geo,
+                     const FieldVector<bool,dimRange>& limit,
+                     const LinearFunction& linearFunction,
+                     LocalFunctionImp& limitEn ) const
     {
-      enum { dim = dimGrid };
-
       // true if geometry mapping is affine
-      const bool affineMapping = localMassMatrix_.affine();
+      const bool affineMapping = geo.affine();
 
       // set zero dof to zero
       uTmpLocal_.init( en );
       uTmpLocal_.clear();
 
-      // get quadrature for destination space order
-      VolumeQuadratureType quad( en, spc_.order() + 1 );
+      const auto interpolation = spc_.interpolation( en );
 
-      const int quadNop = quad.nop();
-      for(int qP = 0; qP < quadNop ; ++qP)
+      const bool constantValue = linearFunction.isConstant();
+      if( constantValue )
       {
-        // get quadrature weight
-        const double intel = (affineMapping) ?
-          quad.weight(qP) : // affine case
-          quad.weight(qP) * geo.integrationElement( quad.point(qP) ); // general case
-
-        RangeType retVal( enVal );
-        // if we don't have only constant value then evaluate function
-        if( !constantValue )
-        {
-          // get global coordinate
-          DomainType point = geo.global( quad.point( qP ) );
-          point -= enBary;
-
-          // evaluate linear function
-          for( int r = 0; r < dimRange; ++r )
-            retVal[ r ] += (deoMod[ r ] * point);
-        }
-
-        retVal *= intel;
-        uTmpLocal_.axpy( quad[ qP ], retVal );
+        const ConstantFunction& constFct = linearFunction;
+        interpolation( constFct, uTmpLocal_.localDofVector() );
       }
-
-      if( !affineMapping )
-        localMassMatrix_.applyInverse( en, uTmpLocal_ );
+      else
+      {
+        interpolation( linearFunction, uTmpLocal_.localDofVector() );
+      }
 
       // check physicality of projected data
       if ( (! constantValue) && (! checkPhysical(en, geo, uTmpLocal_)) )
       {
         // for affine mapping we only need to set higher moments to zero
-        if( affineMapping )
-        {
+        if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v &&
+            affineMapping )
+        { // note: the following assumes an ONB made up of moments and affine mapping
           const int numBasis = uTmpLocal_.numDofs()/dimRange;
           for(int i=1; i<numBasis; ++i)
           {
@@ -1173,9 +1313,9 @@ namespace Fem
         }
         else
         {
-          // if not physical project to mean value
-          L2project(en,geo,enBary,enVal,limit,deoMod_, limitEn, true);
-          return ;
+          // general interpolation of constant value
+          const ConstantFunction& constFct = linearFunction;
+          interpolation( constFct, uTmpLocal_.localDofVector() );
         }
       }
 
@@ -1189,7 +1329,7 @@ namespace Fem
       {
         // copy to limitEn skipping components that should not be limited
         const int numBasis = uTmpLocal_.numDofs()/dimRange;
-        for(int i=1; i<numBasis; ++i)
+        for(int i=0; i<numBasis; ++i)
         {
           for( const auto& r : discreteModel_.model().limitedRange() )
           {
@@ -1202,7 +1342,7 @@ namespace Fem
 
     template <class BasisFunctionSetType, class PointType>
     const RangeType& evaluateConstantBasis( const BasisFunctionSetType& basisSet,
-                                           const PointType& x ) const
+                                            const PointType& x ) const
     {
       // calculate constant part of the basis functions
       if( ! (phi0_[ 0 ] > 0 ) )
@@ -1231,8 +1371,9 @@ namespace Fem
                      RangeType& val) const
     {
       bool notphysical = false;
-      if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v
-          && localMassMatrix_.affine() )
+      const Geometry& geo = en.geometry();
+
+      if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v && geo.affine() )
       {
         // get point quadrature
         VolumeQuadratureType quad( en, 0 );
@@ -1253,8 +1394,6 @@ namespace Fem
       }
       else
       {
-        const Geometry& geo = en.geometry();
-
         // get quadrature
         VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
 
@@ -1287,11 +1426,22 @@ namespace Fem
       return notphysical;
     }
 
-    template <bool conforming>
     bool integrateIntersection(const IntersectionType & intersection,
                                const EntityType& nb,
                                RangeType& shockIndicator,
                                RangeType& adaptIndicator) const
+    {
+      if( ! conformingGridPart && ! intersection.conforming() )
+        return integrateIntersectionImpl< false >(intersection, nb, shockIndicator, adaptIndicator);
+      else
+        return integrateIntersectionImpl< true  >(intersection, nb, shockIndicator, adaptIndicator);
+    }
+
+    template <bool conforming>
+    bool integrateIntersectionImpl(const IntersectionType & intersection,
+                                   const EntityType& nb,
+                                   RangeType& shockIndicator,
+                                   RangeType& adaptIndicator) const
     {
       // make sure we got the right conforming statement
       assert( intersection.conforming() == conforming );
@@ -1381,15 +1531,15 @@ namespace Fem
     }
 
     // calculate shock detector
-    bool calculateIndicator(const EntityType& en,
+    bool calculateIndicator(const ArgumentFunctionType& U,
                             const LocalFunctionType& uEn,
                             const Geometry& geo,
                             const bool initLimiter,
                             FieldVector<bool,dimRange>& limit,
                             RangeType& shockIndicator,
-                            RangeType& adaptIndicator) const
+                            RangeType& adaptIndicator ) const
     {
-      enum { dim = EntityType :: dimension };
+      const EntityType& en = uEn.entity();
 
       // calculate circume during neighbor check
       double circume = 0.0;
@@ -1442,7 +1592,6 @@ namespace Fem
             shockIndicator = -1;
             return true;
           }
-
         }
         else
         { // non-conforming case
@@ -1496,51 +1645,45 @@ namespace Fem
           // add face vol to circume
           circume += vol;
 
-          // order of quadrature
-          const int jumpQuadOrd = spc_.order();
-
-          // check all neighbors
-          if (intersection.neighbor())
+          // internal shock indicator based on Krivodonova et al.
+          if( ! extTroubledCellIndicator_ )
           {
-            // get neighbor entity
-            const EntityType& nb = intersection.outside();
+            // order of quadrature
+            const int jumpQuadOrd = spc_.order();
 
-            // conforming case
-            if( ! conformingGridPart && ! intersection.conforming() )
-            { // non-conforming case
-              if (integrateIntersection< false > (intersection, nb, shockIndicator, adaptIndicator))
+            // check all neighbors
+            if (intersection.neighbor())
+            {
+              // get neighbor entity
+              const EntityType& nb = intersection.outside();
+
+              if (integrateIntersection(intersection, nb, shockIndicator, adaptIndicator))
               {
                 shockIndicator = -1;
                 return true;
               }
             }
-            else
+
+            // check all neighbors
+            if ( intersection.boundary() )
             {
-              if (integrateIntersection< true > (intersection, nb, shockIndicator, adaptIndicator))
+              FaceQuadratureType faceQuadInner(gridPart_,intersection, jumpQuadOrd, FaceQuadratureType::INSIDE);
+
+              // initialize intersection
+              caller().initializeBoundary( intersection, faceQuadInner );
+
+              if (integrateBoundary(en, intersection, faceQuadInner, shockIndicator, adaptIndicator))
               {
                 shockIndicator = -1;
                 return true;
               }
-            }
-          }
-
-          // check all neighbors
-          if ( intersection.boundary() )
-          {
-            FaceQuadratureType faceQuadInner(gridPart_,intersection, jumpQuadOrd, FaceQuadratureType::INSIDE);
-
-            // initialize intersection
-            caller().initializeBoundary( intersection, faceQuadInner );
-
-            if (integrateBoundary(en, intersection, faceQuadInner, shockIndicator, adaptIndicator))
-            {
-              shockIndicator = -1;
-              return true;
             }
           }
         }
-
       } // end intersection iterator
+
+      if (indicator_ == 1)
+        return false;
 
       // calculate max face volume
       {
@@ -1566,11 +1709,34 @@ namespace Fem
       // multiply h pol ord with circume
       const double circFactor = (circume > 0.0) ? (hPowPolOrder/(circume * tolFactor_ )) : 0.0;
 
+      assert(indicator_!=0 || extTroubledCellIndicator_);
+      if( extTroubledCellIndicator_ ) // also true for indicator_=3
+      {
+        shockIndicator = ( tol_1_ * (*extTroubledCellIndicator_)( U, uEn ) );
+      }
+      else if( indicator_ == 2 )
+      {
+        for(int r=0; r<dimRange; ++r)
+        {
+          shockIndicator[r] = std::abs(shockIndicator[r]) * circFactor * tol_1_;
+        }
+      }
+      else if ( indicator_ == 4 )
+      {
+        // always limit on each cell
+        shockIndicator = 2.;
+      }
+      else
+      {
+        std::cout << "wrong indicator selection\n";
+        assert(0);
+        abort();
+      }
+
       for(int r=0; r<dimRange; ++r)
       {
-        // only scale shock indicator with tolerance
-        shockIndicator[r] = std::abs(shockIndicator[r]) * circFactor * tol_1_;
         adaptIndicator[r] = std::abs(adaptIndicator[r]) * circFactor;
+
         if(shockIndicator[r] > 1.)
         {
           limit[r] = true;
@@ -1589,10 +1755,10 @@ namespace Fem
     {
       // check whether we have an inflow intersection or not
       const int quadNop = quad.nop();
-      for(int l=0; l<quadNop; ++l)
+      for(int qp=0; qp<quadNop; ++qp)
       {
         // check physicality of value
-        const bool physical = caller().checkPhysical( intersection, quad, l );
+        const bool physical = caller().checkPhysical( intersection, quad, qp );
 
         if( checkPhysical && ! physical )
         {
@@ -1603,7 +1769,7 @@ namespace Fem
         if( ! inflowIntersection )
         {
           // check intersection
-          if( physical && caller().checkDirection(intersection, quad, l) )
+          if( physical && caller().checkDirection(intersection, quad, qp) )
           {
             inflowIntersection = true;
             // in case of physicality check is disabled
@@ -1634,7 +1800,7 @@ namespace Fem
     }
 
   private:
-    mutable DiscreteModelCallerType *caller_;
+    mutable std::unique_ptr< DiscreteModelCallerType > caller_;
     DiscreteModelType& discreteModel_;
     mutable double currentTime_;
 
@@ -1644,9 +1810,9 @@ namespace Fem
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
 
-#if WANT_DUNE_OPTIM
-    mutable LinearProgramming linProg_;
-#endif
+    mutable LinearFunction linearFunction_;
+
+    std::unique_ptr< LinearProgramming > linProg_;
 
     const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
@@ -1665,16 +1831,16 @@ namespace Fem
 
     // tolerance to scale shock indicator
     const double tolFactor_;
+    std::size_t indicator_;
     const double tol_1_;
 
     // if true scheme is TVD
     const GeometryInformationType geoInfo_;
     const FaceGeometryInformationType faceGeoInfo_;
 
-    mutable GradientType deoMod_;
     mutable RangeType    phi0_ ;
 
-    mutable std::vector< GradientType > deoMods_;
+    mutable std::vector< GradientType > gradients_;
     mutable std::vector< CheckType >    comboVec_;
 
     mutable std::vector< DomainType > barys_;
@@ -1687,7 +1853,6 @@ namespace Fem
     // vector for stroing the information which elements have been computed already
     mutable std::vector< bool > visited_;
 
-    LocalMassMatrixType localMassMatrix_;
     //! true if limiter is used in adaptive scheme
     const bool adaptive_;
     //! true if grid is cartesian like
@@ -1696,18 +1861,21 @@ namespace Fem
     mutable std::vector<double> stepTime_;
     mutable size_t elementCounter_;
 
-    //! true if indicator should be calculated
+    //! true if troubled cell indicator should be calculated
     mutable bool calcIndicator_;
 
     //! true if limiter is used as finite volume scheme of higher order
     mutable bool reconstruct_;
 
     // choice of admissible linear functions
-    const AdmissibleFunctions admissibleFunctions_;
-    mutable AdmissibleFunctions usedAdmissibleFunctions_ ;
+    const AdmissibleFunctions    admissibleFunctions_;
+    mutable AdmissibleFunctions  usedAdmissibleFunctions_ ;
 
     mutable std::vector< RangeType  > values_;
-    mutable std::vector< GradientType > gradients_;
+    mutable std::vector< bool >       valuesComputed_;
+
+    // function pointer to external troubled cell indicator, can be nullptr
+    TroubledCellIndicatorType extTroubledCellIndicator_;
 
     mutable int counter_;
   }; // end DGLimitPass

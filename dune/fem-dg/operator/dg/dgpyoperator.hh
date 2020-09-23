@@ -8,6 +8,10 @@
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
+#include <dune/fem/space/lagrange.hh>
+#include <dune/fem/quadrature/interpolationquadrature.hh>
+
+
 #include <dune/fem-dg/algorithm/evolution.hh>
 
 // dune-fem-dg includes
@@ -18,10 +22,10 @@
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
-#if HAVE_DUNE_FEMPY
+// this is part of dune-fem now
 #include <dune/fempy/quadrature/fempyquadratures.hh>
-#endif
 
 namespace Dune
 {
@@ -79,14 +83,16 @@ namespace Fem
 
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
-    typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
-                std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
-#if HAVE_DUNE_FEMPY
-                Dune::FemPy::FempyQuadratureTraits, // use quadratures from dune-fempy
-#else
-                Dune::Fem::DefaultQuadratureTraits,
-#endif
-                threading >  OpTraits;
+    typedef typename std::conditional< Additional::defaultQuadrature,
+            DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
+                                   std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
+                                   DefaultQuadrature< DiscreteFunctionSpaceType >::template DefaultQuadratureTraits,
+                                   threading>,
+            // fempy quadratures
+            DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
+                                   std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
+                                   Dune::FemPy::FempyQuadratureTraits,
+                                   threading> > ::type OpTraits;
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
 
@@ -98,6 +104,7 @@ namespace Fem
     typedef Estimator< DestinationType, typename ModelType::ProblemType >   GradientIndicatorType ;
     typedef AdaptIndicator< IndicatorType, GradientIndicatorType >          AdaptIndicatorType;
 
+    typedef typename FullOperatorType :: TroubledCellIndicatorType          TroubledCellIndicatorType;
 
     // solver selection, available fem, istl, petsc, ...
     typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
@@ -114,9 +121,9 @@ namespace Fem
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
         advFlux_( advectionFlux( parameter, std::integral_constant< bool, fluxIsUserDefined >() )),
-        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
         adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }
@@ -132,9 +139,9 @@ namespace Fem
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
         advFlux_( advFlux ),
-        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
         adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }
@@ -183,6 +190,13 @@ namespace Fem
       }
     }
 
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
+    {
+      fullOperator_.setTroubledCellIndicator(indicator);
+      explOperator_.setTroubledCellIndicator(indicator);
+    }
+
+
     /** \copydoc SpaceOperatorInterface::setTime */
     void setTime( const double time )
     {
@@ -190,6 +204,23 @@ namespace Fem
     }
 
     double timeStepEstimate() const { return fullOperator_.timeStepEstimate(); }
+
+    //! return number of interior elements visited by the operator
+    inline size_t gridSizeInterior() const
+    {
+      size_t elem = std::max( fullOperator_.numberOfElements(),
+                              explOperator_.numberOfElements() );
+
+      // this can occur if element size if requested
+      // before operator had been applied
+      if( elem == 0 )
+      {
+        const auto end = space_.end();
+        size_t elem = 0;
+        for( auto it = space_.begin(); it != end; ++it, ++elem );
+      }
+      return elem;
+    }
 
     //// End Methods from SpaceOperatorInterface /////
 
@@ -222,7 +253,6 @@ namespace Fem
 
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
-
   };
 
 } // end namespace Fem

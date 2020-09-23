@@ -73,7 +73,7 @@ namespace Dune
       cls.def( "applyLimiter", []( Operator &self, DF &u) { self.applyLimiter(u); } );
       // cls.def( "setTime", &Operator::setTime);
       cls.def( "_setTime", &Operator::setTime);
-      cls.def_property_readonly("timeStepEstimate",
+      cls.def_property_readonly("localTimeStepEstimate",
           [](const Operator &self) -> std::tuple<double,double,double>
           { return {self.timeStepEstimate(),
                     self.explicitOperator().timeStepEstimate(),

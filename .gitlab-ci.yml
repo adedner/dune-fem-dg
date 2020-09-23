@@ -11,10 +11,10 @@ variables:
 
 before_script:
   - . /duneci/bin/duneci-init-job
-  - python3 -m venv /duneci/modules/dune-pip
-  - source /duneci/modules/dune-pip/bin/activate
-  - pip install --upgrade pip
-  - pip install ufl numpy matplotlib mpi4py portalocker
+    #- python3 -m venv /duneci/modules/dune-pip
+    #- source /duneci/modules/dune-pip/bin/activate
+    #- pip install --upgrade pip
+    #- pip install ufl numpy matplotlib mpi4py portalocker
   - duneci-install-module https://gitlab.dune-project.org/core/dune-common.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-geometry.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
@@ -24,24 +24,21 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
 
 debian-11-gcc-9-17:
-  image: duneci/debian:11
+  image: registry.dune-project.org/docker/ci/debian:11
   script:
-    - source /duneci/modules/dune-pip/bin/activate
+    #- source /duneci/modules/dune-pip/bin/activate
       # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
       # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
     - duneci-standard-test
   variables:
     DUNECI_TOOLCHAIN:  gcc-9-17
-    # DUNE_LOG_FORMAT:   '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    # DUNE_LOG_LEVEL:    DEBUG
-    # MAKEFLAGS:         "--verbose --output-sync=target --print-directory"
 
-ubuntu:18.04--gcc:
-  image: duneci/ubuntu:18.04
-  script:
-    - source /duneci/modules/dune-pip/bin/activate
-      # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
-      # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
-    - duneci-standard-test
-  variables:
-    DUNECI_TOOLCHAIN:  gcc-7-17
+    #ubuntu:20.04--gcc:
+    #image: duneci/ubuntu:18.04
+    #script:
+    #- source /duneci/modules/dune-pip/bin/activate
+    #  # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
+    #  # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
+    #- duneci-standard-test
+    #variables:
+    #DUNECI_TOOLCHAIN:  gcc-7-17

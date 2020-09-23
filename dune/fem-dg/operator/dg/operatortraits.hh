@@ -1,56 +1,29 @@
 #ifndef DUNE_FEM_DG_OPERATORTRAITS_HH
 #define DUNE_FEM_DG_OPERATORTRAITS_HH
 
+#include <dune/fem/quadrature/dunequadratures.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
+#include <dune/fem/quadrature/interpolationquadrature.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem/space/finitevolume/space.hh>
 #include <dune/fem/function/adaptivefunction/adaptivefunction.hh>
 
+
 #include <dune/fem-dg/operator/fluxes/diffusion/parameters.hh>
+
+#if HAVE_DUNE_POLYGONGRID
+#include <dune/polygongrid/declaration.hh>
+#endif
+
+#if HAVE_OPM_GRID
+#include <opm/grid/polyhedralgrid/declaration.hh>
+#endif // #if HAVE_OPM_GRID
+
 namespace Dune
 {
 namespace Fem
 {
-
-  // traits for the operator passes
-  template< class GridPart,
-            int polOrd,
-            class ModelImp,
-            class DiscreteFunctionImp,
-            class AdvectionFluxImp,
-            class DiffusionFluxImp,
-            class LimiterIndicatorFunctionImp,
-            class AdaptationHandlerImp,
-            class ExtraParameterTupleImp = std::tuple<>,
-            template <class F, int d> class QuadratureTraits = Dune::Fem::DefaultQuadratureTraits
-          >
-  struct OperatorTraits
-  {
-    typedef GridPart                                                     GridPartType;
-    typedef typename GridPartType::GridType                              GridType;
-
-    typedef ModelImp                                                     ModelType;
-    typedef AdvectionFluxImp                                             AdvectionFluxType;
-    typedef DiffusionFluxImp                                             DiffusionFluxType;
-
-    // polynomial order of ansatz space
-    static const int polynomialOrder = polOrd;
-
-    typedef DiscreteFunctionImp                                          DestinationType ;
-    //static_assert( std::is_same<typename  ModelType::RangeType, typename DiscreteFunctionType::RangeType>::value, "range type does not fit.");
-    typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
-
-    typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
-    typedef Fem::CachingQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
-
-    typedef LimiterIndicatorFunctionImp                                  LimiterIndicatorType;
-
-    typedef AdaptationHandlerImp                                         AdaptationHandlerType ;
-
-    typedef ExtraParameterTupleImp                                       ExtraParameterTupleType;
-  };
-
   // traits for the operator passes
   template< class ModelImp,
             class DiscreteFunctionImp,
@@ -58,7 +31,7 @@ namespace Fem
             class DiffusionFluxImp,
             class ExtraParameterTupleImp = std::tuple<>,
             class AdaptationHandlerFunctionSpaceImp = typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType,
-            template <class F, int d> class QuadratureTraits = Dune::Fem::DefaultQuadratureTraits,
+            template <class F, int d> class QuadratureTraits = DefaultQuadrature< typename DiscreteFunctionImp::DiscreteFunctionSpaceType >::template DefaultQuadratureTraits,
             bool enableThreaded =
     // static cmake variables provided by dune-fem
 #ifdef USE_SMP_PARALLEL
@@ -89,9 +62,8 @@ namespace Fem
 
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
-
     // default quadrature selection should be CachingQuadrature
-    template <class DFS>
+    template <class Grid, bool caching>
     struct SelectQuadrature
     {
       typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
@@ -100,15 +72,46 @@ namespace Fem
 
     // if selected discrete function space has no caching storage,
     // then select ElementQuadrature, and not  CachingQuadrature
-    template <class FS, class GP, int polOrd,
-              template <class, class, int, template <class> class> class DFS>
-    struct SelectQuadrature< DFS< FS, GP, polOrd, Dune::Fem::SimpleStorage > >
+    // also, if the grid is polygonal or polyhedral
+    // CachingQuadarature cannot be used
+    template <class Grid>
+    struct SelectQuadrature< Grid, false >
     {
       typedef Fem::ElementQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
       typedef Fem::ElementQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
     };
 
-    typedef SelectQuadrature< DiscreteFunctionSpaceType >  SelectQuadratureType;
+    template <class Grid>
+    struct CheckGrid { static const bool value = true; };
+
+    // also, if the grid is polygonal or polyhedral
+    // CachingQuadarature cannot be used
+#if HAVE_DUNE_POLYGONGRID
+    template <class ct>
+    struct CheckGrid< Dune::PolygonGrid< ct > > { static const bool value = false; };
+#endif
+
+#if HAVE_OPM_GRID
+    template <int dim, int dimworld, class ct>
+    struct CheckGrid< Dune::PolyhedralGrid< dim, dimworld, ct > > { static const bool value = false; };
+#endif
+
+    template <class DFS>
+    struct CheckSpace { static const bool value = true; };
+
+    // if selected discrete function space has no caching storage,
+    // then select ElementQuadrature, and not  CachingQuadrature
+    template <class FS, class GP, int polOrd,
+              template <class, class, int, template <class> class> class DFS>
+    struct CheckSpace< DFS< FS, GP, polOrd, Dune::Fem::SimpleStorage > >
+    {
+      static const bool value = false;
+    };
+
+    // define quad selector which contains the correct types for quadratures
+    typedef SelectQuadrature< GridType,
+                              CheckSpace< DiscreteFunctionSpaceType > :: value  &&
+                              CheckGrid < GridType > :: value >  SelectQuadratureType;
 
     typedef typename SelectQuadratureType::VolumeQuadratureType   VolumeQuadratureType;
     typedef typename SelectQuadratureType::FaceQuadratureType     FaceQuadratureType;

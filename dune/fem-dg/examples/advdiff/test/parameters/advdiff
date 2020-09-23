@@ -15,7 +15,15 @@ gridsol.filename: heat-checkpoint
 
 # GENERAL
 #--------
-# femdg.stepper.printcount: 10
+fem.adaptation.method: none # none | generic | callback
+
+# coarsest level that should be present
+fem.adaptation.coarsestLevel: 3
+# finest level that should be present
+fem.adaptation.finestLevel: 6
+
+fem.eoc.steps: 1
+femdg.stepper.printcount: 100
 paramfile: ../../parameter/paramBase
 
 # PROBLEM SETUP
@@ -24,7 +32,6 @@ paramfile: ../../parameter/paramBase
 # problem: heat, quasi, plaplace
 problem: pulse
 
-fem.eoc.steps: 3
 femdg.stepper.endtime: 0.15
 femdg.stepper.diffusiontimestep: 1
 epsilon: 0.001

@@ -75,6 +75,10 @@ namespace Fem
   DiscreteFunctionSpaces::Enum::lagrange;
 #elif DISCRETEFUNCTIONSPACESENUM == 5
   DiscreteFunctionSpaces::Enum::padaptive;
+#elif DISCRETEFUNCTIONSPACESENUM == 6
+  DiscreteFunctionSpaces::Enum::gausslobatto;
+#elif DISCRETEFUNCTIONSPACESENUM == 7
+  DiscreteFunctionSpaces::Enum::gausslegendre;
 #else // DISCRETEFUNCTIONSPACESENUM == 1
   DiscreteFunctionSpaces::Enum::orthonormal;
 #endif

@@ -198,7 +198,7 @@ namespace Fem
         limitedRange_[ i ] = i;
 
       // if method has been filled then modified will be set differently
-      advection_.limitedRange( limitedRange_ );
+      advection().limitedRange( limitedRange_ );
     }
 
 #ifdef EULER_WRAPPER_TEST
@@ -210,17 +210,15 @@ namespace Fem
     void setTime (const double t)
     {
       BaseType::setTime(t);
-#if HAVE_DUNE_FEMPY
       // update model times (only if time method is available on these models)
       //! TODO problem without virtualization advection_.setTime(t);
-      //! TODO problem without virtualization diffusion_.setTime(t);
+      //! TODO problem without virtualization diffusion().setTime(t);
       ::detail::CallSetTime< AdvectionModelType,
                              ::detail::CheckTimeMethod< AdvectionModelType >::value >
-        ::setTime( const_cast< AdvectionModelType& > (advection_), t );
+        ::setTime( const_cast< AdvectionModelType& > (advection()), t );
       ::detail::CallSetTime< DiffusionModelType,
                              ::detail::CheckTimeMethod< DiffusionModelType >::value >
-        ::setTime( const_cast< DiffusionModelType& > (diffusion_), t );
-#endif
+        ::setTime( const_cast< DiffusionModelType& > (diffusion()), t );
     }
 
     double gamma () const { return problem_.gamma(); }
@@ -229,9 +227,9 @@ namespace Fem
     void setEntity( const Entity& entity ) const
     {
       if( hasAdvection )
-        advection_.init( entity );
+        advection().init( entity );
       if( hasDiffusion )
-        diffusion_.init( entity );
+        diffusion().init( entity );
     }
 
     inline bool hasStiffSource() const { return AdditionalType::hasStiffSource; }
@@ -242,8 +240,8 @@ namespace Fem
 
     void obtainBounds( RangeType& globalMin, RangeType& globalMax) const
     {
-      globalMin = 0;
-      globalMax = std::numeric_limits<double>::max();
+      assert( hasAdvection );
+      advection().obtainBounds(globalMin, globalMax);
     }
 
     bool isConstant( const RangeType& min, const RangeType& max ) const
@@ -259,7 +257,7 @@ namespace Fem
                                RangeType & s) const
     {
       assert( hasDiffusion );
-      diffusion_.source( local.quadraturePoint(), u, du, s );
+      diffusion().source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -271,7 +269,7 @@ namespace Fem
                                   RangeType& s) const
     {
       assert( hasAdvection );
-      advection_.source( local.quadraturePoint(), u, du, s );
+      advection().source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -282,7 +280,7 @@ namespace Fem
                            JacobianRangeType& result ) const
     {
       assert( hasAdvection );
-      advection_.diffusiveFlux( local.quadraturePoint(), u, du, result );
+      advection().diffusiveFlux( local.quadraturePoint(), u, du, result );
     }
 
     template <class LocalEvaluation>
@@ -292,7 +290,7 @@ namespace Fem
     {
       if( hasDiffusion )
       {
-        maxValue = diffusion_.diffusionTimeStep( local.entity(), local.quadraturePoint(), 0.0, u );
+        maxValue = diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), 0.0, u );
       }
     }
 
@@ -301,7 +299,7 @@ namespace Fem
                                      const T& circumEstimate,
                                      const RangeType& u ) const
     {
-      return diffusion_.diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
+      return diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
     }
 
     // is not used
@@ -314,7 +312,7 @@ namespace Fem
       assert( hasAdvection );
       assert( 0 ); // if this is used we have to check if this is correct
       // TODO: u != ubar and du != dubar
-      advection_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
+      advection().linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
     }
 
     template <class LocalEvaluation>
@@ -329,7 +327,7 @@ namespace Fem
       RangeType u; // fake return variable
       const int id = getBoundaryId( local );
       // the following fails since is is called with
-      return advection_.hasBoundaryValue(id, time(), local.entity(), local.position(), u, u);
+      return advection().hasBoundaryValue(id, time(), local.entity(), local.position(), u, u);
     }
 
     // return uRight for insertion into the numerical flux
@@ -342,7 +340,7 @@ namespace Fem
 #ifndef NDEBUG
       const bool isDirichlet =
 #endif
-      advection_.boundaryValue(id, time(), local.entity(), local.quadraturePoint(),
+      advection().boundaryValue(id, time(), local.entity(), local.quadraturePoint(),
                                     local.intersection().unitOuterNormal( local.localPosition() ),
                                     uLeft, uRight);
       assert( isDirichlet );
@@ -363,7 +361,7 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      advection_.boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
+      advection().boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
       return 0; // TODO: do something better here
@@ -376,7 +374,7 @@ namespace Fem
                     JacobianRangeType& diff ) const
     {
       assert( hasDiffusion );
-      diffusion_.diffusiveFlux( local.quadraturePoint(), u, du, diff);
+      diffusion().diffusiveFlux( local.quadraturePoint(), u, du, diff);
     }
 
 
@@ -395,7 +393,7 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      diffusion_.diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
+      diffusion().diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
       return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
@@ -411,7 +409,7 @@ namespace Fem
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      advspeed = advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed = advection().maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 
@@ -425,7 +423,7 @@ namespace Fem
     inline DomainType velocity (const LocalEvaluation& local,
                                 RangeType& u) const
     {
-      return advection_.velocity( time(), local.entity(), local.quadraturePoint(), u );
+      return advection().velocity( time(), local.entity(), local.quadraturePoint(), u );
     }
 
     /////////////////////////////////////////////////////////////////
@@ -437,7 +435,7 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      velocity = advection_.velocity( time(), en, x, u );
+      velocity = advection().velocity( time(), en, x, u );
     }
 
     // we have physical check for this model
@@ -452,7 +450,7 @@ namespace Fem
                          const DomainType& x,
                          const RangeType& u) const
     {
-      return advection_.physical( entity, x, u ) > 0;
+      return advection().physical( entity, x, u ) > 0;
     }
 
     // adjust average value if necessary
@@ -463,7 +461,7 @@ namespace Fem
                              RangeType& u ) const
     {
       // nothing to be done here for this test case
-      advection_.adjustAverageValue( entity, xLocal, u );
+      advection().adjustAverageValue( entity, xLocal, u );
     }
 
     // calculate jump between left and right value
@@ -474,7 +472,7 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
-      jump = advection_.jump( it, x, uLeft, uRight );
+      jump = advection().jump( it, x, uLeft, uRight );
     }
 
     // calculate jump between left and right value
@@ -485,7 +483,7 @@ namespace Fem
                                      const RangeType& uRight,
                                      RangeType& indicator) const
     {
-      indicator = advection_.jump( it, x, uLeft, uRight );
+      indicator = advection().jump( it, x, uLeft, uRight );
     }
 
     // misc for eoc calculation
@@ -495,8 +493,13 @@ namespace Fem
     }
 
   protected:
-    const AdvectionModelType& advection_;
-    const DiffusionModelType& diffusion_;
+    const AdvectionModelType& advection () const { return advection_; }
+    const DiffusionModelType& diffusion () const { return diffusion_; }
+
+    // store a copy of the models here for thread parallel runs
+    // where we need class variables to be thread safe
+    AdvectionModelType advection_;
+    DiffusionModelType diffusion_;
 
     const ProblemType& problem_;
     LimitedRangeType limitedRange_;

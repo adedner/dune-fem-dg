@@ -115,8 +115,11 @@ namespace Fem
             ThreadPass < InnerPassType, ThreadIteratorType, true>,
             InnerPassType > :: type                                           LimitPassType;
 
-    typedef typename LimiterDiscreteModelType::IndicatorType                  IndicatorType;
+    typedef typename LimiterDiscreteModelType :: IndicatorType                IndicatorType;
     typedef typename IndicatorType :: DiscreteFunctionSpaceType               IndicatorSpaceType;
+
+    // InnerPassType == LimitPass in case of threading
+    typedef typename InnerPassType :: TroubledCellIndicatorType               TroubledCellIndicatorType;
 
   public:
     Limiter( const DomainSpaceType& domainSpace,
@@ -133,15 +136,16 @@ namespace Fem
 
     Limiter( const DomainSpaceType& domainSpace,
              const RangeSpaceType&  rangeSpace,
-             const ModelType& model )
+             const ModelType& model,
+             const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : domainSpace_( domainSpace )
       , rangeSpace_( rangeSpace )
       , indicatorSpace_( domainSpace_.gridPart() )
       , indicator_("indicator", indicatorSpace_ )
       , model_( model )
-      , discreteModel_( model_, domainSpace_.order() )
+      , discreteModel_( model_, domainSpace_.order(), parameter )
       , startPass_()
-      , limitPass_( discreteModel_ , startPass_, rangeSpace_ )
+      , limitPass_( discreteModel_ , startPass_, rangeSpace_, parameter )
     {
       discreteModel_.setIndicator( &indicator_ );
 
@@ -159,6 +163,11 @@ namespace Fem
       limitPass_( arg, dest );
     }
 
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
+    {
+      limitPass_.setTroubledCellIndicator(indicator);
+    }
+
     bool activated( const EntityType& entity ) const
     {
       return std::abs( indicator_.localFunction( entity )[ 0 ] ) > 0.0;
@@ -171,6 +180,11 @@ namespace Fem
     std::vector<double> computeTimeSteps () const
     {
       return limitPass_.computeTimeSteps();
+    }
+
+    inline size_t numberOfElements () const
+    {
+      return limitPass_.numberOfElements();
     }
 
   private:

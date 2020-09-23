@@ -320,6 +320,7 @@ namespace Fem
     // Destination of Limiter can differ from the operators destination type depending on FV or DG
     // standard limiter and  scaling limiter
     typedef Limiter< DestinationType, LimiterDestinationType,  LimiterDiscreteModelType, threading, ModelType::scalingLimiter > LimiterType;
+    typedef typename LimiterType :: TroubledCellIndicatorType TroubledCellIndicatorType;
 
     // select non-blocking communication handle
     typedef typename
@@ -382,17 +383,20 @@ namespace Fem
       , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
       , discreteModel1_( model_, advFlux_, diffFlux_ )
-      , limiter_( space_, limiterSpace_, model_ )
+      , limiter_( space_, limiterSpace_, model_, parameter )
       , pass0_()
       , pass2_( discreteModel1_, pass0_, space_ )
       , counter_(0)
       , limitTime_( 0 )
       , computeTime_( 0 )
+      , name_( name )
+      , verbose_( Dune::Fem::Parameter::verbose() ) // ||parameter.verbose() )
     {
     }
 
     virtual ~DGLimitedAdvectionOperator() {
-      std::cout << "~DGLimitedAdvectionOperator: op calls = " << counter_ << " T_l = " << limitTime_ << "  T_op = " << computeTime_ << std::endl;
+      if( verbose_ )
+        std::cout << "~DGLimitedAdvectionOperator("<<name_<<"): op calls = " << counter_ << " T_l = " << limitTime_ << "  T_op = " << computeTime_ << std::endl;
     }
 
     void activateLinear() const {
@@ -460,7 +464,7 @@ namespace Fem
 
     inline size_t numberOfElements () const
     {
-      return pass2_.numberOfElements();
+      return std::max( pass2_.numberOfElements(), limiter_.numberOfElements() );
     }
 
     /*
@@ -479,6 +483,11 @@ namespace Fem
     inline void limit( const DestinationType& arg, DestinationType& U ) const
     {
       LimiterCall< LimiterType, polOrd >::limit( limiter_, arg, U );
+    }
+
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
+    {
+      limiter_.setTroubledCellIndicator(indicator);
     }
 
     void printmyInfo(std::string filename) const
@@ -513,11 +522,11 @@ namespace Fem
     }
 
   protected:
-    GridPartType&              gridPart_;
-    const ModelType&           model_;
-    const AdvectionFluxType&   advFlux_;
+    GridPartType&                   gridPart_;
+    const ModelType&                model_;
+    const AdvectionFluxType&        advFlux_;
 
-    SpaceType                  space_;
+    SpaceType                       space_;
     LimiterSpaceType                limiterSpace_;
     mutable LimiterDestinationType  limitedU_;
 
@@ -539,6 +548,9 @@ namespace Fem
 
     mutable double limitTime_;
     mutable double computeTime_;
+
+    std::string name_;
+    const bool verbose_;
   };
 
 

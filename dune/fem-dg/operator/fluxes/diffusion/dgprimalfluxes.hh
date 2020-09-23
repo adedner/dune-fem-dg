@@ -11,6 +11,8 @@
 #include <dune/fem/storage/dynamicarray.hh>
 
 #include <dune/fem-dg/pass/dgmasspass.hh>
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
+
 #include "fluxbase.hh"
 
 namespace Dune
@@ -62,7 +64,8 @@ namespace Fem
     typedef typename DiscreteGradientSpaceType::RangeType             GradientType;
     typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >  LiftingFunctionType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0>                  VolumeQuadratureType ;
+    typedef Fem::CachingQuadrature< GridPartType, 0,
+         DefaultQuadrature<DiscreteGradientSpaceType>::template DefaultQuadratureTraits>   VolumeQuadratureType ;
 
     typedef Fem::LocalMassMatrix
       < DiscreteGradientSpaceType, VolumeQuadratureType >             LocalMassMatrixType;
@@ -96,7 +99,7 @@ namespace Fem
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
         , localMassMatrix_( InverseMassProviderType :: getObject( KeyType( gradSpc_.gridPart() ) ) )
 #else
-        , localMassMatrix_( gradSpc_, 2*gradSpc_.order() )
+        , localMassMatrix_( gradSpc_, [this](const int order) { return DefaultQuadrature<DiscreteGradientSpaceType>::volumeOrder(order); } )
 #endif
         , isInitialized_( 0 )
       {

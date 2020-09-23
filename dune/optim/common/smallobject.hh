@@ -74,7 +74,7 @@ namespace Dune
 
     static SmallObjectPool &instance ()
     {
-      static SmallObjectPool inst;
+      static thread_local SmallObjectPool inst;
       return inst;
     }
 

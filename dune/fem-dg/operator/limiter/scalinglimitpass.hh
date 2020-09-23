@@ -116,24 +116,9 @@ namespace Fem
     //! type of cartesian grid checker
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
-  protected:
-    template <class DiscreteSpace>
-    struct HierarchicalBasis
-    {
-      static const bool v = false ;
-    };
+    //! function describing an external troubled cell indicator
+    typedef std::shared_ptr< TroubledCellIndicatorBase<ArgumentFunctionType> > TroubledCellIndicatorType;
 
-    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< DiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
-    {
-      static const bool v = true ;
-    };
-
-    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
-    {
-      static const bool v = true ;
-    };
 
   public:
     //- Public methods
@@ -146,10 +131,30 @@ namespace Fem
      *  \param  fQ         order of face quadrature
      */
     ScalingLimitDGPass(DiscreteModelType& problem,
-                PreviousPassType& pass,
-                const DiscreteFunctionSpaceType& spc,
-                const int vQ = -1,
-                const int fQ = -1 ) :
+                       PreviousPassType& pass,
+                       const DiscreteFunctionSpaceType& spc,
+                       const int vQ = -1,
+                       const int fQ = -1,
+                       const bool verbose = Dune::Fem::Parameter::verbose()) :
+      ScalingLimitDGPass( problem, pass, spc, Dune::Fem::Parameter::container() )
+    {}
+
+    //- Public methods
+    /** \brief constructor
+     *
+     *  \param  problem    Actual problem definition (see problem.hh)
+     *  \param  pass       Previous pass
+     *  \param  spc        Space belonging to the discrete function local to this pass
+     *  \param  vQ         order of volume quadrature
+     *  \param  fQ         order of face quadrature
+     */
+    ScalingLimitDGPass(DiscreteModelType& problem,
+                       PreviousPassType& pass,
+                       const DiscreteFunctionSpaceType& spc,
+                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
+                       const int vQ = -1,
+                       const int fQ = -1,
+                       const bool verbose = Dune::Fem::Parameter::verbose()) :
       BaseType(pass, spc),
       caller_( 0 ),
       discreteModel_(problem),
@@ -158,6 +163,7 @@ namespace Fem
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
+      scaledFunction_( gridPart_, discreteModel_.model(), spc_.order() ),
       indexSet_( gridPart_.indexSet() ),
       cornerPointSetContainer_(),
       dofConversion_(dimRange),
@@ -166,7 +172,7 @@ namespace Fem
       argOrder_( spc_.order() ),
       geoInfo_( gridPart_.indexSet() ),
       phi0_( 0 ),
-      localMassMatrix_( spc_ , 2*spc_.order()+3 ),
+      localMassMatrix_( spc_, [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
       stepTime_(3, 0.0)
     {
       // we need the flux here
@@ -182,31 +188,25 @@ namespace Fem
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity ));
+      return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
     }
 
     //! return default face quadrature order
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity )) + 1;
+      return DefaultQuadrature<DiscreteFunctionSpaceType >::faceOrder( space.order( entity ) );
     }
 
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity )+3 ) : volumeQuadOrd_ ;
-    }
-
-    //! return default face quadrature order
-    int defaultFaceQuadOrder( const EntityType& entity ) const
-    {
-      return (2 * spc_.order( entity )) + 3;
+      return ( volumeQuadOrd_ < 0 ) ? defaultVolumeQuadratureOrder( spc_, entity ) : volumeQuadOrd_ ;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
     int faceQuadratureOrder( const EntityType& entity ) const
     {
-      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
 
     template <class S1, class S2>
@@ -339,6 +339,117 @@ namespace Fem
       }
     };
 
+
+    struct ScaledFunction :
+      public Dune::Fem::BindableGridFunction< GridPartType, Dune::Dim<dimRange> >
+    {
+      typedef Dune::Fem::BindableGridFunction<GridPartType, Dune::Dim<dimRange> > Base;
+      typedef typename Base::RangeType   RangeType;
+      typedef typename Base::EntityType  EntityType;
+      using Base::Base;
+
+      typedef typename DiscreteModelType :: ModelType  ModelType;
+
+    protected:
+      const ModelType& model_;
+      int order_;
+
+      mutable unsigned int quadId_;
+      mutable std::vector< RangeType > tmpVal_ ;
+      mutable RangeType theta_;
+    public:
+      using Base::bind;
+      mutable RangeType enVal_;
+      mutable int count_ ;
+
+      ScaledFunction( const GridPartType& gridPart,
+                      const ModelType& model, const int order )
+        : Base( gridPart ),
+          model_( model ),
+          order_( order ),
+          quadId_( -1 ),
+          tmpVal_(), theta_(1), enVal_(0), count_(0)
+      {}
+
+      void bind( const EntityType& entity, const int order )
+      {
+        Base::bind( entity );
+        order_ = order;
+      }
+
+      template <class Quadrature>
+      std::vector< RangeType >& getValues( const Quadrature& quadrature ) const
+      {
+        // adjust size if necessary
+        tmpVal_.resize( quadrature.nop() );
+
+        // store quadrature id for later check during evaluate
+        quadId_ = quadrature.id();
+        count_  = 0;
+        return tmpVal_;
+      }
+
+      // return reference to scaling factor
+      RangeType& resetTheta () const
+      {
+        // reset theta to default value which does no scaling
+        theta_ = 1;
+        return theta_;
+      }
+
+      template <class Quadrature, class RangeArray>
+      void evaluateQuadrature(const Quadrature& quadrature, RangeArray &values) const
+      {
+        assert( quadrature.id() == quadId_ );
+        const int quadNop = quadrature.nop();
+        assert( quadNop == int(tmpVal_.size()) );
+
+        for(int qP = 0; qP < quadNop ; ++qP)
+        {
+          evaluate( qP, values[ qP ] );
+        }
+      }
+
+      template <class Point>
+      void evaluate(const Point &x, typename Base::RangeType &value) const
+      {
+        evaluate( count_, value );
+        ++count_;
+        return ;
+
+        std::cout << "Wrong quadrature " << std::endl;
+        assert( false );
+        std::abort();
+      }
+
+      template <class Quadrature>
+      void evaluate(const QuadraturePointWrapper< Quadrature > &x, typename Base::RangeType &value) const
+      {
+        assert( x.quadrature().id() == quadId_ );
+        evaluate( x.index(), value );
+      }
+
+      unsigned int order() const { return order_; }
+      std::string name() const { return "ScalingLimmitPass::ScaledFunction"; } // needed for output
+
+    protected:
+      void evaluate(const int qP, typename Base::RangeType &value) const
+      {
+        assert( qP < int(tmpVal_.size() ));
+        // copy value
+        value = tmpVal_[ qP ];
+
+        // \tilde{p}(x) = \theta (p(x) - \bar{u}) + \bar{u}
+        // limitedRange contains all components that should be modified
+        // default is 0,...,dimRange-1
+        for( const auto& d : model_.limitedRange() )
+        {
+          value[ d ] = theta_[ d ] * ( value[ d ] - enVal_[ d ]) + enVal_[ d ];
+        }
+      }
+    };
+
+
   public:
     virtual std::vector<double> computeTimeSteps () const
     {
@@ -348,7 +459,7 @@ namespace Fem
       return tmp;
     }
 
-    size_t leafElements() const
+    size_t numberOfElements() const
     {
       return elementCounter_;
     }
@@ -485,16 +596,16 @@ namespace Fem
       applyLocalImp( entity );
     }
 
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
+    { // don't need a troubled cell indicator here
+    }
+
   protected:
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
     {
-      //std::cout << "ScalingPass::applyLocalImp" << std::endl;
       // timer for shock detection
       Dune::Timer indiTime;
-
-      // extract types
-      enum { dim = EntityType :: dimension };
 
       // check argument is not zero
       assert( arg_ );
@@ -502,6 +613,9 @@ namespace Fem
       //- statements
       // set entity to caller
       caller().setEntity( en );
+
+      // bind function to entity
+      scaledFunction_.bind( en, spc_.order( en ) );
 
       // get function to limit
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
@@ -512,7 +626,8 @@ namespace Fem
       // get geometry
       const Geometry& geo = en.geometry();
 
-      RangeType enVal ;
+      // get reference to cell average
+      RangeType& enVal = scaledFunction_.enVal_;
 
       bool limiter = false;
 
@@ -523,7 +638,7 @@ namespace Fem
         limiter = true;
       }
 
-      RangeType theta( 1 );
+      RangeType& theta = scaledFunction_.resetTheta();
 
       CornerPointSetType cornerquad( en );
       if( ! checkPhysicalQuad( cornerquad, uEn, enVal, theta ) )
@@ -554,14 +669,23 @@ namespace Fem
         limiter = true;
       }
 
+      for (auto t : theta)
+      {
+        if (t<1) // if scaling would be done
+          limiter = true;
+      }
+
       // scale function
       if( limiter )
       {
         // get local funnction for limited values
         DestLocalFunctionType limitEn = dest_->localFunction(en);
 
-        // project scaled function to limitEn
-        L2project(en, geo, enVal, uEn, theta, limitEn);
+        // set all dofs to zero
+        limitEn.clear();
+
+        const auto interpolation = spc_.interpolation( en );
+        interpolation( scaledFunction_, limitEn.localDofVector() );
 
         // set indicator 1
         discreteModel_.markIndicator();
@@ -583,20 +707,19 @@ namespace Fem
                            RangeType& theta ) const
     {
       // geometry and also use caching
-      const int quadNop = quad.nop();
       const EntityType& en = uEn.entity();
 
-      tmpVal_.resize( quadNop );
+      auto& tmpVal = scaledFunction_.getValues( quad );
 
       bool physical = true;
 
       // evaluate uEn on all quadrature points
-      uEn.evaluateQuadrature( quad , tmpVal_ );
+      uEn.evaluateQuadrature( quad , tmpVal );
 
-      //const Geometry& geo = en.geometry();
+      const int quadNop = quad.nop();
       for(int l=0; l<quadNop; ++l)
       {
-        const RangeType& u = tmpVal_[ l ];
+        const RangeType& u = tmpVal[ l ];
 
         for( const auto& d : discreteModel_.model().limitedRange() )
         {
@@ -609,8 +732,6 @@ namespace Fem
           theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
         }
 
-        // warning!!! caching of geo can be more efficient
-        //const DomainType& xgl = geo.global( quad[l] );
         // check data
         if ( ! discreteModel_.physical( en, quad.point(l), u ) )
         {
@@ -621,78 +742,6 @@ namespace Fem
 
       // solution is physical
       return physical;
-    }
-
-    // check physicality on given quadrature
-    template <class QuadratureType, class LocalFunctionImp>
-    bool checkPhysicalQuad(const QuadratureType& quad,
-                           const LocalFunctionImp& uEn) const
-    {
-      // geometry and also use caching
-      const int quadNop = quad.nop();
-      const EntityType& en = uEn.entity();
-
-      tmpVal_.resize( quadNop );
-
-      // evaluate uEn on all quadrature points
-      uEn.evaluateQuadrature( quad , tmpVal_ );
-
-      //const Geometry& geo = en.geometry();
-      for(int l=0; l<quadNop; ++l)
-      {
-        const RangeType& u = tmpVal_[ l ];
-
-        // warning!!! caching of geo can be more efficient
-        //const DomainType& xgl = geo.global( quad[l] );
-        // check data
-        if ( ! discreteModel_.physical( en, quad.point(l), u ) )
-        {
-          // notPhysical
-          return false ;
-        }
-      }
-    }
-
-    //! check physicallity of data
-    template <class LocalFunctionImp>
-    bool checkPhysical(const EntityType& en,
-                       const Geometry& geo,
-                       const LocalFunctionImp& uEn) const
-    {
-      enum { dim = dimGrid };
-      if( discreteModel_.hasPhysical() )
-      {
-#if 1
-        // use LagrangePointSet to evaluate on corners of the
-        // geometry and also use caching
-        return checkPhysicalQuad( CornerPointSetType( en ), uEn );
-#else
-        {
-          VolumeQuadratureType volQuad(en, volumeQuadOrd_ );
-          if( ! checkPhysicalQuad(volQuad, uEn) ) return false;
-        }
-
-        const IntersectionIteratorType endnit = gridPart_.iend(en);
-        for (IntersectionIteratorType nit = gridPart_.ibegin(en);
-             nit != endnit; ++nit)
-        {
-          const IntersectionType& intersection = *nit;
-          if( intersection.neighbor() && ! intersection.conforming() )
-          {
-            typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-            NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-          }
-          else
-          {
-            // conforming case
-            FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-          }
-        }
-#endif
-      } // end physical
-      return true;
     }
 
     template <class LocalFunctionImp, class SpaceImp>
@@ -732,82 +781,6 @@ namespace Fem
       }
     }
 
-    // L2 projection
-    template <class LocalFunctionImp>
-    void L2project(const EntityType& en,
-                   const Geometry& geo,
-                   const RangeType& enVal,
-                   const LocalFunctionType& uEn,
-                   const RangeType& theta,
-                   LocalFunctionImp& limitEn ) const
-    {
-      enum { dim = dimGrid };
-
-      // true if geometry mapping is affine
-      const bool affineMapping = localMassMatrix_.affine();
-
-      // set all dofs to zero
-      limitEn.clear();
-
-      // get quadrature for destination space order
-      VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
-
-      //std::cout << globalMin << " " << globalMax << std::endl;
-      //std::cout << minVal  << " " << maxVal << std::endl;
-
-      //old version that did not work well
-      /*
-      for( const auto& d : discreteModel_.model().limitedRange() )
-      {
-        double fst = 1.0;
-        double sec = 1.0;
-        if( std::abs( maxVal[ d ] - enVal[ d ] ) > 1e-10 )
-          fst = (globalMax[ d ] - enVal[ d ])/(maxVal[ d ] - enVal[ d ]);
-
-        if( std::abs( minVal[ d ] - enVal[ d ] ) > 1e-10 )
-          sec = (globalMin[ d ] - enVal[ d ])/(minVal[ d ] - enVal[ d ]);
-
-        theta[ d ] = std::min( std::min( std::abs( fst ), std::abs( sec ) ), double(1) );
-        if( std::abs( theta[d ] ) < 1e-12 )
-          theta[ d ] = 0;
-      }
-      */
-
-      const int quadNop = tmpVal_.size();// quad.nop();
-      assert( quadNop == int(quad.nop()) );
-
-      // this has been done previously in checkPhysicalQuad
-      // uEn.evaluateQuadrature( quad, tmpVal_ );
-
-      for(int qP = 0; qP < quadNop ; ++qP)
-      {
-        RangeType &value = tmpVal_[ qP ];
-
-        // \tilde{p}(x) = \theta (p(x) - \bar{u}) + \bar{u}
-        // limitedRange contains all components that should be modified
-        // default is 0,...,dimRange-1
-        for( const auto& d : discreteModel_.model().limitedRange()  )
-        {
-          value[ d ] = theta[ d ] * ( value[ d ] - enVal[ d ]) + enVal[ d ];
-        }
-
-        // get quadrature weight
-        const double intel = (affineMapping) ?
-          quad.weight(qP) : // affine case
-          quad.weight(qP) * geo.integrationElement( quad.point(qP) ); // general case
-
-        // quadrature scaling
-        value *= intel;
-      }
-
-      // add all value to limitEn
-      limitEn.axpyQuadrature( quad, tmpVal_ );
-
-      // apply local inverse mass matrix for non-linear mappings
-      if( !affineMapping )
-        localMassMatrix_.applyInverse( en, limitEn );
-    }
-
     template <class BasisFunctionSetType, class PointType>
     const RangeType& evaluateConstantBasis( const BasisFunctionSetType& basisSet,
                                            const PointType& x ) const
@@ -839,7 +812,7 @@ namespace Fem
                      RangeType& val) const
     {
       bool notphysical = false;
-      if( HierarchicalBasis< DiscreteFunctionSpaceType > :: v
+      if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v
           && localMassMatrix_.affine() )
       {
         // get point quadrature
@@ -928,6 +901,8 @@ namespace Fem
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
 
+    mutable ScaledFunction scaledFunction_;
+
     const IndexSetType& indexSet_;
 
     CornerPointSetContainerType cornerPointSetContainer_;
@@ -944,8 +919,6 @@ namespace Fem
 
     mutable RangeType    globalMin_;
     mutable RangeType    globalMax_ ;
-
-    mutable std::vector< RangeType >  tmpVal_ ;
 
     mutable std::vector< RangeType >  aver_ ;
 

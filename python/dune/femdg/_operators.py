@@ -1,12 +1,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys
+import sys, hashlib
 import logging
 logger = logging.getLogger(__name__)
+from io import StringIO
 
 from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
 
+from dune.typeregistry import generateTypeName
 from dune.generator import Constructor, Method
+from dune.generator.importclass import load as classLoad
 from dune.common.hashit import hashIt
 from dune.fem.operator import load
 from dune.fem import parameter as parameterReader
@@ -83,31 +86,10 @@ def createOrderRedcution(domainSpace):
     return load(includes, typeName, constructor).Operator( domainSpace )
 
 #####################################################
-## fem-dg Operator
+## fem-dg models
 #####################################################
 from dune.femdg.patch import transform
-# create DG operator + solver (limiter = none,minmod,vanleer,superbee),
-# (diffusionScheme = cdg2,br2,ip,nipg,...)
-def femDGOperator(Model, space,
-        limiter="minmod",
-        advectionFlux="default",
-        diffusionScheme = "cdg2", threading=False,
-        initialTime=0.0, parameters=None):
-    virtualize = False
-    import dune.create as create
-
-    includes = []
-
-    if limiter is None or limiter is False:
-        limiter = "unlimited"
-
-    if limiter.lower() == "default":
-        limiter = "minmod"
-
-    # TODO: does this make sense - if there is no diffusion then it doesn't
-    # matter and with diffusion using 'none' seems a bad idea?
-    if diffusionScheme is None or diffusionScheme is False:
-        diffusionScheme = "none"
+def femDGModels(Model, space, initialTime=0):
 
     u = TrialFunction(space)
     v = TestFunction(space)
@@ -144,12 +126,123 @@ def femDGOperator(Model, space,
             diffModel += inner(as_vector(Model.S_impl(t,x,u,grad(u))),v)*dx
             print("Model.S_s is deprecated. Use S_i instead!")
 
-    advModel  = create.model("elliptic",space.grid, advModel,
+    from dune.fem.model import elliptic
+    virtualize = False
+
+    advModel  = elliptic(space.grid, advModel,
                       modelPatch=transform(Model,space,t,"Adv"),
                       virtualize=virtualize)
-    diffModel = create.model("elliptic",space.grid, diffModel,
+    diffModel = elliptic(space.grid, diffModel,
                       modelPatch=transform(Model,space,t,"Diff"),
                       virtualize=virtualize)
+
+    Model._ufl = {"u":u,"v":v,"n":n,"x":x,"t":t}
+
+    return [Model,advModel,diffModel]
+
+#####################################################
+## fem-dg Operator
+#####################################################
+# create DG operator + solver (limiter = none,default,minmod,vanleer,superbee,lp,scaling),
+# (diffusionScheme = cdg2,cdg,br2,ip,nipg,bo)
+def femDGOperator(Model, space,
+        limiter="default",
+        advectionFlux="default",
+        diffusionScheme = "cdg2",
+        threading=False,
+        defaultQuadrature=True,
+        codegen=True,
+        initialTime=0.0, parameters=None):
+    """ create DG operator + ODE solver
+
+    Args:
+        Model: analytical model describing the PDE and auxiliary functionality
+        space: discrete function space (DG space)
+        limiter: choice of limiter stabilization, possible values are
+                 none,default,minmod,vanleer,superbee,lp,scaling
+        advectionFlux: choice of numerical flux for advective parts
+                    default is local Lax-Friedrichs
+        diffusionScheme: choice of numerical flux for diffusive parts
+                possible choices are cdg2(default),cdg,br2,ip,nipg,bo
+        threading: enable shared memory parallelization
+        defaultQuadrature: use quadratures that generically fit to the space
+        codegen: enable optimized code for evaluation and interpolation
+        initialTime: T_0, default is 0.0
+        parameters: Additional parameter passed to the DG operator, limiter and ODE solvers
+    Returns:
+        DGOperator
+    """
+
+    includes = []
+
+    # obtain information about limiter interface before Model
+    # is augmented with default implementations
+    hasScalingInterface = hasattr(Model,"lowerBound") or hasattr(Model,"upperBound") or hasattr(Model,"physical")
+    hasLimiterInterface = (hasattr(Model,"jump") and hasattr(Model,"velocity")) or hasattr(Model,"physical")
+
+    if type(Model)==list or type(Model)==tuple:
+        advModel = Model[1]
+        diffModel = Model[2]
+        Model = Model[0]
+    else:
+        Model, advModel, diffModel = femDGModels(Model,space,initialTime)
+
+    hasAdvFlux = hasattr(Model,"F_c")
+    hasDiffFlux = hasattr(Model,"F_v")
+    hasStiffSource = hasattr(Model,"S_i") or hasattr(Model,"S_s")
+    hasNonStiffSource = hasattr(Model,"S_e") or hasattr(Model,"S_ns")
+
+    virtualize = False
+
+    defaultLimiter = limiter == "default"
+
+    if limiter is None or limiter is False:
+        limiter = "unlimited"
+
+    if type(limiter) in [list,tuple]:
+        limiterIndicator = limiter[1]
+        limiter = limiter[0]
+    else:
+        limiterIndicator = None
+
+    limiterstr = limiter
+    if limiter.lower() == "default":
+        # check for limiter interface implementation
+        if not hasLimiterInterface:
+            print("\nfemDGOperator: Limiter selected but limiter interface (jump,velocity,physical) missing in Model!", flush=True)
+            print("femDGOperator: Falling back to unlimited!\n", flush=True)
+            limiter = "unlimited"
+        else:
+            # default is minmod which can be either lp-minmod or muscl-minmod
+            limiter = "minmod"
+            limiterstr = limiter if space.grid.type.isSimplex else "lp"
+            # force default values for how reconstruction is done
+            parameters["femdg.limiter.admissiblefunctions"] = "default"
+
+    if limiter.lower() == "lp":
+        limiter = "minmod"
+        # force default values for how reconstruction is done
+        parameters["femdg.limiter.admissiblefunctions"] = "lp"
+
+    if limiter.lower() == "scaling":
+        # check for scaling limiter interface
+        if not hasScalingInterface:
+            raise KeyError(\
+              "femDGOperator: ScalingLimiter selected but scaling limiter interface (lowerBound,upperBound,physical) missing in Model!\n")
+    elif limiter.lower() != "unlimited":
+        # check for scaling limiter interface
+        if not hasScalingInterface:
+            raise KeyError(\
+              "femDGOperator: MUSCL type stabilization selected but limiter interface (jump,velocity,physical) missing in Model!\n")
+
+    if space.grid.comm.rank == 0:
+        limiterstr = "default(" + limiterstr + ")" if defaultLimiter else limiterstr
+        print("femDGOperator: Limiter =",limiterstr)
+
+    # TODO: does this make sense - if there is no diffusion then it doesn't
+    # matter and with diffusion using 'none' seems a bad idea?
+    if diffusionScheme is None or diffusionScheme is False:
+        diffusionScheme = "none"
 
     spaceType = space._typeName
 
@@ -197,13 +290,13 @@ def femDGOperator(Model, space,
             # at the moment this is always the same type (depending on
             # model._typeName) so could be done by only providing the header
             # file in the dg operator construction method
-            from dune.typeregistry import generateTypeName
             clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
             advectionFlux = advectionFlux(advModel,clsName,includes)
             includes += advectionFlux._includes
-        #elif advectionFlux.lower().find(".h") >= 0:
-        #    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
-        #    includes += [ advectionFlux ]
+        elif hasattr(advectionFlux,"_typeName"):
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+            advectionFluxIsCallable = True
+            includes += advectionFlux._includes
         else:
             # if dgadvectionflux.method has been selected, then use general flux,
             # otherwise default to LLF flux
@@ -242,7 +335,8 @@ def femDGOperator(Model, space,
     elif limiter.lower() != "minmod":
         raise ValueError("limiter "+limiter+" not recognised")
 
-    signature = (advFluxId,diffusionScheme,threading,solverId,formId,limiterId,limiterFctId,advFluxId,diffFluxId,)
+    signature = (advFluxId,diffusionScheme,threading,solverId,formId,
+                 limiterId,limiterFctId,advFluxId,diffFluxId,str(defaultQuadrature))
     additionalClass = "Additional_"+hashIt(str(signature))
     struct = Struct(additionalClass, targs=['class FunctionSpace'])
     struct.append(TypeAlias('DomainType','typename FunctionSpace::DomainType'))
@@ -258,8 +352,7 @@ def femDGOperator(Model, space,
         limitedDimRange = "FunctionSpace :: dimRange"
     else:
         limiterModified = {}
-        count = 0
-        for id,f in limiterModifiedDict.items(): count += 1
+        count = len( limiterModifiedDict.items() )
         limitedDimRange = str(count)
     struct.append([Declaration(
         Variable("const int", "limitedDimRange = " + limitedDimRange),
@@ -303,6 +396,9 @@ def femDGOperator(Model, space,
     struct.append([Declaration(
         Variable("const Dune::Fem::DiffusionFlux::Enum", "diffFluxId = " + diffFluxId),
         static=True)])
+    struct.append([Declaration(
+        Variable("const bool", "defaultQuadrature"), initializer=defaultQuadrature,
+        static=True)])
 
     writer = SourceWriter(StringWriter())
     writer.emit([struct])
@@ -329,33 +425,50 @@ def femDGOperator(Model, space,
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
 
-    estimateMark = Method('estimateMark', '''[]( DuneType &self, const typename DuneType::DestinationType &u, const double dt) { self.estimateMark(u, dt); }''' );
+    estimateMark = Method('estimateMark', '''[]( DuneType &self, const typename DuneType::DestinationType &u, const double dt) { self.estimateMark(u, dt); }''' )
+
+    includes += ["dune/fem-dg/operator/limiter/indicatorbase.hh"]
+    setIndicator = Method('setTroubledCellIndicator',
+            args=['DuneType &self, typename DuneType::TroubledCellIndicatorType indicator'],
+            body=['self.setTroubledCellIndicator(indicator);'],
+            extra=['pybind11::keep_alive<0,1>()'])
+    gridSizeInterior = Method('gridSizeInterior', '&DuneType::gridSizeInterior')
+
+    order = space.order
+    if codegen:
+        codegen = [space,range(2,2*order+2),range(2,2*order+2)]
+    else:
+        codegen = None
 
     if parameters is not None:
         if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark,
-                     baseClasses = [base],
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
+                     baseClasses=[base],
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
         else:
-            op = load(includes, typeName, estimateMark,
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, parameters=parameters )
     else:
         if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark,
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux )
         else:
-            op = load(includes, typeName, estimateMark,
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel )
 
-    op._t = t
-    op.time = t.value
+    op._t = Model._ufl["t"]
+    op.time = Model._ufl["t"].value
     op.models = [advModel,diffModel]
     op.space = space
     def setTime(self,time):
@@ -371,7 +484,39 @@ def femDGOperator(Model, space,
     op.stepTime  = stepTime.__get__(op)
     op._hasAdvFlux = hasAdvFlux
     op._hasDiffFlux = hasDiffFlux
+    if limiterIndicator is not None:
+        op.setTroubledCellIndicator(limiterIndicator)
     return op
+
+def smoothnessIndicator(clsName, includes, u_h, ctorArgs=None):
+    if ctorArgs is None: ctorArgs=[]
+    baseName,_ = generateTypeName("Dune::Fem::TroubledCellIndicatorBase",u_h)
+    return classLoad(clsName, includes,*ctorArgs, baseClasses=[baseName],
+                              holder="std::shared_ptr")
+def advectionNumericalFlux(clsName ,includes, advModel, additionalArgs=None):
+    if additionalArgs is None: additionalArgs=[]
+    code = '''
+namespace Dune
+{
+  namespace Fem
+  {
+    template <>
+    struct DGAdvectionFlux< XXXADV_MODELXXX, AdvectionFlux::Enum::userdefined >
+    : public XXXIMPL_MODELXXX
+    {
+      template< class ... Args>
+      DGAdvectionFlux( Args&&... args )
+      : XXXIMPL_MODELXXX( std::forward<Args>(args)... ) {}
+      std::string name() const {return "user defined flux";}
+    };
+  }
+}
+'''
+    code = code.replace("XXXADV_MODELXXX",advModel._typeName)
+    code = code.replace("XXXIMPL_MODELXXX",clsName)
+    clsName,includesA = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel,
+                                         "Dune::Fem::AdvectionFlux::Enum::userdefined")
+    return classLoad(clsName, includes+includesA+[StringIO(code)], advModel, *additionalArgs)
 
 # RungeKutta solvers
 def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
@@ -410,9 +555,11 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
 
-    return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
-            fullOperator.fullOperator,
-            fullOperator.explicitOperator,
-            fullOperator.implicitOperator,
-            imexId,
-            parameters=parameters)
+    return load(includes, typeName,
+                constructor, solve, setTimeStepSize, deltaT,
+                codegen=fullOperator.codegen).\
+            Operator( fullOperator.fullOperator,
+                      fullOperator.explicitOperator,
+                      fullOperator.implicitOperator,
+                      imexId,
+                      parameters=parameters )
