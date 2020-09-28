@@ -504,11 +504,9 @@ namespace Fem
 // DiscreteFunctionSpaceSelector
 ///////////////////////////////////////////////////////////////////////////
 #ifdef USE_BASEFUNCTIONSET_CODEGEN
-  template <class T>
-  using Storage = Dune::Fem::CodegenStorage<T>;
+  using Storage = Dune::Fem::CodegenStorage;
 #else
-  template <class T>
-  using Storage = Dune::Fem::CachingStorage<T>;
+  using Storage = Dune::Fem::CachingStorage;
 #endif
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder, DiscreteFunctionSpaces::Enum dfType, Galerkin::Enum opType >

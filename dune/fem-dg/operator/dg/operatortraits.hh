@@ -102,7 +102,7 @@ namespace Fem
     // if selected discrete function space has no caching storage,
     // then select ElementQuadrature, and not  CachingQuadrature
     template <class FS, class GP, int polOrd,
-              template <class, class, int, template <class> class> class DFS>
+              template <class, class, int, class> class DFS>
     struct CheckSpace< DFS< FS, GP, polOrd, Dune::Fem::SimpleStorage > >
     {
       static const bool value = false;

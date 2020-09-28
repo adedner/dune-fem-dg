@@ -1254,7 +1254,7 @@ namespace Fem
     };
 
     template <class LocalFunctionImp, class FunctionSpaceImp, class GridPartImp,
-              int polOrd, template <class> class StrorageImp >
+              int polOrd, class StrorageImp >
     struct NumLinearBasis<LocalFunctionImp,
               DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
                                          StrorageImp> >

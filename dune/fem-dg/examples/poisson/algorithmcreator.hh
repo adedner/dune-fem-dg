@@ -51,7 +51,7 @@ namespace Fem
     typedef AlgorithmConfigurator< GridSelectorGridType,
                                    Galerkin::Enum::dg,
                                    Adaptivity::Enum::yes,
-                                   DiscreteFunctionSpaces::Enum::legendre,
+                                   DiscreteFunctionSpaces::Enum::hierarchic_legendre,
                                    Solver::Enum::istl,
                                    AdvectionLimiter::Enum::unlimited,
                                    Matrix::Enum::assembled,

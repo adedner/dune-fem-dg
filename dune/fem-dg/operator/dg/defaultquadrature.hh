@@ -34,7 +34,7 @@ namespace Dune
       static int faceOrder( const int polOrder )   {  return (polOrder > 0) ? (2 * polOrder - 1) : 0; }
     };
 
-    template < class FunctionSpace, class GridPart, unsigned int order, template< class > class Storage >
+    template < class FunctionSpace, class GridPart, unsigned int order, class Storage >
     struct DefaultQuadrature< Dune::Fem::FixedOrderDGLagrangeSpace< FunctionSpace, GridPart, order, Dune::GaussLobattoPointSet, Storage > >
     : public DefaultQuadratureGaussLobatto
     {
@@ -59,7 +59,7 @@ namespace Dune
       static int faceOrder( const int polOrder )   {  return 2 * polOrder + 1; }
     };
 
-    template < class FunctionSpace, class GridPart, unsigned int order, template< class > class Storage >
+    template < class FunctionSpace, class GridPart, unsigned int order, class Storage >
     struct DefaultQuadrature< Dune::Fem::FixedOrderDGLagrangeSpace< FunctionSpace, GridPart, order, Dune::GaussLegendrePointSet, Storage > >
       : public DefaultQuadratureGaussLegendre
     {};
@@ -70,7 +70,7 @@ namespace Dune
     {
     };
 
-    template< class LFEMap, class FunctionSpace, template< class > class Storage >
+    template< class LFEMap, class FunctionSpace, class Storage >
     struct DefaultQuadrature< DiscontinuousLocalFiniteElementSpace< LFEMap, FunctionSpace, Storage > >
       : public DefaultQuadratureSpec< LFEMap >
     {
