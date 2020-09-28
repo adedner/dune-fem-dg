@@ -179,8 +179,9 @@ namespace Fem
     template< class FunctionSpaceImp, int polOrd, class GridPartImp = GridParts >
     using DiscreteFunctions = typename SolverSelect<>::template DiscreteFunctionType<DiscreteFunctionSpaces<FunctionSpaceImp,polOrd,GridPartImp> >;
 
-  private:
-    template<class DF> struct FunctionChooser
+  public:
+    template<class DF>
+    struct FunctionChooser
     {
       typedef DiscreteFunctionSpaces< typename DF::DiscreteFunctionSpaceType::FunctionSpaceType, DF::DiscreteFunctionSpaceType::polynomialOrder > type;
     };
