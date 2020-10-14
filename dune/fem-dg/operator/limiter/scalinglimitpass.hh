@@ -744,27 +744,6 @@ namespace Fem
       return physical;
     }
 
-    template <class LocalFunctionImp, class SpaceImp>
-    struct NumLinearBasis
-    {
-      inline static int numBasis(const LocalFunctionImp& lf)
-      {
-        return lf.numDofs()/dimRange;
-      }
-    };
-
-    template <class LocalFunctionImp, class FunctionSpaceImp, class
-      GridPartImp, int polOrd, template <class> class StrorageImp >
-    struct NumLinearBasis<LocalFunctionImp,
-              DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
-                                         StrorageImp> >
-    {
-      inline static int numBasis(const LocalFunctionImp& lf)
-      {
-        return dimGrid + 1;
-      }
-    };
-
     void initializeVolumeQuadratures( const std::vector< GeometryType >& geomTypes ) const
     {
       for( size_t i=0; i<geomTypes.size(); ++ i )

@@ -38,8 +38,8 @@ namespace Fem
   struct HierarchicSimplexDGSpace
   {
     typedef Dune::Fem::DiscontinuousGalerkinSpace< typename OtherSpace :: FunctionSpaceType,
-                                        typename OtherSpace :: GridPartType,
-                                       OtherSpace :: polynomialOrder > Type;
+                                                   typename OtherSpace :: GridPartType,
+                                                   OtherSpace :: polynomialOrder > Type;
 
     enum { dimension = OtherSpace :: GridPartType :: dimension };
 
@@ -78,8 +78,8 @@ namespace Fem
   struct HierarchicCubeDGSpace
   {
     typedef Dune::Fem::HierarchicLegendreDiscontinuousGalerkinSpace< typename OtherSpace :: FunctionSpaceType,
-                                                typename OtherSpace :: GridPartType,
-                                                OtherSpace :: polynomialOrder > Type;
+                                                                     typename OtherSpace :: GridPartType,
+                                                                     OtherSpace :: polynomialOrder > Type;
     typedef typename OtherSpace :: GridType GridType;
 
     static int size( const int order )
@@ -96,6 +96,7 @@ namespace Fem
   template< class DiscreteFunctionImp, template<class> class SigmaDiscreteFunctionChooserImp >
   class SigmaDiscreteFunctionSelector
   {
+  public:
     typedef DiscreteFunctionImp                                      DiscreteFunctionType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionType::GridPartType              GridPartType;

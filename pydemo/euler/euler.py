@@ -126,10 +126,7 @@ def sod(dim=2,gamma=1.4):
     Model = CompressibleEulerReflection(dim,gamma)
     Vl, Vr = [1.,0.,0.,1.], [0.125,0,0,0.1]
     Model.initial=riemanProblem( Model, x[0], x0, Vl, Vr)
-    #Model.domain=[[0, 0], [1, 0.25], [256, 64]]
-    #Model.domain=[[0, 0], [1, 0.25], [128, 32]]
     Model.domain=[[0, 0], [1, 0.25], [64, 16]]
-    Model.domain=(reader.dgf, "grid2d_nonaffine.dgf")
     Model.endTime=0.25
     def chorin(gv,t):
         gf = gv.function("chorin","chorin.hh", Vl,Vr,gamma,x0,t,name="chorin")

@@ -39,12 +39,6 @@
 #include <dune/fem/solver/petscinverseoperators.hh>
 #endif
 
-#if HAVE_EIGEN
-#include <dune/fem/storage/eigenvector.hh>
-#include <dune/fem/operator/linear/eigenoperator.hh>
-#include <dune/fem/solver/eigen.hh>
-#endif
-
 //include operators
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include <dune/fem-dg/operator/dg/fluxoperator.hh>
@@ -390,32 +384,6 @@ namespace Fem
   //};
 #endif
 
-#if HAVE_EIGEN
-#ifndef NDEBUG
-#warning "Eigen solver is not working at the moment.!"
-  template <bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::eigen,symmetric>
-  {
-    static const bool solverConfigured = true;
-    // choose type of discrete function, Matrix implementation and solver implementation
-    typedef Dune::Fem::EigenVector<double>                                                                          DofVectorType;
-    template<class Space>
-    using DiscreteFunctionType = Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction<Space,DofVectorType> >;
-    template<class DSpace, class RSpace = DSpace>
-    using LinearOperatorType = Dune::Fem::EigenLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
-    template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType = EigenCGInverseOperator< DiscreteFunctionType<DSpace > >;
-  };
-#else
-  //template< bool dummy >
-  //struct AvailableSolvers< Solver::Enum::eigen, dummy >
-  //{
-  //  static_warning(false, "You have chosen the Eigen solver backend which is currently not installed. Falling back to standard solver!");
-  //};
-#endif // NDEBUG
-#endif // HAVE_EIGEN
-
-
   ///////////////////////////////////////////////////////////////////////////
 // MatrixFreeSolverSelector
 ///////////////////////////////////////////////////////////////////////////
@@ -504,11 +472,9 @@ namespace Fem
 // DiscreteFunctionSpaceSelector
 ///////////////////////////////////////////////////////////////////////////
 #ifdef USE_BASEFUNCTIONSET_CODEGEN
-  template <class T>
-  using Storage = Dune::Fem::CodegenStorage<T>;
+  using Storage = Dune::Fem::CodegenStorage;
 #else
-  template <class T>
-  using Storage = Dune::Fem::CachingStorage<T>;
+  using Storage = Dune::Fem::CachingStorage;
 #endif
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder, DiscreteFunctionSpaces::Enum dfType, Galerkin::Enum opType >
