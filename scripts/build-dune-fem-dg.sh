@@ -1,116 +1,121 @@
 #!/bin/bash
 
-WORKDIR=`pwd`
+WORKDIR=${PWD}
 
-echo "This script will download and build all DUNE modules"
-echo "necessary to run the examples in dune-fem-dg."
-echo
-echo "The installation directory is: $WORKDIR"
-echo "Some third party libraries have to be downloaded manually."
-echo "Please take a look at this script for parameters and options."
-echo
-read -p "Install DUNE modules to $WORKDIR? (Y/N) " YN
-if [ "$YN" != "Y" ] ;then
-  exit 1
+if [ "$DUNE_CONTROL_PATH" != "" ]; then
+  if [ "$WORKDIR" != "$DUNE_CONTROL_PATH" ]; then
+    echo "DUNE_CONTROL_PATH is already set to $DUNE_CONTROL_PATH"
+    exit 1
+  fi
 fi
 
-# this script downloads the necessary set of DUNE modules
-# to build and run the examples in dune-fem-dg
-# NOTE: Zoltan has to be downloaded separately from
+CMAKE_VERSION=`cmake --version | head -1 | cut -d " " -f 3 | cut -d " " -f 1`
+REQUIRED_VERSION="3.13.3"
+# check if cmake version is ok
+if awk 'BEGIN {exit !('$CMAKE_VERSION' < '$REQUIRED_VERSION')}'; then
+  CMAKEPIP=cmake
+fi
+echo $CMAKEPIP
 
-#change appropriately, i.e. 2.3 or empty (which refers to master)
+# create necessary python virtual environment
+if ! test -d $WORKDIR/dune-venv ; then
+  python3 -m venv $WORKDIR/dune-venv
+  source $WORKDIR/dune-venv/bin/activate
+  pip install --upgrade pip
+  pip install $CMAKEPIP ufl numpy matplotlib mpi4py
+  #pip install numpy matplotlib mpi4py
+else
+  source $WORKDIR/dune-venv/bin/activate
+fi
+
+#change appropriately, i.e. 2.6 or empty which refers to master
 DUNEVERSION=
 
-# your favorite compiler optimization flags
-FLAGS="-O3 -DNDEBUG"
-MAKE_FLAGS="-j4"
+FLAGS="-O3 -DNDEBUG -funroll-loops -finline-functions -Wall -ftree-vectorize -fno-stack-protector -mtune=native"
 
-# download dlmalloc from ftp://g.oswego.edu/pub/misc/ via the following command
-if ! test -d dlmalloc ; then
-  echo "Downloading dlmalloc"
-  mkdir dlmalloc ; cd dlmalloc
-  wget ftp://g.oswego.edu/pub/misc/malloc.{h,c}
-  cd ../
-fi
-# configure parameter for dlmalloc (v 2.8.6)
-WITH_DLMALLOC="--with-dlmalloc=$WORKDIR/dlmalloc"
-
-# most likely /usr if zlib is installed on the system
-#WITH_ZLIB="--with-zlib=/usr"
-WITH_ZLIB=
-
-# Zoltan has to be downloaded from
-# http://www.cs.sandia.gov/zoltan/
-#WITH_ZOLTAN="--with-zoltan=$WORKDIR/zoltan"
-WITH_ZOLTAN=
-
-# SIONlib 1.5p1 has to be downloaded from
-# http://www.fz-juelich.de/ias/jsc/EN/Expertise/Support/Software/SIONlib/sionlib-download_node
-#WITH_SIONLIB="--with-sionlib=$WORKDIR/sionlib"
-WITH_SIONLIB=
-
-# dune modules needed to build dune-fem-dg
-DUNEMODULES="dune-common dune-geometry dune-grid dune-istl dune-alugrid dune-fem dune-fem-dg"
+DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid"
+DUNEEXTMODULES="dune-alugrid dune-spgrid"
+DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
 
 # build flags for all DUNE modules
 # change according to your needs
-CACHEFILE=$WORKDIR/cache.config
-# if ! test -f config.opts ; then
-echo "MAKE_FLAGS=\"$MAKE_FLAGS\"
+if ! test -f config.opts ; then
+echo "\
+DUNEPATH=`pwd`
+BUILDDIR=build-cmake
 USE_CMAKE=yes
-CONFIGURE_FLAGS=\"CXXFLAGS=\\\"$FLAGS\\\" \\
-  --cache-file=$CACHEFILE \\
-  --disable-documentation \\
-  --Wno-deprecated-declarations \\
-  --enable-experimental-grid-extensions \\
-  --enable-parallel \\
-  --enable-fieldvector-size-is-method \\
-  $WITH_DLMALLOC \\
-  $WITH_ZLIB \\
-  $WITH_ZOLTAN \\
-  $WITH_SIONLIB\"" > config.opts
-# fi
+MAKE_FLAGS=-j4
+CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
+ -DDUNE_ENABLE_PYTHONBINDINGS=ON \\
+ -DADDITIONAL_PIP_PARAMS="-upgrade" \\
+ -DCMAKE_LD_FLAGS=\\\"$PY_LDFLAGS\\\" \\
+ -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
+ -DDISABLE_DOCUMENTATION=TRUE \\
+ -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > config.opts
+fi
+
+if ! test -f activate.sh ; then
+echo "#!/bin/bash
+
+# set current main working directory
+export DUNE_CONTROL_PATH=\${PWD}
+
+source \$DUNE_CONTROL_PATH/dune-venv/bin/activate
+
+# defines CMAKE_FLAGS
+source \${DUNE_CONTROL_PATH}/config.opts
+
+# CRITICAL, DEBUG or NOTSET
+export DUNE_LOG_LEVEL=CRITICAL
+export DUNE_LOG_FORMAT='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+export DUNE_PY_DIR=\${DUNE_CONTROL_PATH}/cache/
+
+export DUNE_CMAKE_FLAGS="\${CMAKE_FLAGS}"
+
+MODULES=\`\$DUNE_CONTROL_PATH/dune-common/bin/dunecontrol --print\`
+for MOD in \$MODULES; do
+  MODPATH=\"\${PWD}/\${MOD}/build-cmake/python\"
+  MODFOUND=\`echo \$PYTHONPATH | grep \$MODPATH\`
+  if [ \"\$MODFOUND\" == \"\" ]; then
+    export PYTHONPATH=\$PYTHONPATH:\$MODPATH
+  fi
+done
+" > activate.sh
+fi
 
 DUNEBRANCH=
-ALUGRIDBRANCH=
-FEMBRANCH=
-FEMDGBRANCH=
 if [ "$DUNEVERSION" != "" ] ; then
   DUNEBRANCH="-b releases/$DUNEVERSION"
-  ALUGRIDBRANCH="-b releases/2.4"
-  FEMBRANCH="-b releases/2.4-dune-fem-dg"
-  FEMDGBRANCH="-b releases/2.4"
 fi
 
 # get all dune modules necessary
-for MOD in $DUNEMODULES ; do
-  if [ "$MOD" == "dune-alugrid" ] ; then
-    # use the special branch for dune-alugrid
-    git clone $DUNEALUGRIDBRANCH https://gitlab.dune-project.org/extensions/dune-alugrid.git
-  elif [ "$MOD" == "dune-fem" ] ; then
-    # use the special branch for dune-fem
-    git clone $FEMBRANCH https://gitlab.dune-project.org/dune-fem/dune-fem.git
-  elif [ "$MOD" == "dune-fem-dg" ] ; then
-    # use the special branch for dune-fem-dg
-    git clone $FEMDGBRANCH https://gitlab.dune-project.org/dune-fem/dune-fem-dg.git
+for MOD in $DUNECOREMODULES ; do
+  git clone $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
+done
+
+# get all dune extension modules necessary
+for MOD in $DUNEEXTMODULES ; do
+  if [ "$MOD" == "dune-alugrid" ]; then
+    git clone $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
+  elif [ "$MOD" == "dune-spgrid" ]; then
+    git clone $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
   else
-    git clone $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
+    git clone $DUNEBRANCH https://gitlab.dune-project.org/staging/$MOD.git
   fi
 done
 
-# delete old cache file
-if test -f $CACHEFILE ; then
-  rm -f $CACHEFILE
-fi
+# get all dune extension modules necessary
+for MOD in $DUNEFEMMODULES ; do
+  git clone $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
+done
 
-# build all DUNE modules in the correct order
+# load environment variables
+source activate.sh
+
+# build all DUNE modules using dune-control
 ./dune-common/bin/dunecontrol --opts=config.opts all
 
-cd dune-fem-dg/build-cmake
-TARGET=test
-BUILD_TARGET=build_tests
-
-# first build tests (compiling...)...
-make $MAKE_FLAGS $BUILD_TARGET
-# ... then run tests
-make $MAKE_FLAGS $TARGET
+#cd dune-fem-dg/build-cmake
+#make build_tests
+#make test
