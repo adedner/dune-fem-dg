@@ -19,6 +19,7 @@
 
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
+#include <dune/fem/space/common/capabilities.hh>
 
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/function/localfunction/bindable.hh>
@@ -38,7 +39,6 @@
 #include <dune/fem-dg/operator/limiter/smoothness.hh>
 #include <dune/fem-dg/operator/limiter/indicatorbase.hh>
 
-#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 
 //*************************************************************
@@ -474,13 +474,13 @@ namespace Fem
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return DefaultQuadrature< DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
+      return Capabilities::DefaultQuadrature< DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
     }
 
     //! return default face quadrature order
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return DefaultQuadrature< DiscreteFunctionSpaceType >::faceOrder( space.order( entity ) );
+      return Capabilities::DefaultQuadrature< DiscreteFunctionSpaceType >::surfaceOrder( space.order( entity ) );
     }
 
   protected:

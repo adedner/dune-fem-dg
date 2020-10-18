@@ -13,13 +13,13 @@
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
+#include <dune/fem/space/common/capabilities.hh>
 #include <dune/fem/storage/dynamicarray.hh>
 
 #include <dune/fem-dg/pass/pass.hh>
 #include <dune/fem-dg/pass/modelcaller.hh>
 #include <dune/fem-dg/pass/discretemodel.hh>
 #include <dune/fem/misc/compatibility.hh>
-#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 #include <dune/fem/io/parameter.hh>
 
@@ -126,6 +126,8 @@ namespace Fem
     static const bool conformingGridPart =
       Fem::GridPartCapabilities::isConforming< GridPartType >::v ;
 
+    typedef Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType >  DefaultQuadratureType;
+
   public:
     //- Public methods
     //! Constructor
@@ -180,7 +182,7 @@ namespace Fem
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
         localMassMatrix_( InverseMassProviderType :: getObject( MassKeyType( gridPart_ ) ) ),
 #else
-        localMassMatrix_( spc_ , [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
+        localMassMatrix_( spc_ , [this](const int order) { return DefaultQuadratureType::volumeOrder(order); } ),
 #endif
         reallyCompute_( true )
     {
@@ -943,29 +945,29 @@ namespace Fem
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return DefaultQuadrature< DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
+      return DefaultQuadratureType::volumeOrder( space.order( entity ) );
     }
 
     //! return default face quadrature
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return DefaultQuadrature< DiscreteFunctionSpaceType >::faceOrder( space.order( entity ) );
+      return DefaultQuadratureType::surfaceOrder( space.order( entity ) );
     }
 
   protected:
-    //! return appropriate quadrature order, default is 2 * order(entity)
+    //! return appropriate quadrature order
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
       return ( volumeQuadOrd_ < 0 ) ? defaultVolumeQuadratureOrder( spc_, entity ) : volumeQuadOrd_ ;
     }
 
-    //! return appropriate quadrature order, default is 2 * order( entity ) + 1
+    //! return appropriate quadrature order
     int faceQuadratureOrder( const EntityType& entity ) const
     {
       return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
 
-    //! return appropriate quadrature order, default is 2 * order( entity ) + 1
+    //! return appropriate quadrature order
     int faceQuadratureOrder( const EntityType& entity, const EntityType& neighbor ) const
     {
       return ( faceQuadOrd_ < 0 ) ?

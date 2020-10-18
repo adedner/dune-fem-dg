@@ -8,7 +8,7 @@
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem/space/finitevolume/space.hh>
 #include <dune/fem/function/adaptivefunction/adaptivefunction.hh>
-
+#include <dune/fem/space/common/capabilities.hh>
 
 #include <dune/fem-dg/operator/fluxes/diffusion/parameters.hh>
 
@@ -31,7 +31,7 @@ namespace Fem
             class DiffusionFluxImp,
             class ExtraParameterTupleImp = std::tuple<>,
             class AdaptationHandlerFunctionSpaceImp = typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType,
-            template <class F, int d> class QuadratureTraits = DefaultQuadrature< typename DiscreteFunctionImp::DiscreteFunctionSpaceType >::template DefaultQuadratureTraits,
+            template <class F, int d> class QuadratureTraits = Capabilities::DefaultQuadrature< typename DiscreteFunctionImp::DiscreteFunctionSpaceType >::template DefaultQuadratureTraits,
             bool enableThreaded =
     // static cmake variables provided by dune-fem
 #ifdef USE_SMP_PARALLEL
