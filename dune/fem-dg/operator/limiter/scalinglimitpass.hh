@@ -119,6 +119,7 @@ namespace Fem
     //! function describing an external troubled cell indicator
     typedef std::shared_ptr< TroubledCellIndicatorBase<ArgumentFunctionType> > TroubledCellIndicatorType;
 
+    typedef Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType >   DefaultQuadratureType;
 
   public:
     //- Public methods
@@ -172,7 +173,7 @@ namespace Fem
       argOrder_( spc_.order() ),
       geoInfo_( gridPart_.indexSet() ),
       phi0_( 0 ),
-      localMassMatrix_( spc_, [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
+      localMassMatrix_( spc_, [this](const int order) { return DefaultQuadratureType::volumeOrder(order); } ),
       stepTime_(3, 0.0)
     {
       // we need the flux here
@@ -188,13 +189,13 @@ namespace Fem
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
+      return DefaultQuadratureType::volumeOrder( space.order( entity ) );
     }
 
     //! return default face quadrature order
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return DefaultQuadrature<DiscreteFunctionSpaceType >::faceOrder( space.order( entity ) );
+      return DefaultQuadratureType::surfaceOrder( space.order( entity ) );
     }
 
     //! return appropriate quadrature order, default is 2 * order(entity)

@@ -8,12 +8,12 @@
 
 #include <dune/fem/common/tupleutility.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
+#include <dune/fem/space/common/capabilities.hh>
 
 #include <dune/fem/quadrature/cachingquadrature.hh>
 
 #include <dune/fem-dg/pass/pass.hh>
 #include <dune/fem-dg/pass/discretemodel.hh>
-#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 
 namespace Dune
@@ -96,7 +96,7 @@ namespace Dune
       explicit DGInverseMassPass ( PreviousPass &previousPass,
                                    const DiscreteFunctionSpaceType &space )
       : BaseType( previousPass, space, "DGInverseMassPass" ),
-        localMassMatrix_( space, [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
+        localMassMatrix_( space, [this](const int order) { return Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
         arg_( 0 ),
         dest_( 0 )
       {}
@@ -109,7 +109,7 @@ namespace Dune
                                    const int faceQuadOrd = -1)
       : BaseType( previousPass, space, "DGInverseMassPass" ),
         localMassMatrix_( space, [this,volQuadOrd](const int order) { return
-            ( volQuadOrd == -1 ) ? DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order) : volQuadOrd; } ),
+            ( volQuadOrd == -1 ) ? Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order) : volQuadOrd; } ),
         arg_( 0 ),
         dest_( 0 )
       {}

@@ -9,6 +9,7 @@
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
 #include <dune/fem/space/lagrange.hh>
+#include <dune/fem/space/common/capabilities.hh>
 #include <dune/fem/quadrature/interpolationquadrature.hh>
 
 
@@ -22,7 +23,6 @@
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
-#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 // this is part of dune-fem now
 #include <dune/fempy/quadrature/fempyquadratures.hh>
@@ -86,7 +86,7 @@ namespace Fem
     typedef typename std::conditional< Additional::defaultQuadrature,
             DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
                                    std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
-                                   DefaultQuadrature< DiscreteFunctionSpaceType >::template DefaultQuadratureTraits,
+                                   Capabilities::DefaultQuadrature< DiscreteFunctionSpaceType >::template DefaultQuadratureTraits,
                                    threading>,
             // fempy quadratures
             DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,

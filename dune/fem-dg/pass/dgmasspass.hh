@@ -11,10 +11,10 @@
 #include <dune/fem/storage/singletonlist.hh>
 #include <dune/fem/common/tupleutility.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
+#include <dune/fem/space/common/capabilities.hh>
 
 #include <dune/fem-dg/pass/dginversemass.hh>
 #include <dune/fem-dg/misc/crs.hh>
-#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 namespace Dune
 {
@@ -109,7 +109,7 @@ namespace Dune
         volumeQuadratureOrder_( 2 * scalarSpace_.order() ),
         matrices_( Fem :: ThreadManager :: maxThreads() ),
         localMassMatrix_( scalarSpace_, [this](const int order) { return
-            DefaultQuadrature< ScalarDiscreteFunctionSpaceType >::volumeOrder(order); }  ),
+            Capabilities::DefaultQuadrature< ScalarDiscreteFunctionSpaceType >::volumeOrder(order); }  ),
         sequence_( -1 )
       {
         assert( Fem::ThreadManager::singleThreadMode() );
