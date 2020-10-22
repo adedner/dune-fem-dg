@@ -13,6 +13,7 @@ def run(Model, Stepper=None,
         polOrder=1, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
         dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
+        codegen=True,
         parameters={},
         modifyModel=None):
     if Stepper is None:
@@ -77,7 +78,7 @@ def run(Model, Stepper=None,
 
     operator = femDGOperator(Model, space,
         limiter=limiter, threading=threading, parameters=parameters,
-        defaultQuadrature=True
+        defaultQuadrature=True, codegen=codegen
         )
     stepper  = Stepper(operator, cfl)
     # create and initialize solution

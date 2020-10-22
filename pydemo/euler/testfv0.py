@@ -36,7 +36,7 @@ Model.exact = None
 run(Model,
     startLevel=0, limiter=None,
     primitive=primitive, saveStep=0.16, subsamp=2,
-    dt=None,threading=False,grid="alucube", space="finitevolume",
+    dt=None,threading=False,grid="alucube", space="finitevolume",codegen=False,
     parameters=parameters)
 
 # print(str(parameter))
