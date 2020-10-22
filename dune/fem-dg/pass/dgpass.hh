@@ -182,7 +182,7 @@ namespace Fem
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
         localMassMatrix_( InverseMassProviderType :: getObject( MassKeyType( gridPart_ ) ) ),
 #else
-        localMassMatrix_( spc_ , [this](const int order) { return DefaultQuadratureType::volumeOrder(order); } ),
+        localMassMatrix_( spc_ , [](const int order) { return DefaultQuadratureType::volumeOrder(order); } ),
 #endif
         reallyCompute_( true )
     {

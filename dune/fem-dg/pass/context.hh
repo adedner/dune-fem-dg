@@ -663,7 +663,7 @@ namespace Fem
     const double volume() const { return volume_; }
 
     //nasty dummy, just to have an intersection() method.
-    decltype(auto) intersection() const { return{}; }
+    int intersection() const { return 0; }
 
   protected:
     const Entity& entity_;
@@ -1054,18 +1054,18 @@ namespace Fem
 
     //access: failure
     template< class Fail >
-    decltype(auto) operator[]( Fail ) const
+    int operator[]( Fail ) const
     {
       static_assert( static_fail<Fail>::value, "This should not happen. Please check the exact type of your argument." );
-      return {};
+      return 0;
     }
 
-    const decltype(auto) values() const
+    const Evaluator<RangeType> values() const
     {
       return Evaluator<RangeType>( values_, qp_, basis_ );
     }
 
-    const decltype(auto) jacobians() const
+    const Evaluator<JacobianType> jacobians() const
     {
       return Evaluator<JacobianType>( jacobians_, qp_, basis_ );
     }

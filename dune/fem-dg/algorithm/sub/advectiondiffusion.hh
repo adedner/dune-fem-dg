@@ -82,14 +82,14 @@ namespace Fem
       adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model_, numFlux_, extra, name() ) )
     {}
 
-    virtual AdaptIndicatorType* adaptIndicator ()
+    virtual AdaptIndicatorType* adaptIndicator () override
     {
       assert( adaptIndicator_ );
       return adaptIndicator_->value();
     }
 
     //! return overal number of grid elements
-    virtual UInt64Type gridSize () const
+    virtual UInt64Type gridSize () const override
     {
       assert( operator_ );
       assert( advectionOperator_ );

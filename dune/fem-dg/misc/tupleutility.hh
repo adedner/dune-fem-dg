@@ -555,6 +555,7 @@ namespace Fem
     /**
      * \brief partial specialization for *non unique* template parameters.
      */
+    /*
     template<template<class,class,int,int> class PairImp, class RowHead, class RowHead2, class... Rows, class... Cols, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead, RowHead2, Rows... >, std::tuple< Cols... >, row, col >
     {
@@ -570,6 +571,7 @@ namespace Fem
       typedef std::tuple< TupleHead,       TupleEnd       >         type;
       typedef std::tuple< SharedTupleHead, SharedTupleEnd >  shared_type;
     };
+    */
   }
 
 
