@@ -63,7 +63,7 @@ def evolve(gridView, order, Model, outName,
 
     operator = femDGOperator(models, space, limiter=limiter,
                      codegen=codegen,
-                     threading=True,
+                     threading=threading,
                      defaultQuadrature=True,
                      parameters=parameters)
 
