@@ -39,7 +39,7 @@ namespace EulerNumFlux
     typedef Model  ModelType ;
     //typedef double FieldType ;
     typedef typename Model :: RangeFieldType  FieldType;
-    enum { dim = Model :: dimDomain };
+    static const int dim = Model :: dimDomain;
 
     EulerFlux( const Model& model )
       : model_( model ),
@@ -464,8 +464,8 @@ namespace Fem
 
     typedef typename ModelImp::Traits             Traits;
     typedef typename ModelImp::Traits::GridType   GridType;
-    enum { dimRange = ModelImp::dimRange };
-    enum { dimDomain = GridType::dimensionworld };
+    static const int dimRange = ModelImp::dimRange;
+    static const int dimDomain = GridType::dimensionworld;
     typedef typename ModelImp::DomainType         DomainType;
     typedef typename ModelImp::RangeType          RangeType;
     typedef typename ModelImp::RangeFieldType     RangeFieldType;

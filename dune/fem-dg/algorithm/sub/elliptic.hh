@@ -92,11 +92,11 @@ namespace Fem
     typedef typename ErrorEstimatorType::SigmaDiscreteFunctionType      SigmaDiscreteFunctionType;
     typedef typename ErrorEstimatorType::SigmaDiscreteFunctionSpaceType SigmaDiscreteFunctionSpaceType;
     typedef typename ErrorEstimatorType::DGOperatorType                 DGOperatorType;
-    static const int polynomialOrder = ErrorEstimatorType::polynomialOrder;
 
     //typedef typename DGOperatorType::ContainerType                      ContainerType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
+    static const int polynomialOrder = DiscreteFunctionSpaceType::polynomialOrder;
     typedef typename DiscreteFunctionType::GridPartType                 GridPartType;
     typedef typename GridPartType::GridType                             GridType;
 
@@ -674,11 +674,11 @@ namespace Fem
     }
 
     //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator()
+    virtual AdaptIndicatorType* adaptIndicator() override
     {
       return adaptIndicator_.get();
     }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution ()
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () override
     {
       return &solution();
     }

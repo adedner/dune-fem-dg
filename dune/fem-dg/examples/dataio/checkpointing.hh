@@ -146,12 +146,12 @@ namespace Fem
     {}
 
     //CHECKPOINTING
-    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution(); }
+    virtual CheckPointDiscreteFunctionType* checkPointSolution () override { return &solution(); }
 
     //DATAWRITER
-    virtual DataWriterType* dataWriter() { return dataWriter_.value(); }
+    virtual DataWriterType* dataWriter() override { return dataWriter_.value(); }
 
-    virtual DiscreteFunctionType& solution ()
+    virtual DiscreteFunctionType& solution () override
     {
       assert( solution_ );
       return *solution_;

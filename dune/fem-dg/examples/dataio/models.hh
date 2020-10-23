@@ -15,6 +15,7 @@ namespace Fem
 
     typedef GridImp                                                       GridType;
   public:
+    static const int modelParameterSize = 0;
     typedef typename BaseType::RangeFieldType                             RangeFieldType;
     typedef typename BaseType::DomainFieldType                            DomainFieldType;
     enum { dimRange  = BaseType::dimRange };

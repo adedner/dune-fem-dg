@@ -48,6 +48,8 @@ namespace Fem
     typedef EvolutionProblemInterface<
                    Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
                                        GridType::dimension, dimRange > >  BaseType;
+    using BaseType::evaluate;
+
 
     enum{ dimDomain = BaseType :: dimDomain };
     typedef typename BaseType :: DomainType            DomainType;
@@ -113,13 +115,13 @@ namespace Fem
     }
 
     //! this problem has no source term
-    bool hasStiffSource() const { return false; }
-    bool hasNonStiffSource() const { return false; }
+    bool hasStiffSource() const override { return false; }
+    bool hasNonStiffSource() const override { return false; }
 
     double stiffSource(const DomainType& arg,
                   const double t,
                   const RangeType& u,
-                  RangeType& res) const
+                  RangeType& res) const override
     {
       return 0.0;
     }
@@ -127,26 +129,26 @@ namespace Fem
     double nonStiffSource(const DomainType& arg,
                   const double t,
                   const RangeType& u,
-                  RangeType& res) const
+                  RangeType& res) const override
     {
       return 0.0;
     }
 
-    double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
+    double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const override
     {
       return epsilon();
     }
 
     //! return start time
-    double startTime() const { return startTime_; }
+    double startTime() const override { return startTime_; }
 
     //! return start time
-    double epsilon() const { return epsilon_; }
+    double epsilon() const override { return epsilon_; }
 
     /**
      * \brief getter for the velocity
      */
-    void velocity(const DomainType& x, const double time, DomainType& v) const
+    void velocity(const DomainType& x, const double time, DomainType& v) const override
     {
       v = velocity_;
     }
@@ -169,7 +171,7 @@ namespace Fem
     /**
      * \brief evaluate exact solution
      */
-    void evaluate(const DomainType& arg, const double t, RangeType& res) const
+    void evaluate(const DomainType& arg, const double t, RangeType& res) const override
     {
 
       res = 0;
@@ -206,7 +208,7 @@ namespace Fem
     /**
      * \brief latex output for EocOutput
      */
-    std::string description() const
+    std::string description() const override
     {
       std::ostringstream ofs;
 

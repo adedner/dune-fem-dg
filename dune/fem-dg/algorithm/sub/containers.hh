@@ -383,7 +383,7 @@ namespace Fem
     static_assert( size >= 0, "invalid integer_sequence: Throw this additional assertion here because \
                                gcc-6 won't stop compiling for a very long time... :(" );
 
-    static std::make_integer_sequence< unsigned long int, size > sequence;
+    typedef std::make_integer_sequence< unsigned long int, size > SequenceType;
 
     ////// Creation
     template< unsigned long int i, class SameObject >
@@ -411,7 +411,7 @@ namespace Fem
     friend class TwoArgContainer;
 
     template< template<class,int...> class, class >
-    friend class OneArgContainer;
+    friend struct OneArgContainer;
   public:
     /**
      * \brief constructor, for internal use only.
@@ -428,7 +428,7 @@ namespace Fem
      */
     template< class SameObject >
     OneArgContainer( std::shared_ptr< SameObject > obj, const std::string name = "" )
-    : item1_( createContainer( sequence, obj, name ) )
+    : item1_( createContainer( SequenceType(), obj, name ) )
     {}
 
     /**
@@ -523,9 +523,9 @@ namespace Fem
 
   protected:
     using BaseType::item1_;
+    typedef typename BaseType::SequenceType SequenceType;
 
     static const int size = BaseType::size;
-    using BaseType::sequence;
 
     ///// Creation
     template< unsigned long int i, unsigned long int j >
@@ -565,7 +565,7 @@ namespace Fem
     friend class TwoArgContainer;
 
     template< template<class,int...> class, class >
-    friend class OneArgContainer;
+    friend struct OneArgContainer;
 
   public:
     /**
@@ -588,8 +588,8 @@ namespace Fem
     template< class SameObject >
     TwoArgContainer( std::shared_ptr< SameObject > obj, const std::string name = "" )
     : BaseType( obj, name ),
-      item2_( createContainer( sequence, sequence, name + "matrix" ) ),
-      colItem1_( FakeColBaseType::createContainer( sequence, obj, name ) )
+      item2_( createContainer( SequenceType(), SequenceType(), name + "matrix" ) ),
+      colItem1_( FakeColBaseType::createContainer( SequenceType(), obj, name ) )
     {}
 
 
@@ -748,7 +748,6 @@ namespace Fem
     static_assert( size >= 0, "invalid integer_sequence: Throw this additional assertion here because \
                                gcc-6 won't stop compiling for a very long time... :(" );
     typedef std::make_integer_sequence< unsigned long int, size > SequenceType;
-    static SequenceType sequence;
 
     ////// Creation
     template< unsigned long int i, class ContainerImp >
@@ -765,7 +764,7 @@ namespace Fem
     }
 
     template< class... >
-    friend class ExtraArg;
+    friend struct ExtraArg;
   public:
     //no default constructor
     ExtraArg() = delete;
@@ -773,9 +772,9 @@ namespace Fem
     template< class ContainerImp >
     static decltype(auto) init( const ContainerImp& cont )
     {
-      typedef decltype(std::declval<ExtraArg<Args...> >().createContainer( sequence,cont ) ) ReturnType;
+      typedef decltype(std::declval<ExtraArg<Args...> >().createContainer( SequenceType(), cont ) ) ReturnType;
 
-      return std::make_shared<ExtraArgContainer<ReturnType> >( createContainer( sequence, cont ) );
+      return std::make_shared<ExtraArgContainer<ReturnType> >( createContainer( SequenceType(), cont ) );
     }
   };
 

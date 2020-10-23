@@ -25,7 +25,7 @@ namespace Fem
   public:
     typedef ModelImp  ModelType;
 
-    enum { dimRange = ModelType::dimRange };
+    static const int dimRange = ModelType::dimRange;
     typedef typename ModelType::DomainType         DomainType;
     typedef typename ModelType::RangeType          RangeType;
     typedef typename ModelType::JacobianRangeType  JacobianRangeType;

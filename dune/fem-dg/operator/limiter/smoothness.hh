@@ -103,6 +103,8 @@ template <class DiscreteFunction>
 struct ModalSmoothnessIndicator
 : public Dune::Fem::TroubledCellIndicatorBase<DiscreteFunction>
 {
+  virtual ~ModalSmoothnessIndicator() {}
+
   typedef typename DiscreteFunction :: LocalFunctionType  LocalFunctionType;
   double operator()( const DiscreteFunction& U, const LocalFunctionType& uEn) const override
   {

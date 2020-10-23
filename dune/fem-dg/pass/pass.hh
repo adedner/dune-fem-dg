@@ -490,6 +490,8 @@ namespace Dune
       //! Actions to be carried out before a global grid walkthrough.
       //! To be overridden in a derived class.
       virtual void prepare (const ArgumentType &arg, DestinationType &dest) const = 0;
+
+      using BaseType::finalize;
       //! Actions to be carried out after a global grid walkthrough.
       //! To be overridden in a derived class.
       virtual void finalize (const ArgumentType &arg, DestinationType &dest) const = 0;

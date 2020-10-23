@@ -53,7 +53,7 @@ namespace Fem
 
     typedef DGAdvectionFluxBase< ModelType, FluxParameterImp  > BaseType;
 
-    enum { dimRange = ModelType::dimRange };
+    static const int dimRange = ModelType::dimRange;
     typedef typename ModelType::DomainType         DomainType;
     typedef typename ModelType::RangeType          RangeType;
     typedef typename ModelType::JacobianRangeType  JacobianRangeType;

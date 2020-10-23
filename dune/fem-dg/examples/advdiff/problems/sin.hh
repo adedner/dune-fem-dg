@@ -27,6 +27,7 @@ namespace Fem
     typedef EvolutionProblemInterface<
                    Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
                                        GridType::dimension, dimRange > >  BaseType;
+    using BaseType::evaluate;
 
     enum{ dimDomain = BaseType :: dimDomain };
     typedef typename BaseType :: DomainType            DomainType;
@@ -51,14 +52,14 @@ namespace Fem
     }
 
     //! this problem has no source term
-    bool hasStiffSource() const { return false; }
-    bool hasNonStiffSource() const { return true; }
-    bool hasMass() const { return true; }
+    bool hasStiffSource() const override { return false; }
+    bool hasNonStiffSource() const override { return true; }
+    bool hasMass() const override { return true; }
 
     double stiffSource(const DomainType& arg,
                        const double t,
                        const RangeType& u,
-                       RangeType& res) const
+                       RangeType& res) const override
     {
       return 0.0;
     }
@@ -66,7 +67,7 @@ namespace Fem
     double nonStiffSource(const DomainType& arg,
                           const double t,
                           const RangeType& u,
-                          RangeType& res) const
+                          RangeType& res) const override
     {
       // eval solution
       evaluate( arg, t, res );
@@ -79,27 +80,27 @@ namespace Fem
     virtual inline void mass (const DomainType& arg,
                               const double time,
                               const RangeType& u,
-                              RangeType& diag ) const
+                              RangeType& diag ) const override
     {
       diag = massFactor_;
     }
 
 
-    double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
+    double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const override
     {
       return epsilon() * massFactor_;
     }
 
     //! return start time
-    double startTime() const { return startTime_; }
+    double startTime() const override { return startTime_; }
 
     //! return start time
-    double epsilon() const { return epsilon_; }
+    double epsilon() const override { return epsilon_; }
 
     /**
      * \brief getter for the velocity
      */
-    void velocity(const DomainType& x, const double time, DomainType& v) const
+    void velocity(const DomainType& x, const double time, DomainType& v) const override
     {
       v = velocity_;
     }
@@ -115,7 +116,7 @@ namespace Fem
     /**
      * \brief evaluate exact solution
      */
-    void evaluate(const DomainType& arg, const double t, RangeType& res) const
+    void evaluate(const DomainType& arg, const double t, RangeType& res) const override
     {
       res = 1.0;
       const double pi = 2.0 * M_PI ;
@@ -128,7 +129,7 @@ namespace Fem
     /**
      * \brief latex output for EocOutput
      */
-    std::string description() const
+    std::string description() const override
     {
       std::ostringstream ofs;
 

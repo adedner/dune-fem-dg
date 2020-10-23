@@ -201,7 +201,7 @@ namespace Fem
       return solver_.get();
     }
 
-    DiscreteFunctionType& solution ()
+    DiscreteFunctionType& solution () override
     {
       assert( solution_ );
       return *solution_;
@@ -224,27 +224,27 @@ namespace Fem
     //}
 
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const { return GridWidth::calcGridWidth( solution_->space().gridPart() ); }
+    virtual double gridWidth () const override { return GridWidth::calcGridWidth( solution_->space().gridPart() ); }
 
     //SOLVERMONITOR
-    virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
+    virtual SolverMonitorType* monitor() override { return solverMonitor_.value(); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsType* diagnostics() { return diagnostics_.value(); }
+    virtual DiagnosticsType* diagnostics() override { return diagnostics_.value(); }
 
     //DATAWRITER
-    virtual DataWriterType* dataWriter() { return dataWriter_.value(); }
+    virtual DataWriterType* dataWriter() override { return dataWriter_.value(); }
 
     //LIMITING
-    virtual void limit(){}
-    virtual LimitDiscreteFunctionType* limitSolution () { return solution_.get(); }
+    virtual void limit() override {}
+    virtual LimitDiscreteFunctionType* limitSolution () override { return solution_.get(); }
 
     //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
+    virtual AdaptIndicatorType* adaptIndicator() override { return nullptr; }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () override { return solution_.get(); }
 
     //CHECKPOINTING
-    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return solution_.get(); }
+    virtual CheckPointDiscreteFunctionType* checkPointSolution () override { return solution_.get(); }
 
   private:
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )

@@ -221,7 +221,7 @@ namespace Fem
     const DGOperatorType&            oper_;
     const DiscreteFunctionType&      uh_;
     const SigmaDiscreteFunctionType& sigma_;
-    const double&                    beta_;
+    const double                     beta_;
     const DiscreteFunctionSpaceType& dfSpace_;
     GridPartType&                    gridPart_;
     const IndexSetType&              indexSet_;

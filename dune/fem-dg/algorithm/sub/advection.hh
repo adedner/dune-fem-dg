@@ -80,20 +80,20 @@ namespace Fem
     }
 
 
-    virtual AdaptIndicatorType* adaptIndicator ()
+    virtual AdaptIndicatorType* adaptIndicator () override
     {
       assert( adaptIndicator_ );
       return adaptIndicator_->value();
     }
 
-    virtual void limit ()
+    virtual void limit () override
     {
       if( limitSolution() )
         advectionOperator_->applyLimiter( *limitSolution() );
     }
 
     //! return overal number of grid elements
-    virtual UInt64Type gridSize () const
+    virtual UInt64Type gridSize () const override
     {
       assert( advectionOperator_ );
       assert( adaptIndicator_ );

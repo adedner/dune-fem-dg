@@ -31,6 +31,7 @@ namespace Fem
     typedef EvolutionProblemInterface<
                    Dune::Fem::FunctionSpace< typename GridType::ctype, typename GridType::ctype,
                                              GridType::dimension, dimRange > >   BaseType;
+    using BaseType::evaluate;
 
     enum{ dimDomain = BaseType::dimDomain };
     typedef typename BaseType::DomainType            DomainType;
@@ -58,19 +59,19 @@ namespace Fem
       myName = "quasi";
     }
 
-    double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
+    double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const override
     {
       return epsilon_ * u.infinity_norm();
     }
 
-    double startTime() const { return startTime_; }
+    double startTime() const override { return startTime_; }
 
-    double epsilon() const { return epsilon_; }
+    double epsilon() const override { return epsilon_; }
 
     /**
      * \brief getter for the velocity
      */
-    void velocity(const DomainType& x, const double time, DomainType& v) const
+    void velocity(const DomainType& x, const double time, DomainType& v) const override
     {
       v = velocity_;
     }
@@ -86,13 +87,13 @@ namespace Fem
     /**
      * \brief evaluate exact solution
      */
-    void evaluate(const DomainType& arg, const double t, RangeType& res) const
+    void evaluate(const DomainType& arg, const double t, RangeType& res) const override
     {
       res = std::sin(arg[0]) * std::sin(arg[1]) * std::exp( -epsilon_*t );
     }
 
-    bool hasStiffSource() const { return true; }
-    bool hasNonStiffSource() const { return false; }
+    bool hasStiffSource() const override { return true; }
+    bool hasNonStiffSource() const override { return false; }
 
     /**
      * \brief evaluate stiff source function
@@ -100,7 +101,7 @@ namespace Fem
     double nonStiffSource( const DomainType& arg,
                            const double t,
                            const RangeType& u,
-                           RangeType& res ) const
+                           RangeType& res ) const override
     {
       res = 0.;
 
@@ -112,9 +113,9 @@ namespace Fem
      * \brief evaluate non stiff source function
      */
     double stiffSource( const DomainType& arg,
-                           const double t,
-                           const RangeType& u,
-                           RangeType& res ) const
+                        const double t,
+                        const RangeType& u,
+                        RangeType& res ) const override
     {
       const double x = arg[0];
       const double y = arg[1];
@@ -137,7 +138,7 @@ namespace Fem
     /**
      * \brief latex output for EocOutput
      */
-    std::string description() const
+    std::string description() const override
     {
       std::ostringstream ofs;
 

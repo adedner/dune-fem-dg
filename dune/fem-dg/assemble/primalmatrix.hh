@@ -415,7 +415,6 @@ namespace Fem
         LocalFunctionType rhsLocal = rhs_->localFunction( entity );
 
         const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
-        const unsigned int numBasisFunctionsEn = baseSet.size();
 
         for (const auto& intersection : intersections(space_.gridPart(), entity) )
         {
@@ -823,8 +822,8 @@ namespace Fem
         std::cout << "reading extra: " << i << std::endl;
         for( const auto qp : quad )
         {
-          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(phiFaceEn_[qp.index()]) );
-          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(dphiFaceEn_[qp.index()]) );
+          std::get<i>( *extra_ ).localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(phiFaceEn_[qp.index()]) );
+          std::get<i>( *extra_ ).localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(dphiFaceEn_[qp.index()]) );
         }
       } );
     }
