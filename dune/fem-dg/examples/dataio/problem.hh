@@ -103,10 +103,10 @@ namespace Fem
       }
 
     //! return start time
-    double startTime() const { return startTime_; }
+    double startTime() const override { return startTime_; }
 
     //! return start time
-    double epsilon() const { return epsilon_; }
+    double epsilon() const override { return epsilon_; }
 
     /**
      * \brief getter for the velocity
@@ -127,7 +127,7 @@ namespace Fem
     /**
      * \brief evaluate exact solution
      */
-    void evaluate(const DomainType& arg, const double t, RangeType& res) const
+    void evaluate(const DomainType& arg, const double t, RangeType& res) const override
     {
 
       res = 0;
@@ -164,7 +164,7 @@ namespace Fem
     /**
      * \brief latex output for EocOutput
      */
-    std::string description() const
+    std::string description() const override
     {
       std::ostringstream ofs;
       ofs << "Problem: " << myName << "\n\n"
