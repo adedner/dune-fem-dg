@@ -2170,7 +2170,8 @@ namespace Poisson
           k[i][j] = 0;
 
       for(int i=0; i<2; ++ i ) k[i][i] = 1;
-      k[2][2] = tau_ ;
+      if( dim == 3 )
+        k[dim-1][dim-1] = tau_ ;
     }
 
     int getDomain(const DomainField x[dim]) const
