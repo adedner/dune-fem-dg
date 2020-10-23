@@ -415,7 +415,6 @@ namespace Fem
         LocalFunctionType rhsLocal = rhs_->localFunction( entity );
 
         const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
-        const unsigned int numBasisFunctionsEn = baseSet.size();
 
         for (const auto& intersection : intersections(space_.gridPart(), entity) )
         {

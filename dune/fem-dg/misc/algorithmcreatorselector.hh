@@ -234,7 +234,7 @@ namespace Fem
 
 
   template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op, OperatorSplit::Enum split, Matrix::Enum ass >
-  class OperatorSelector;
+  struct OperatorSelector;
 
   //matrixfree
   template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op >

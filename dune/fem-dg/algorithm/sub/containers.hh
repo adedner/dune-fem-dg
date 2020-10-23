@@ -411,7 +411,7 @@ namespace Fem
     friend class TwoArgContainer;
 
     template< template<class,int...> class, class >
-    friend class OneArgContainer;
+    friend struct OneArgContainer;
   public:
     /**
      * \brief constructor, for internal use only.
@@ -565,7 +565,7 @@ namespace Fem
     friend class TwoArgContainer;
 
     template< template<class,int...> class, class >
-    friend class OneArgContainer;
+    friend struct OneArgContainer;
 
   public:
     /**
@@ -764,7 +764,7 @@ namespace Fem
     }
 
     template< class... >
-    friend class ExtraArg;
+    friend struct ExtraArg;
   public:
     //no default constructor
     ExtraArg() = delete;

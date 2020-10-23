@@ -46,6 +46,8 @@ namespace Fem
                    Dune::Fem::FunctionSpace< double, double,
                    GridType::dimensionworld, GridType::dimensionworld+2 >,
                    true >                                              BaseType;
+    using BaseType::evaluate;
+    using BaseType::velocity;
 
     enum{ dimDomain = BaseType :: dimDomain };
     typedef typename BaseType :: DomainType                            DomainType;
