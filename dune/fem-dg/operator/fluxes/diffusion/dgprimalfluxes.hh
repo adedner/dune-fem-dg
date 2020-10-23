@@ -98,7 +98,7 @@ namespace Fem
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
         , localMassMatrix_( InverseMassProviderType :: getObject( KeyType( gradSpc_.gridPart() ) ) )
 #else
-        , localMassMatrix_( gradSpc_, [this](const int order) { return Capabilities::DefaultQuadrature<DiscreteGradientSpaceType>::volumeOrder(order); } )
+        , localMassMatrix_( gradSpc_, [](const int order) { return Capabilities::DefaultQuadrature<DiscreteGradientSpaceType>::volumeOrder(order); } )
 #endif
         , isInitialized_( 0 )
       {
