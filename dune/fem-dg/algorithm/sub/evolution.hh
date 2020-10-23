@@ -201,7 +201,7 @@ namespace Fem
       return solver_.get();
     }
 
-    DiscreteFunctionType& solution ()
+    DiscreteFunctionType& solution () override
     {
       assert( solution_ );
       return *solution_;
@@ -236,7 +236,7 @@ namespace Fem
     virtual DataWriterType* dataWriter() override { return dataWriter_.value(); }
 
     //LIMITING
-    virtual void limit(){}
+    virtual void limit() override {}
     virtual LimitDiscreteFunctionType* limitSolution () override { return solution_.get(); }
 
     //ADAPTATION

@@ -674,11 +674,11 @@ namespace Fem
     }
 
     //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator()
+    virtual AdaptIndicatorType* adaptIndicator() override
     {
       return adaptIndicator_.get();
     }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution ()
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () override
     {
       return &solution();
     }

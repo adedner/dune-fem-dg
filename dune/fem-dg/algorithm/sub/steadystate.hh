@@ -231,7 +231,7 @@ namespace Fem
       return solver_.get();
     }
 
-    DiscreteFunctionType& solution ()
+    DiscreteFunctionType& solution () override
     {
       assert( solution_ );
       return *solution_;
@@ -254,22 +254,22 @@ namespace Fem
       return *exactSolution_;
     }
 
-    virtual void setTime( const double time ){}
+    virtual void setTime( const double time ) {}
 
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const { return GridWidth::calcGridWidth( solution().space().gridPart() ); }
+    virtual double gridWidth () const override { return GridWidth::calcGridWidth( solution().space().gridPart() ); }
 
     //ADAPTATION
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () override { return solution_.get(); }
 
     //SOLVERMONITOR
-    virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
+    virtual SolverMonitorType* monitor() override { return solverMonitor_.value(); }
 
     //DATAWRITER
-    virtual DataWriterType* dataWriter() { return dataWriter_.value(); }
+    virtual DataWriterType* dataWriter() override { return dataWriter_.value(); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsType* diagnostics() { return diagnostics_.value(); }
+    virtual DiagnosticsType* diagnostics() override { return diagnostics_.value(); }
 
   protected:
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver()
@@ -282,7 +282,7 @@ namespace Fem
       return solution().dofsValid();
     }
 
-    virtual void doInitialize ( const int loop )
+    virtual void doInitialize ( const int loop ) override
     {
       //initialize solverMonitor
       solverMonitor_.registerData( "GridWidth", &solverMonitor_.monitor().gridWidth, nullptr, true );
@@ -292,7 +292,7 @@ namespace Fem
       solverMonitor_.registerData( "MaxILS", &solverMonitor_.monitor().max_ils_iterations );
     }
 
-    virtual void doPreSolve ( const int loop )
+    virtual void doPreSolve ( const int loop ) override
     {
       //create solver (e.g. assemble matrix etc.)
       solver_ = this->doCreateSolver();
@@ -314,7 +314,7 @@ namespace Fem
       solution().clear();
     }
 
-    virtual void doSolve ( const int loop )
+    virtual void doSolve ( const int loop ) override
     {
       Dune::Timer timer;
       double time = 0;
@@ -325,12 +325,12 @@ namespace Fem
       std::cout << "Solve time: " << time << std::endl;
     }
 
-    virtual void doPostSolve( const int loop )
+    virtual void doPostSolve( const int loop ) override
     {
       monitor()->finalize( gridWidth(), gridSize() );
     }
 
-    virtual void doFinalize ( const int loop )
+    virtual void doFinalize ( const int loop ) override
     {
       solver_ = nullptr;
     }
