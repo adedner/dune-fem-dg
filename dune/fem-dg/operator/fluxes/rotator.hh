@@ -15,7 +15,7 @@ namespace Fem
   {
     template <int N>
     struct RotInt2Type{
-      enum { value = N };
+      static const int value = N;
     };
 
   public:
@@ -31,7 +31,7 @@ namespace Fem
     FieldRotator(const int startIdx) :
       idx_(startIdx)
     {
-      assert(startIdx < ValueType::dimension - NormalType::dimension+1 );
+      assert(startIdx < (int(ValueType::dimension) - int(NormalType::dimension)+1) );
     }
 
     //! Rotate data from basic coordinate system into normal coordinate system

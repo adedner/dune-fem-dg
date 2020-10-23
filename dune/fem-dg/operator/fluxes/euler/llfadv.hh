@@ -35,7 +35,7 @@ namespace Fem
     typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >   BaseType;
 
     typedef typename ModelImp::Traits             Traits;
-    enum { dimRange = ModelImp::dimRange };
+    static const int dimRange = ModelImp::dimRange;
     typedef typename ModelImp::DomainType         DomainType;
     typedef typename ModelImp::RangeType          RangeType;
     typedef typename ModelImp::JacobianRangeType  JacobianRangeType;

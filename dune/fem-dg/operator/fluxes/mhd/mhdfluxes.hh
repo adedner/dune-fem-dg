@@ -48,8 +48,8 @@ namespace Fem
   {
   public:
     typedef Model                                       ModelType;
-    enum { dimDomain = Model::dimDomain };
-    enum { dimRange = Model::dimRange };
+    static const int dimDomain = Model::dimDomain;
+    static const int dimRange = Model::dimRange;
     typedef typename Model::Traits                      Traits;
     typedef typename Traits::GridType                   GridType;
     typedef typename GridType::ctype                    ctype;
@@ -154,8 +154,8 @@ namespace Fem
   {
     typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >   BaseType;
 
-    enum { dimRange  = ModelImp::dimRange };
-    enum { dimDomain = ModelImp::dimDomain };
+    static const int dimRange  = ModelImp::dimRange;
+    static const int dimDomain = ModelImp::dimDomain;
     typedef typename ModelImp::DomainType         DomainType;
     typedef typename ModelImp::RangeType          RangeType;
     typedef typename ModelImp::JacobianRangeType  JacobianRangeType;

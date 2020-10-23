@@ -38,10 +38,10 @@ namespace Fem
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
-    enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
-    enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
-    enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
+    static const int dimDomain = DiscreteFunctionSpaceType::dimDomain;
+    static const int dimRange  = DiscreteFunctionSpaceType::dimRange;
+    static const int dimGradRange = dimDomain * dimRange;
+    static const int polOrd = DiscreteFunctionSpaceType::polynomialOrder;
 
     typedef typename DiscreteFunctionSpaceType::RangeFieldType        RangeFieldType;
     typedef typename DiscreteFunctionSpaceType::DomainFieldType       DomainFieldType;
@@ -157,7 +157,7 @@ namespace Fem
     }
 
   public:
-    enum { evaluateJacobian = true };
+    static const bool evaluateJacobian = true;
 
     /**
      * \brief constructor reading parameters

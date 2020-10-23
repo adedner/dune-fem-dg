@@ -24,8 +24,8 @@ namespace Fem
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
-    enum { dimDomain = DiscreteFunctionSpaceType :: dimDomain };
-    enum { dimRange  = DiscreteFunctionSpaceType :: dimRange };
+    static const int dimDomain = DiscreteFunctionSpaceType :: dimDomain;
+    static const int dimRange  = DiscreteFunctionSpaceType :: dimRange;
 
     typedef typename DiscreteFunctionSpaceType :: DomainType           DomainType;
     typedef typename DiscreteFunctionSpaceType :: RangeFieldType       RangeFieldType;
@@ -40,8 +40,8 @@ namespace Fem
     typedef typename GridPartType :: IntersectionType                  Intersection;
     typedef typename GridPartType :: GridType                          GridType;
     typedef typename DiscreteFunctionSpaceType :: EntityType           EntityType;
-    enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
+    static const int dimGradRange = dimDomain * dimRange;
+    static const int polOrd = DiscreteFunctionSpaceType :: polynomialOrder;
 
     typedef typename BaseType :: ParameterType  ParameterType;
 
@@ -53,7 +53,7 @@ namespace Fem
     typedef typename DiscreteGradientSpaceType :: JacobianRangeType GradientJacobianType;
 
     // jacobians of the functions do not have to be evaluated for this flux
-    enum { evaluateJacobian = false };
+    static const bool evaluateJacobian = false;
 
   protected:
     typedef typename BaseType::IdEnum         EnumType;
@@ -97,7 +97,7 @@ namespace Fem
     const bool hasLifting () const { return false; }
 
   protected:
-    enum { realLDG = true };
+    static const bool realLDG = true;
     double theta( const DomainType& normal ) const
     {
       if( method_ == EnumType::ldg )

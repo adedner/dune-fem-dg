@@ -27,14 +27,14 @@ namespace Fem
   class DGDiffusionFluxBase
   {
   public:
-    enum { evaluateJacobian = false };
+    static const bool evaluateJacobian = false;
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
     typedef FluxParameterImp                                         ParameterType;
     typedef typename ParameterType::IdEnum                           IdEnum;
 
-    enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
-    enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
+    static const int dimDomain = DiscreteFunctionSpaceType::dimDomain;
+    static const int dimRange  = DiscreteFunctionSpaceType::dimRange;
 
     typedef typename DiscreteFunctionSpaceType::DomainType           DomainType;
     typedef typename DiscreteFunctionSpaceType::RangeFieldType       RangeFieldType;
@@ -49,8 +49,8 @@ namespace Fem
     typedef typename GridPartType::IntersectionType                  IntersectionType;
     typedef typename GridPartType::GridType                          GridType;
     typedef typename DiscreteFunctionSpaceType::EntityType           EntityType;
-    enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
+    static const int dimGradRange = dimDomain * dimRange;
+    static const int polOrd = DiscreteFunctionSpaceType::polynomialOrder;
 
     // type of gradient space
     typedef typename DiscreteFunctionSpaceType::
@@ -269,8 +269,8 @@ namespace Fem
   public:
     typedef DiscreteFunctionSpaceImp                DiscreteFunctionSpaceType;
 
-    enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
-    enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
+    static const int dimDomain = DiscreteFunctionSpaceType::dimDomain;
+    static const int dimRange  = DiscreteFunctionSpaceType::dimRange;
 
     typedef typename BaseType::DomainType               DomainType;
     typedef typename BaseType::RangeFieldType           RangeFieldType;
@@ -285,8 +285,8 @@ namespace Fem
     typedef typename BaseType::IntersectionType         IntersectionType;
     typedef typename BaseType::GridType                 GridType;
     typedef typename BaseType::EntityType               EntityType;
-    enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
+    static const int dimGradRange = dimDomain * dimRange;
+    static const int polOrd = DiscreteFunctionSpaceType::polynomialOrder;
 
     typedef typename BaseType::ParameterType             ParameterType;
 
@@ -298,7 +298,7 @@ namespace Fem
     typedef typename DiscreteGradientSpaceType::JacobianRangeType GradientJacobianType;
 
     // jacobians of the functions do not have to be evaluated for this flux
-    enum { evaluateJacobian = false };
+    static const bool evaluateJacobian = false;
 
   protected:
     using BaseType::determineDirection;
