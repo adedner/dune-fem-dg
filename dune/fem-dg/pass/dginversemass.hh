@@ -204,7 +204,6 @@ namespace Dune
 
     protected:
       using BaseType::destination_;
-      using BaseType::deleteHandler_;
 
     private:
       LocalMassMatrixType localMassMatrix_;

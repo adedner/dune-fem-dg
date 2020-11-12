@@ -13,7 +13,6 @@
 #include <type_traits>
 
 #include <dune/common/timer.hh>
-#include <dune/common/visibility.hh>
 
 #include <dune/fem/common/memory.hh>
 #include <dune/fem/common/tupleutility.hh>
@@ -124,31 +123,6 @@ namespace Dune
       template <class PT, class PP, int PI>
       friend class Pass;
     public:
-      //! little interface class for deleting discrete function
-      //! held by this class
-      template <class ObjectToDelete>
-      class DeleteHandler
-      {
-      protected:
-        // don't create intances of this class
-        DeleteHandler () {}
-      public:
-        //! destructor
-        virtual ~DeleteHandler () {}
-        //! default implementation just deletes obj
-        virtual void freeLocalMemory(ObjectToDelete * obj)
-        {
-          delete obj;
-        }
-
-        //! return reference to default object deleter
-        DUNE_EXPORT static DeleteHandler<ObjectToDelete>& instance ()
-        {
-          static DeleteHandler<ObjectToDelete> mh;
-          return mh;
-        }
-      };
-
       //! Type of the preceding pass.
       typedef PreviousPassImp PreviousPassType;
 
@@ -162,9 +136,6 @@ namespace Dune
       //! Type of the discrete function which stores the result of this pass'
       //! computations.
       typedef typename DiscreteModelImp::Traits::DestinationType DestinationType;
-
-      //! type of mem handler, which deletes destination
-      typedef DeleteHandler<DestinationType> DeleteHandlerType;
 
       typedef typename DestinationType :: DiscreteFunctionSpaceType :: CommunicationManagerType
             :: NonBlockingCommunicationType  NonBlockingCommunicationType;
@@ -190,7 +161,7 @@ namespace Dune
       //! \param pass Previous pass
       Pass(PreviousPassType& pass) :
         destination_(0),
-        deleteHandler_(0),
+        destinationMemory_(),
         previousPass_(pass),
         time_(0.0),
         finalizeCommunication_( true )
@@ -203,10 +174,8 @@ namespace Dune
       //! Destructor
       virtual ~Pass()
       {
-        // if deleteHandler was set by derived class,
-        // then use to delete destination_
-        if( deleteHandler_ ) deleteHandler_->freeLocalMemory(destination_);
-        destination_ = 0;
+        destinationMemory_.reset();
+        destination_ = nullptr;
       }
 
       //! printTex info of operator
@@ -230,9 +199,8 @@ namespace Dune
         if( finalizeCommunication_ )
           finalizeCommunication( arg );
       }
-      //! Allocates the local memory of a pass, if needed.
-      //! If memory is allocated, then deleteHandler must be set for removal of
-      //! memory to avoid leaks
+
+      //! Allocates the local memory of a pass, if needed and stores it in destinationMemory_
       virtual void allocateLocalMemory() = 0;
 
       //! Set time provider (which gives you access to the global time).
@@ -379,8 +347,8 @@ namespace Dune
       //! destination (might be set from outside)
       DestinationType* destination_;
 
-      //! object to delete destination_
-      DeleteHandlerType* deleteHandler_;
+      //! object to delete destination pointer
+      std::unique_ptr< DestinationType > destinationMemory_;
 
       // previous pass
       PreviousPassType& previousPass_;
@@ -454,10 +422,8 @@ namespace Dune
         {
           std::ostringstream funcName;
           funcName << passName_ << "_" << this->passNumber();
-          this->destination_ = new DestinationType(funcName.str(), space());
-
-          // set mem handle for deleting destination_
-          this->deleteHandler_ = &(BaseType::DeleteHandlerType::instance());
+          this->destinationMemory_.reset( new DestinationType(funcName.str(), space()));
+          this->destination_ = this->destinationMemory_.operator->();
         }
       }
 
