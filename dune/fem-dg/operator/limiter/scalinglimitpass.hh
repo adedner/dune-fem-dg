@@ -173,7 +173,7 @@ namespace Fem
       argOrder_( spc_.order() ),
       geoInfo_( gridPart_.indexSet() ),
       phi0_( 0 ),
-      localMassMatrix_( spc_, [this](const int order) { return DefaultQuadratureType::volumeOrder(order); } ),
+      localMassMatrix_( spc_, [](const int order) { return DefaultQuadratureType::volumeOrder(order); } ),
       stepTime_(3, 0.0)
     {
       // we need the flux here
@@ -623,9 +623,6 @@ namespace Fem
 
       // get U on entity
       const LocalFunctionType uEn = U.localFunction(en);
-
-      // get geometry
-      const Geometry& geo = en.geometry();
 
       // get reference to cell average
       RangeType& enVal = scaledFunction_.enVal_;
