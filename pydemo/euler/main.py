@@ -1,7 +1,4 @@
-#import mpi4py.rc
-# mpi4py.rc.threaded = False
 from dune.fem import parameter
-from dune.alugrid import aluCubeGrid
 from dune.femdg.testing import run
 
 # from euler import constant as problem
@@ -31,14 +28,16 @@ parameters = {"fem.ode.odesolver": "EX",
 #-----------------
 
 Model = problem()
-Model.domain = aluCubeGrid(Model.domain,dimgrid=2)
+Model.endTime = 0.01
+Model.exact = None
 
 run(Model,
-    startLevel=3, polOrder=4, limiter="default",
+    startLevel=0, polOrder=2, limiter="default",
     primitive=primitive, saveStep=0.05, subsamp=2,
     dt=None,threading=False,grid="alucube",
-    space="dglagrange",
-    # space=("dglagrange","lobatto"),
+    space="dgonb",
+    #space="dglagrange",
+    #space=("dglagrange","lobatto"),
     # space=("dglagrange","gauss"),
     parameters=parameters)
 
