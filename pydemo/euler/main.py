@@ -34,7 +34,7 @@ Model.endTime = 0.01
 run(Model,
     startLevel=0, polOrder=2, limiter="default",
     primitive=primitive, saveStep=0.05, subsamp=2,
-    dt=None,threading=False,grid="alucube",
+    dt=None,threading=False,grid="yasp",
     space="dgonb",
     #space="dglagrange",
     #space=("dglagrange","lobatto"),
