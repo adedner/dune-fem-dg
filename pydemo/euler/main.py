@@ -29,7 +29,7 @@ parameters = {"fem.ode.odesolver": "EX",
 
 Model = problem()
 Model.endTime = 0.01
-Model.exact = None
+# Model.exact = None
 
 run(Model,
     startLevel=0, polOrder=2, limiter="default",
