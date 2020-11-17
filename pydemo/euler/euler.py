@@ -134,8 +134,9 @@ def sod(dim=2,gamma=1.4):
         @gridFunction(gv,"sod",3)
         def lf(e,x):
             lgf.bind(e)
-            return FieldVector( Model.toCons(lgf(x)) )
-            # return Model.toCons(gf(e,x))
+            y = FieldVector( Model.toCons(lgf(x)) )
+            lgf.unbind()
+            return y
         # lf.plot()
         return lf
     Model.exact = lambda gv,t: chorin(gv,t)

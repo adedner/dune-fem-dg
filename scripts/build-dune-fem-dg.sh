@@ -33,9 +33,10 @@ DUNEVERSION=
 
 FLAGS="-O3 -DNDEBUG -funroll-loops -finline-functions -Wall -ftree-vectorize -fno-stack-protector -mtune=native"
 
-DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid"
+DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid dune-localfunctions"
 DUNEEXTMODULES="dune-alugrid dune-spgrid"
-DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
+DUNEFEMMODULES="dune-fem dune-fem-dg"
+EXTRAFEMMODULES="dune-fempy"
 
 # build flags for all DUNE modules
 # change according to your needs
@@ -73,7 +74,7 @@ export DUNE_PY_DIR=\${DUNE_CONTROL_PATH}/cache/
 
 export DUNE_CMAKE_FLAGS="\${CMAKE_FLAGS}"
 
-MODULES=\`\$DUNE_CONTROL_PATH/dune-common/bin/dunecontrol --print\`
+MODULES=\"$DUNECOREMODULES $DUNEEXTMODULES $DUNEFEMMODULES\"
 for MOD in \$MODULES; do
   MODPATH=\"\${PWD}/\${MOD}/build-cmake/python\"
   MODFOUND=\`echo \$PYTHONPATH | grep \$MODPATH\`
@@ -107,6 +108,11 @@ done
 
 # get all dune extension modules necessary
 for MOD in $DUNEFEMMODULES ; do
+  git clone $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
+done
+
+# get all dune extension modules necessary
+for MOD in $EXTRAFEMMODULES ; do
   git clone $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
 done
 

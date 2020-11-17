@@ -90,7 +90,6 @@ namespace Dune
       using BaseType::passNumber;
 
     protected:
-      using BaseType::deleteHandler_;
       using BaseType::destination_;
 
     public:
@@ -128,8 +127,9 @@ namespace Dune
       {
         if( destination_ )
           return;
-        destination_ = new DestinationType( "stabilization_pass_" + std::to_string( passNumber() ), space() );
-        deleteHandler_ = &(BaseType::DeleteHandlerType::instance());
+
+        destinationMemory_.reset( new DestinationType( "stabilization_pass_" + std::to_string( passNumber() ), space() ) );
+        destination_ = destinationMemory_.operator->();
       }
 
       /** \copydoc Dune::Fem::Pass::printTexInfo */
