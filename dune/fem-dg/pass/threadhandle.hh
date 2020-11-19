@@ -48,7 +48,7 @@ namespace Fem
       }
     };
 
-#if HAVE_PTHREAD
+#ifdef USE_PTHREADS
     ////////////////////////////////////////////
     // class ThreadHandleObject
     ////////////////////////////////////////////
@@ -310,7 +310,7 @@ namespace Fem
       if( ! ThreadManager :: singleThreadMode() )
         DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread parallel region!");
 
-#if HAVE_PTHREAD
+#ifdef USE_PTHREADS
       if( ThreadManager :: pthreads )
       {
         // pthread version
@@ -340,7 +340,7 @@ namespace Fem
       // run threads in blocking mode
       std::mutex mtx;
 
-#if HAVE_PTHREAD
+#ifdef USE_PTHREADS
       if( ThreadManager :: pthreads )
       {
         // pthread version
