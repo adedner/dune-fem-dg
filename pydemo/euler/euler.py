@@ -135,7 +135,7 @@ def sod(dim=2,gamma=1.4):
         def lf(e,x):
             lgf.bind(e)
             y = FieldVector( Model.toCons(lgf(x)) )
-            # lgf.unbind()
+            lgf.unbind()
             return y
         # lf.plot()
         return lf
