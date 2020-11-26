@@ -1,6 +1,11 @@
 Module: dune-fem-dg
 Version: 2.8-git
-Maintainer: dune@mathematik.uni-freiburg.de
+Maintainer: dune-fem@lists.dune-project.org
 Whitespace-Hook: Yes
 Depends: dune-fem (>= 2.8)
 Suggests: dune-optim dune-polygongrid
+
+PythonRequires:
+Description: The Dune FEM module: Discontinuous Galerkin for evolution equations
+URL: https://www.dune-project.org/modules/dune-fem-dg/
+Authors: Andreas Dedner, Tobias Malkmus, Robert Kloefkorn, Stefan Wierling (geb. Girke)

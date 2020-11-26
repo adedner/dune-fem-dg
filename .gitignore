@@ -65,3 +65,7 @@ dune-fem-dg-config-version.cmake
 dune-fem-dg-config.cmake
 
 *.idea
+# ignore files generated during python setup.py sdist
+MANIFEST
+_skbuild/
+dist

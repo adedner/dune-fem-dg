@@ -2,7 +2,7 @@
 #define DUNE_FEMDG_SOD_HH
 
 #include <dune/common/fvector.hh>
-#include <dune/fem-dg/examples/euler/problems/chorjo.hh>
+#include <dune/fem-dg/examples/euler/chorjo.hh>
 
 void chorin(const double (&Ulr)[6], double gamma,
             double t,double x,
