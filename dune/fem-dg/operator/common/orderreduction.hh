@@ -61,56 +61,36 @@ namespace Dune {
       void operator () (const DomainFunctionType& arg, RangeFunctionType& dest )
       {
         const auto& basisSets = arg.space().basisFunctionSets();
-        //const double eps_ = 1e-8 ;
-        //maxRelOrder_.resize();
+
+        typedef typename RangeFunctionType::RangeFieldType  RangeFieldType;
+
+        Dune::DynamicVector< RangeFieldType > localDofs;
+        ConstLocalFunction< DomainFunctionType > hlf( arg );
 
         for( const auto& entity : arg.space() )
         {
-          const auto hlf    = arg.localFunction( entity );
+          auto guard = bindGuard( hlf, entity );
+
           const int numDofs = hlf.numDofs();
           const int order   = hlf.order();
 
           const int lowerOrder = std::max( order-1, 0 );
 
-          /*
-          int maxRelevantOrder = order ;
-          for( int ord = order-1 ; ord > 0 ; --ord)
-          {
-            // get basis function set with one order lower
-            const auto& lowerBase = basisSets.basisFunctionSet( entity, ord );
-
-            double sum = 0 ;
-            for( int i = lowerBase.size(); i<numDofs; ++i )
-            {
-              sum += (hlf[ i ] * hlf[ i ]);
-            }
-
-            if( std::abs( sum ) < eps_ )
-            {
-              maxRelevantOrder = lowerOrder-1;
-            }
-            else
-              break ;
-          }
-
-          maxRelOrder_[ entity ].set( maxRelevantOrder );
-          */
-
           // get basis function set with one order lower
           const auto& lowerBase = basisSets.basisFunctionSet( entity, lowerOrder );
 
-          auto llf = dest.localFunction( entity );
-          // copy dofs first
-          llf.assign( hlf );
-
-          //std::cout << "baseSet order = " << order << " " << lowerOrder << std::endl;
-          //std::cout << "baseSet start = " << lowerBase.size() << " " << numDofs << std::endl;
+          localDofs.resize( numDofs );
+          // copy dofs
+          localDofs = hlf.localDofVector();
 
           // erase higher order moments
           for( int i = lowerBase.size(); i<numDofs; ++i )
           {
             llf[ i ] = 0;
           }
+
+          // set local dofs of destination
+          dest.setLocalDofs( localDofs, entity );
         }
       }
 

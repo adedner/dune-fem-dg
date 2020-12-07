@@ -1,4 +1,6 @@
 #pragma once
+
+#include <dune/fem/function/localfunction/const.hh>
 namespace Dune
 {
   namespace Fem
@@ -8,7 +10,7 @@ namespace Dune
     {
       virtual ~TroubledCellIndicatorBase() {}
 
-      typedef typename DiscreteFunction::LocalFunctionType LocalFunctionType;
+      typedef Dune::Fem::ConstLocalFunction< DiscreteFunction >  LocalFunctionType;
       virtual double operator()( const DiscreteFunction& U, const LocalFunctionType& uEn ) const = 0;
     };
   }

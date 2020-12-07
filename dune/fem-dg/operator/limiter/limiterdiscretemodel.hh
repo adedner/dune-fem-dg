@@ -213,12 +213,10 @@ namespace Fem
       // set indicator
       if( indicator_ )
       {
-        typedef typename IndicatorType :: LocalFunctionType  LocalFunctionType;
-        LocalFunctionType lf = indicator_->localFunction( inside() );
-        assert( lf.numDofs() == 3 );
-        lf[0] = 1;
-        lf[1] = 1;
-        lf[2] = 1; // store real adapt indicator
+        typedef typename IndicatorType :: RangeType IndicatorRangeType;
+        // set all components to 1
+        IndicatorRangeType localIndicator( 1 );
+        indicator_->setLocalDofs( inside(), localIndicator );
       }
     }
 
@@ -233,12 +231,13 @@ namespace Fem
       // set indicator
       if( indicator_ )
       {
-        typedef typename IndicatorType :: LocalFunctionType  LocalFunctionType;
-        LocalFunctionType lf = indicator_->localFunction( entity );
-        assert( lf.numDofs() == 3 );
-        lf[0] = shockIndicator[0];
-        lf[1] = adaptIndicator[0];
-        lf[2] = val; // store real adapt indicator
+        typedef typename IndicatorType :: RangeType IndicatorRangeType;
+        IndicatorRangeType localIndicator( 0 );
+
+        localIndicator[0] = shockIndicator[0];
+        localIndicator[1] = adaptIndicator[0];
+        localIndicator[2] = val; // store real adapt indicator
+        indicator_->setLocalDofs( entity, localIndicator );
       }
 
       // only mark for adaptation if this type of adaptation is enabled

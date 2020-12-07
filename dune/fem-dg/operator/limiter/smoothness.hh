@@ -103,9 +103,10 @@ template <class DiscreteFunction>
 struct ModalSmoothnessIndicator
 : public Dune::Fem::TroubledCellIndicatorBase<DiscreteFunction>
 {
+  typedef typename  Dune::Fem::TroubledCellIndicatorBase<DiscreteFunction>::LocalFunctionType
+    LocalFunctionType;
   virtual ~ModalSmoothnessIndicator() {}
 
-  typedef typename DiscreteFunction :: LocalFunctionType  LocalFunctionType;
   double operator()( const DiscreteFunction& U, const LocalFunctionType& uEn) const override
   {
     double modalInd = smoothnessIndicator( uEn );

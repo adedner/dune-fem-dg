@@ -16,7 +16,7 @@ from dune.fem.view import adaptiveLeafGridView as view
 from dune.polygongrid import polygonGrid
 
 import dune.fem
-# dune.fem.parameter.append({"fem.verboserank":0})
+dune.fem.parameter.append({"fem.verboserank":0})
 # dune.fem.parameter.append({"fem.parallel.numberofthreads":8})
 
 from advection_model import model

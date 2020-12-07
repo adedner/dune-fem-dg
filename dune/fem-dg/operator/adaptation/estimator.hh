@@ -35,8 +35,7 @@ namespace Fem
     typedef DiscreteFunction                                    DiscreteFunctionType;
 
     typedef typename BaseType :: DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
-    typedef typename BaseType :: LocalFunctionType              LocalFunctionType;
-
+    typedef typename BaseType :: ConstLocalFunctionType         ConstLocalFunctionType;
     typedef typename BaseType :: DomainFieldType                DomainFieldType;
     typedef typename BaseType :: RangeFieldType                 RangeFieldType;
     typedef typename BaseType :: DomainType                     DomainType;
@@ -214,7 +213,8 @@ namespace Fem
      *  \note \a indicator1_ and \a indicator2_ are assigned its correspond values
      *    for \a entity and its neighbor
      */
-    void estimateLocal( const DiscreteFunctionType& uh,
+    void estimateLocal( const ConstLocalFunctionType& lf,
+                        ConstLocalFunctionType& lfnb,
                         const ElementType& entity, double& ind1Min, double& ind1Max,
                         double& ind2Min, double& ind2Max )
     {
@@ -224,7 +224,6 @@ namespace Fem
       RangeType valnb( 0. );
 
       // get local function on the element
-      LocalFunctionType lf = uh.localFunction( entity );
       const int quadOrder = ( lf.order()==0 ? 1 : lf.order() );
       ElementQuadratureType quad( entity, quadOrder );
 
@@ -272,7 +271,7 @@ namespace Fem
               (entity.level() == neighbor.level() && enIdx < nbIdx) )
           {
             // get local function on the neighbor element
-            LocalFunctionType lfnb = uh.localFunction( neighbor );
+            auto guard = bindGuard( lfnb, neighbor );
             ElementQuadratureType quadNeigh( entity, quadOrder );
 
             // get max and min of the indicator quantity in the neighbor
@@ -327,11 +326,16 @@ namespace Fem
       double indMin[ 2 ] = { std::numeric_limits< double > :: max (), std::numeric_limits< double > :: max () };
       ind2MaxDiff_   = 0;
 
+      ConstLocalFunctionType lf( uh );
+      ConstLocalFunctionType lfnb( uh );
+
       numberOfElements_ = 0 ;
       for( const auto& en : elements( dfSpace_.gridPart() ) )
       {
+        auto guard = bindGuard( lf, en );
+
         // do local estimation
-        estimateLocal( uh, en, indMin[ 0 ], indMax[ 0 ], indMin[ 1 ], indMax[ 1 ] );
+        estimateLocal( lf, lfnb, en, indMin[ 0 ], indMax[ 0 ], indMin[ 1 ], indMax[ 1 ] );
         // count number of elements
         ++ numberOfElements_ ;
       }

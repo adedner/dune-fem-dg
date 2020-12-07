@@ -172,7 +172,8 @@ namespace Fem
 
   public:
     typedef typename PreviousPassType::GlobalArgumentType                 ArgumentFunctionType;
-    typedef typename ArgumentFunctionType::LocalFunctionType              LocalFunctionType;
+    typedef ConstLocalFunction< ArgumentFunctionType >                    LocalFunctionType;
+    //typedef typename ArgumentFunctionType::LocalFunctionType              LocalFunctionType;
 
     // Types from the traits
     typedef typename DiscreteModelType::Traits::DestinationType           DestinationType;
@@ -408,6 +409,9 @@ namespace Fem
       localIdSet_( gridPart_.grid().localIdSet()),
       cornerPointSetContainer_(),
       uTmpLocal_( spc_ ),
+      uEn_(),
+      uEnAvg_(),
+      limitEn_(),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
       dofConversion_(dimRange),
       faceQuadOrd_( fQ ),
@@ -632,22 +636,23 @@ namespace Fem
     {
       const ThisType& op_;
       const GridPartType& gridPart_;
-      const ArgumentFunctionType &U_;
+      LocalFunctionType &uLocal_;
       const DiscreteModelType& discreteModel_;
       const double volume_;
 
       typedef typename IntersectionType::Geometry IntersectionGeometry;
 
-      EvalAverage( const ThisType& op, const ArgumentFunctionType& U, const DiscreteModelType& model, const double volume = -1.0 )
-        : op_( op ), gridPart_( U.space().gridPart() ), U_( U ), discreteModel_( model ), volume_( volume )
+      EvalAverage( const ThisType& op, LocalFunctionType& uLocal, const DiscreteModelType& model, const double volume = -1.0 )
+        : op_( op ), gridPart_( uLocal.discreteFunction().space().gridPart() ),
+          uLocal_( uLocal ), discreteModel_( model ), volume_( volume )
       {}
 
       // return true is average value is non-physical
       bool evaluate( const EntityType& entity, RangeType& value ) const
       {
         // get U on entity
-        const LocalFunctionType uEn = U_.localFunction(entity);
-        return op_.evalAverage( entity, uEn, value );
+        auto guard = bindGuard( uLocal_, entity );
+        return op_.evalAverage( entity, uLocal_, value );
       }
 
       bool boundaryValue( const EntityType& entity,
@@ -742,6 +747,10 @@ namespace Fem
       caller_.reset( new DiscreteModelCallerType( *arg_, discreteModel_ ) );
       caller_->setTime(currentTime_);
 
+      uEn_.reset( new LocalFunctionType( U ) );
+      uEnAvg_.reset( new LocalFunctionType( U ) );
+      limitEn_.reset( new DestLocalFunctionType( *dest_ ) );
+
       // calculate maximal indicator (if necessary)
       discreteModel_.indicatorMax();
 
@@ -796,6 +805,10 @@ namespace Fem
 
       // finalize caller
       caller_.reset();
+      uEn_.reset();
+      uEnAvg_.reset();
+      limitEn_.reset();
+
       // reset usedAdmissibleFunction value to class default
       usedAdmissibleFunctions_ = usedAdmissibleFunctions();
     }
@@ -878,8 +891,10 @@ namespace Fem
       // get function to limit
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
 
+      assert( uEn_ );
       // get U on entity
-      const LocalFunctionType uEn = U.localFunction(en);
+      auto guard = bindGuard( *uEn_, en );
+      const LocalFunctionType& uEn = *uEn_;
 
       // get geometry
       const Geometry& geo = linearFunction_.geometry();
@@ -1005,7 +1020,8 @@ namespace Fem
       if( limiter )
       {
         // helper class for evaluation of average value of discrete function
-        EvalAverage average( *this, U, discreteModel_, geo.volume() );
+        assert( uEnAvg_ );
+        EvalAverage average( *this, *uEnAvg_, discreteModel_, geo.volume() );
 
         // setup neighbors barycenter and mean value for all neighbors
         LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, uEn,
@@ -1030,7 +1046,7 @@ namespace Fem
       if( usedAdmissibleFunctions_ == lp )
       {
         // compute average values on neighboring elements
-        fillAverageValues( en, enIndex, U, enVal );
+        fillAverageValues( en, enIndex, *uEnAvg_, enVal );
         assert( linProg_ );
         // compute optimal linear reconstruction
         linProg_->applyLocal( en, gridPart_.indexSet(), values_, gradient );
@@ -1086,7 +1102,9 @@ namespace Fem
       ////////////////////////////////////////////////////////////////////
 
       // get local funnction for limited values
-      DestLocalFunctionType limitEn = dest_->localFunction(en);
+      assert( limitEn_ );
+      DestLocalFunctionType& limitEn = *limitEn_;
+      auto limguard = bindGuard( limitEn, en );
 
       // project linearFunction onto limitEn
       interpolate( en, geo, limit, linearFunction_, limitEn );
@@ -1100,10 +1118,10 @@ namespace Fem
 
   protected:
     void fillAverageValues( const EntityType& en, const unsigned int enIndex,
-                            const ArgumentFunctionType &U, const RangeType& enVal ) const
+                            LocalFunctionType &uLocal, const RangeType& enVal ) const
     {
       // helper class for evaluation of average value of discrete function
-      EvalAverage average( *this, U, discreteModel_);
+      EvalAverage average( *this, uLocal, discreteModel_);
 
       if( ! valuesComputed_[ enIndex ] )
       {
@@ -1820,6 +1838,10 @@ namespace Fem
     CornerPointSetContainerType cornerPointSetContainer_;
 
     mutable TemporaryLocalFunctionType uTmpLocal_;
+
+    mutable std::unique_ptr< LocalFunctionType > uEn_;
+    mutable std::unique_ptr< LocalFunctionType > uEnAvg_;
+    mutable std::unique_ptr< DestLocalFunctionType > limitEn_;
 
     const double orderPower_;
     const DofConversionUtilityType dofConversion_;
