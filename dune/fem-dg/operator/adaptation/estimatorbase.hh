@@ -7,6 +7,7 @@
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 #include <dune/fem/operator/matrix/blockmatrix.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/function/localfunction/const.hh>
 
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 
@@ -34,9 +35,8 @@ namespace Fem
   public:
     typedef DiscreteFunction DiscreteFunctionType;
 
-    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
-                                                                      DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionType :: LocalFunctionType        LocalFunctionType;
+    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
+    typedef ConstLocalFunction< DiscreteFunctionType >                  ConstLocalFunctionType;
 
     typedef typename DiscreteFunctionSpaceType :: DomainFieldType     DomainFieldType;
     typedef typename DiscreteFunctionSpaceType :: RangeFieldType      RangeFieldType;

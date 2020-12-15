@@ -170,7 +170,9 @@ namespace Fem
 
     bool activated( const EntityType& entity ) const
     {
-      return std::abs( indicator_.localFunction( entity )[ 0 ] ) > 0.0;
+      typename IndicatorSpaceType :: RangeType localIndicator;
+      indicator_.getLocalDofs( entity, localIndicator );
+      return std::abs( localIndicator[ 0 ] ) > 0.0;
     }
 
     const IndicatorType& indicator() const { return indicator_; }

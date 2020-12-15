@@ -49,7 +49,7 @@ namespace Fem
 
   public:
     typedef typename PreviousPassType::GlobalArgumentType                 ArgumentFunctionType;
-    typedef typename ArgumentFunctionType::LocalFunctionType              LocalFunctionType;
+    typedef ConstLocalFunction< ArgumentFunctionType >                    LocalFunctionType;
 
     // Types from the traits
     typedef typename DiscreteModelType::Traits::DestinationType           DestinationType;
@@ -77,7 +77,7 @@ namespace Fem
     typedef typename Geometry::LocalCoordinate                            LocalDomainType;
 
     // Various other types
-    typedef typename DestinationType::LocalFunctionType                   DestLocalFunctionType;
+    typedef MutableLocalFunction< DestinationType >                       DestLocalFunctionType;
 
     typedef LimiterDiscreteModelCaller< DiscreteModelType, ArgumentType, PassIds > DiscreteModelCallerType;
 
@@ -157,7 +157,7 @@ namespace Fem
                        const int fQ = -1,
                        const bool verbose = Dune::Fem::Parameter::verbose()) :
       BaseType(pass, spc),
-      caller_( 0 ),
+      caller_(),
       discreteModel_(problem),
       currentTime_(0.0),
       arg_(0),
@@ -165,6 +165,8 @@ namespace Fem
       spc_(spc),
       gridPart_(spc_.gridPart()),
       scaledFunction_( gridPart_, discreteModel_.model(), spc_.order() ),
+      uEn_(),
+      limitEn_(),
       indexSet_( gridPart_.indexSet() ),
       cornerPointSetContainer_(),
       dofConversion_(dimRange),
@@ -296,22 +298,23 @@ namespace Fem
     {
       const ThisType& op_;
       const GridPartType& gridPart_;
-      const ArgumentFunctionType &U_;
+      LocalFunctionType &uLocal_;
       const DiscreteModelType& discreteModel_;
       const double volume_;
 
       typedef typename IntersectionType::Geometry IntersectionGeometry;
 
-      EvalAverage( const ThisType& op, const ArgumentFunctionType& U, const DiscreteModelType& model, const double volume = -1.0 )
-        : op_( op ), gridPart_( U.space().gridPart() ), U_( U ), discreteModel_( model ), volume_( volume )
+      EvalAverage( const ThisType& op, LocalFunctionType& uLocal, const DiscreteModelType& model, const double volume = -1.0 )
+        : op_( op ), gridPart_( uLocal.discreteFunction().space().gridPart() ),
+          uLocal_( uLocal ), discreteModel_( model ), volume_( volume )
       {}
 
       // return true is average value is non-physical
       bool evaluate( const EntityType& entity, RangeType& value ) const
       {
         // get U on entity
-        const LocalFunctionType uEn = U_.localFunction(entity);
-        return op_.evalAverage( entity, uEn, value );
+        auto guard = bindGuard( uLocal_, entity );
+        return op_.evalAverage( entity, uLocal_, value );
       }
 
       bool boundaryValue( const EntityType& entity,
@@ -494,8 +497,11 @@ namespace Fem
       currentTime_ = this->time();
 
       // initialize caller
-      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
+      caller_.reset( new DiscreteModelCallerType( *arg_, discreteModel_ ) );
       caller_->setTime(currentTime_);
+
+      uEn_.reset( new LocalFunctionType( U ));
+      limitEn_.reset( new DestLocalFunctionType( *dest_ ));
 
       // calculate maximal indicator (if necessary)
       discreteModel_.indicatorMax();
@@ -532,11 +538,9 @@ namespace Fem
       }
 
       // finalize caller
-      if( caller_ )
-      {
-        delete caller_;
-        caller_ = 0;
-      }
+      caller_.reset();
+      uEn_.reset();
+      limitEn_.reset();
     }
 
     //! apply local is virtual
@@ -618,11 +622,10 @@ namespace Fem
       // bind function to entity
       scaledFunction_.bind( en, spc_.order( en ) );
 
-      // get function to limit
-      const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
-
       // get U on entity
-      const LocalFunctionType uEn = U.localFunction(en);
+      assert( uEn_ );
+      auto guard = bindGuard( *uEn_, en );
+      const LocalFunctionType& uEn = *uEn_;
 
       // get reference to cell average
       RangeType& enVal = scaledFunction_.enVal_;
@@ -677,7 +680,9 @@ namespace Fem
       if( limiter )
       {
         // get local funnction for limited values
-        DestLocalFunctionType limitEn = dest_->localFunction(en);
+        assert( limitEn_ );
+        auto lguard = bindGuard( *limitEn_, en );
+        DestLocalFunctionType& limitEn = *limitEn_;
 
         // set all dofs to zero
         limitEn.clear();
@@ -868,7 +873,7 @@ namespace Fem
     }
 
   private:
-    mutable DiscreteModelCallerType *caller_;
+    mutable std::unique_ptr< DiscreteModelCallerType > caller_;
     DiscreteModelType& discreteModel_;
     mutable double currentTime_;
 
@@ -879,6 +884,9 @@ namespace Fem
     GridPartType& gridPart_;
 
     mutable ScaledFunction scaledFunction_;
+
+    mutable std::unique_ptr< LocalFunctionType > uEn_;
+    mutable std::unique_ptr< DestLocalFunctionType > limitEn_;
 
     const IndexSetType& indexSet_;
 

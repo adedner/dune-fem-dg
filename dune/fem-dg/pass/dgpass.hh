@@ -7,6 +7,7 @@
 
 
 #include <dune/fem/function/localfunction/temporary.hh>
+#include <dune/fem/function/localfunction/mutable.hh>
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
@@ -107,6 +108,7 @@ namespace Fem
     typedef typename GridPartType::IndexSetType                         IndexSetType;
 
     typedef Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType >    TemporaryLocalFunctionType;
+    typedef Fem::MutableLocalFunction< DestinationType >                MutableLocalFunctionType;
 
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
     // type of communication manager object which does communication
@@ -170,6 +172,7 @@ namespace Fem
         visited_(),
         updEn_(spc_),
         updNeigh_(spc_),
+        localFunc_(),
         valEnVec_( 20 ),
         valNbVec_( 20 ),
         valJacEn_( 20 ),
@@ -348,6 +351,8 @@ namespace Fem
       caller_.reset( new DiscreteModelCallerType( *arg_, discreteModel_ ) );
       caller_->setTime( this->time() );
 
+      localFunc_.reset( new MutableLocalFunctionType( *dest_ ) );
+
       // resize indicator function
       visited_.resize( indexSet_.size(0) );
       // set all values to false
@@ -369,6 +374,7 @@ namespace Fem
 
       // call finalize
       caller_.reset();
+      localFunc_.reset();
 
       arg_  = nullptr;
       dest_ = nullptr;
@@ -446,8 +452,11 @@ namespace Fem
     {
       if( dest_ )
       {
+        assert( localFunc_ );
+        MutableLocalFunctionType& function = *localFunc_;
+
         // get local function and add update
-        LocalFunctionType function = dest_->localFunction(en);
+        auto guard = bindGuard( function, en );
 
         // apply local inverse mass matrix
         localMassMatrix_.applyInverse( caller(), en, function );
@@ -718,9 +727,8 @@ namespace Fem
     {
       if( dest_ )
       {
-        // get local function and add update
-        LocalFunctionType function = dest_->localFunction( entity );
-        function += update;
+        // add update to destination
+        dest_->addLocalDofs( entity, update );
       }
     }
 
@@ -732,7 +740,13 @@ namespace Fem
     {
       if( dest_ )
       {
-        LocalFunctionType function = dest_->localFunction( entity );
+        assert( localFunc_ );
+        MutableLocalFunctionType& function = *localFunc_;
+
+        // get local function and add update
+        auto guard = bindGuard( function, entity );
+
+        // add update
         function += update;
 
         // apply local inverse mass matrix
@@ -997,6 +1011,8 @@ namespace Fem
 
     mutable TemporaryLocalFunctionType updEn_;
     mutable TemporaryLocalFunctionType updNeigh_;
+
+    mutable std::unique_ptr< MutableLocalFunctionType > localFunc_;
 
     //! Some helper variables
     mutable Fem::DynamicArray< RangeType > valEnVec_;

@@ -4,11 +4,13 @@
 #include <dune/fem/space/shapefunctionset/orthonormal.hh>
 
 #include <dune/fem/quadrature/cachingquadrature.hh>
-#if HAVE_DUNE_FEM_DG
-#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
-#endif
-
 #include <dune/fem/misc/linesegmentsampler.hh>
+
+#include <dune/fem/space/common/capabilities.hh>
+#include <dune/fem/function/localfunction/const.hh>
+#include <dune/fem/common/bindguard.hh>
+
+#include <dune/fem/io/parameter.hh>
 
 template <class DiscreteFunction>
 int minMax( const DiscreteFunction& solution )
@@ -20,7 +22,7 @@ int minMax( const DiscreteFunction& solution )
   const DiscreteFunctionSpaceType& space = solution.space();
   const int dimRange = DiscreteFunctionSpaceType :: dimRange;
 
-  typedef Dune::Fem::DefaultQuadrature< DiscreteFunctionSpaceType >
+  typedef Dune::Fem::Capabilities::DefaultQuadrature< DiscreteFunctionSpaceType >
     DefaultQuadrature;
 
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0, DefaultQuadrature::template DefaultQuadratureTraits > Quadrature;
@@ -30,11 +32,13 @@ int minMax( const DiscreteFunction& solution )
 
   bool isNan = false;
 
+  Dune::Fem::ConstLocalFunction< DiscreteFunction > lf( solution );
+
   std::vector< RangeType > values;
   for( const auto& element : space )
   {
     Quadrature quad( element, 2*space.order( element )+3 );
-    auto lf = solution.localFunction( element );
+    auto guard = Dune::Fem::bindGuard( lf, element );
     const int nop = quad.nop();
     values.resize( nop );
     lf.evaluateQuadrature( quad, values );
@@ -55,7 +59,7 @@ int minMax( const DiscreteFunction& solution )
   comm.min( &minVal[0], dimRange );
   comm.max( &maxVal[0], dimRange );
 
-  if( comm.rank() == 0 )
+  if( Dune::Fem::Parameter::verbose() )
   {
     std::cout << "Min/max values: min = " << minVal[0] << "  max = " << maxVal[0] << std::endl;
   }
