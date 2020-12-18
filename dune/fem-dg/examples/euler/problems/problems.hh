@@ -16,7 +16,7 @@
 
 // local includes
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
-#include "chorjo.hh"
+#include <dune/fem-dg/examples/euler/chorjo.hh>
 
 
 namespace Dune

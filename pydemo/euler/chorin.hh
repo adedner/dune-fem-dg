@@ -1,5 +1,5 @@
 #include <dune/common/fvector.hh>
-#include <dune/fem-dg/examples/euler/problems/chorjo.hh>
+#include <dune/fem-dg/examples/euler/chorjo.hh>
 #include <dune/python/grid/function.hh>
 
 void chorin(const double (&Ulr)[6], double gamma,
