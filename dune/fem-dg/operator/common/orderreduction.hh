@@ -86,11 +86,11 @@ namespace Dune {
           // erase higher order moments
           for( int i = lowerBase.size(); i<numDofs; ++i )
           {
-            llf[ i ] = 0;
+            localDofs[ i ] = 0;
           }
 
           // set local dofs of destination
-          dest.setLocalDofs( localDofs, entity );
+          dest.setLocalDofs( entity, localDofs );
         }
       }
 
