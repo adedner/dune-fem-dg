@@ -13,8 +13,8 @@
 #include <type_traits>
 
 #include <dune/common/timer.hh>
+#include <dune/common/shared_ptr.hh>
 
-#include <dune/fem/common/memory.hh>
 #include <dune/fem/common/tupleutility.hh>
 #include <dune/fem/operator/common/operator.hh>
 
@@ -405,7 +405,7 @@ namespace Dune
                  const DiscreteFunctionSpaceType &spc,
                  std::string passName = "LocalPass")
       : BaseType(pass),
-        spc_( referenceToSharedPtr( spc ) ),
+        spc_( Dune::stackobject_to_shared_ptr( spc ) ),
         passName_(passName),
         computeTime_(0.0),
         numberOfElements_( 0 ),
