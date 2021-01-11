@@ -152,7 +152,7 @@ def femDGOperator(Model, space,
         threading=False,
         defaultQuadrature=True,
         codegen=True,
-        initialTime=0.0, parameters=None):
+        initialTime=0.0, parameters={}):
     """ create DG operator + ODE solver
 
     Args:
@@ -302,7 +302,7 @@ def femDGOperator(Model, space,
             # otherwise default to LLF flux
             if advectionFlux == "default":
                 key = 'dgadvectionflux.method'
-                if parameters is not None and key in parameters.keys():
+                if key in parameters.keys():
                     advectionFlux = parameters["dgadvectionflux.method"]
 
                     # set parameter in dune-fem parameter container
@@ -320,7 +320,7 @@ def femDGOperator(Model, space,
                             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
             else:
                 advFluxId = advectionFlux
-                # raise KeyError("wrong value "+advectionFlux+" for 'advectionFlux' parameter")
+                raise KeyError("wrong value "+advectionFlux+" for 'advectionFlux' parameter")
 
     if limiter.lower() == "unlimited" or limiter.lower() == "none":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
@@ -440,32 +440,18 @@ def femDGOperator(Model, space,
     else:
         codegen = None
 
-    if parameters is not None:
-        if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
-                     baseClasses=[base],
-                     codegen=codegen,
-                     preamble=writer.writer.getvalue()).\
-                     Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
-        else:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
-                     baseClasses = [base],
-                     codegen=codegen,
-                     preamble=writer.writer.getvalue()).\
-                     Operator( space, advModel, diffModel, parameters=parameters )
+    if advectionFluxIsCallable:
+        op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
+                 baseClasses=[base],
+                 codegen=codegen,
+                 preamble=writer.writer.getvalue()).\
+                 Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
     else:
-        if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
-                     baseClasses = [base],
-                     codegen=codegen,
-                     preamble=writer.writer.getvalue()).\
-                     Operator( space, advModel, diffModel, advectionFlux )
-        else:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
-                     baseClasses = [base],
-                     codegen=codegen,
-                     preamble=writer.writer.getvalue()).\
-                     Operator( space, advModel, diffModel )
+        op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
+                 baseClasses = [base],
+                 codegen=codegen,
+                 preamble=writer.writer.getvalue()).\
+                 Operator( space, advModel, diffModel, parameters=parameters )
 
     op._t = Model._ufl["t"]
     op.time = Model._ufl["t"].value
