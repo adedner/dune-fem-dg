@@ -60,6 +60,9 @@ def run(Model, Stepper=None,
     dimR     = Model.dimRange
     t        = 0
     tcount   = 0
+    if saveStep is None:
+        saveStep = Model.endTime
+
     saveTime = saveStep
 
     # create discrete function space
