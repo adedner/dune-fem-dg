@@ -9,13 +9,18 @@ if [ "$DUNE_CONTROL_PATH" != "" ]; then
   fi
 fi
 
+# create necessary python virtual environment
+# this script assumes the name dune-venv.
+# Otherwise copy the instructions from the script
+# to build you own
+
 CMAKE_VERSION=`cmake --version | head -1 | cut -d " " -f 3 | cut -d " " -f 1`
 REQUIRED_VERSION="3.13.3"
 # check if cmake version is ok
 if awk 'BEGIN {exit !('$CMAKE_VERSION' < '$REQUIRED_VERSION')}'; then
   CMAKEPIP=cmake
+  echo "Installing cmake since current version is not new enough!"
 fi
-echo $CMAKEPIP
 
 # create necessary python virtual environment
 if ! test -d $WORKDIR/dune-venv ; then
@@ -23,23 +28,29 @@ if ! test -d $WORKDIR/dune-venv ; then
   source $WORKDIR/dune-venv/bin/activate
   pip install --upgrade pip
   pip install $CMAKEPIP ufl numpy matplotlib mpi4py
-  #pip install numpy matplotlib mpi4py
 else
   source $WORKDIR/dune-venv/bin/activate
 fi
 
-#change appropriately, i.e. 2.6 or empty which refers to master
+#change appropriately, i.e. 2.8 or leave empty which refers to master
 DUNEVERSION=
 
 FLAGS="-O3 -DNDEBUG -funroll-loops -finline-functions -Wall -ftree-vectorize -fno-stack-protector -mtune=native"
 
-DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid dune-localfunctions"
+DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid"
 DUNEEXTMODULES="dune-alugrid dune-spgrid"
-DUNEFEMMODULES="dune-fem dune-fem-dg"
-EXTRAFEMMODULES="dune-fempy"
+DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
 
 # build flags for all DUNE modules
 # change according to your needs
+if test -f config.opts ; then
+  read -p "Found config.opts. Overwrite with default? (y,n) " YN
+  if [ "$YN" != "y" ] ;then
+    echo "Overwriting config.opts!"
+    rm -f config.opts
+  fi
+fi
+
 if ! test -f config.opts ; then
 echo "\
 DUNEPATH=`pwd`
@@ -61,20 +72,20 @@ echo "#!/bin/bash
 # set current main working directory
 export DUNE_CONTROL_PATH=\${PWD}
 
-source \$DUNE_CONTROL_PATH/dune-venv/bin/activate
+#source \$DUNE_CONTROL_PATH/dune-venv/bin/activate
 
 # defines CMAKE_FLAGS
 source \${DUNE_CONTROL_PATH}/config.opts
 
-# CRITICAL, DEBUG or NOTSET
-export DUNE_LOG_LEVEL=CRITICAL
+# critical, debug, info, none
+export DUNE_LOG_LEVEL=info
 export DUNE_LOG_FORMAT='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 export DUNE_PY_DIR=\${DUNE_CONTROL_PATH}/cache/
 
 export DUNE_CMAKE_FLAGS="\${CMAKE_FLAGS}"
 
-MODULES=\"$DUNECOREMODULES $DUNEEXTMODULES $DUNEFEMMODULES\"
+MODULES=\`\$DUNE_CONTROL_PATH/dune-common/bin/dunecontrol --print\`
 for MOD in \$MODULES; do
   MODPATH=\"\${PWD}/\${MOD}/build-cmake/python\"
   MODFOUND=\`echo \$PYTHONPATH | grep \$MODPATH\`
@@ -82,7 +93,10 @@ for MOD in \$MODULES; do
     export PYTHONPATH=\$PYTHONPATH:\$MODPATH
   fi
 done
-" > activate.sh
+
+# python \$DUNE_CONTROL_PATH/dune-common/bin/setup-dunepy.py
+" >> dune-venv/bin/activate
+#> activate.sh
 fi
 
 DUNEBRANCH=
@@ -111,17 +125,15 @@ for MOD in $DUNEFEMMODULES ; do
   git clone $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
 done
 
-# get all dune extension modules necessary
-for MOD in $EXTRAFEMMODULES ; do
-  git clone $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
-done
-
 # load environment variables
-source activate.sh
+source dune-venv/bin/activate
 
 # build all DUNE modules using dune-control
 ./dune-common/bin/dunecontrol --opts=config.opts all
+python ./dune-common/bin/setup-dunepy.py
 
-#cd dune-fem-dg/build-cmake
-#make build_tests
-#make test
+echo "Build finished (hopefully successful). Use
+
+source dune-venv/bin/activate
+
+to activate the virtual environment!"
