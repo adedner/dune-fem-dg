@@ -52,7 +52,7 @@ discretization implemented in DUNE-FEM-DG.
 Installation
 ------------
 
-## Using pip
+- **Using pip**
 
 dune-fem-dg can be installed using the Package Index of Python (pip).
 
@@ -63,7 +63,7 @@ pip install dune-fem-dg
 See https://dune-project.org/doc/installation-pip/ for a more detailed
 description.
 
-## From source
+- **From source**
 
 dune-fem-dg also provides a [shell script](https://gitlab.dune-project.org/dune-fem/dune-fem-dg/-/blob/master/scripts/build-dune-fem-dg.sh)
 to install the sources using a specific git branch.
