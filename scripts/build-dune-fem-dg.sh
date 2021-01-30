@@ -66,8 +66,11 @@ CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > config.opts
 fi
 
-if ! test -f activate.sh ; then
-echo "#!/bin/bash
+FOUND_DUNE_ACTIVATE=`grep "DUNE_VENV_SPECIFIC_SETUP" $WORKDIR/dune-venv/bin/activate`
+
+if [ "$FOUND_DUNE_ACTIVATE" == "" ]; then
+echo "
+## DUNE_VENV_SPECIFIC_SETUP
 
 # set current main working directory
 export DUNE_CONTROL_PATH=\${PWD}
@@ -85,7 +88,7 @@ export DUNE_PY_DIR=\${DUNE_CONTROL_PATH}/cache/
 
 export DUNE_CMAKE_FLAGS="\${CMAKE_FLAGS}"
 
-MODULES=\`\$DUNE_CONTROL_PATH/dune-common/bin/dunecontrol --print\`
+MODULES=\`\$DUNE_CONTROL_PATH/dune-common/bin/dunecontrol --print 2> /dev/null\`
 for MOD in \$MODULES; do
   MODPATH=\"\${PWD}/\${MOD}/build-cmake/python\"
   MODFOUND=\`echo \$PYTHONPATH | grep \$MODPATH\`
@@ -94,8 +97,11 @@ for MOD in \$MODULES; do
   fi
 done
 
+echo \"DUNE_LOG_LEVEL=\$DUNE_LOG_LEVEL\"
+echo \"Change with 'export DUNE_LOG_LEVEL={none,critical,info,debug}' if necessary!\"
+
 # python \$DUNE_CONTROL_PATH/dune-common/bin/setup-dunepy.py
-" >> dune-venv/bin/activate
+" >> $WORKDIR/dune-venv/bin/activate
 #> activate.sh
 fi
 
