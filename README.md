@@ -52,14 +52,28 @@ discretization implemented in DUNE-FEM-DG.
 Installation
 ------------
 
-For a full explanation of the DUNE installation process please read
-the installation notes https://www.dune-project.org/doc/installation/.
+## Using pip
 
+dune-fem-dg can be installed using the Package Index of Python (pip).
+
+```
+pip install dune-fem-dg
+```
+
+See https://dune-project.org/doc/installation-pip/ for a more detailed
+description.
+
+## From source
+
+dune-fem-dg also provides a [shell script](https://gitlab.dune-project.org/dune-fem/dune-fem-dg/-/blob/master/scripts/build-dune-fem-dg.sh)
+to install the sources using a specific git branch.
+Further detailed explanation on the DUNE installation process please read
+the installation notes https://www.dune-project.org/doc/installation/.
 
 Documentation
 -------------
 
 A documentation for the 2.4 release can be found in
 
-* A. Dedner, S. Girke, R. Klöfkorn, T. Malkmus. 2017. The DUNE-FEM-DG module. 
+* A. Dedner, S. Girke, R. Klöfkorn, T. Malkmus. 2017. The DUNE-FEM-DG module.
 Archive of Numerical Software 5(1): 21--61. http://dx.doi.org/10.11588/ans.2017.1.28602
