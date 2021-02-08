@@ -108,20 +108,23 @@ for ele_n in ele_ns:
     v = ufl.TestFunction(V)
 
     bo = dg.CompressibleEulerOperator(mesh, V, dg.DGDirichletBC(ufl.ds, gD))
-    residual = bo.generate_fem_formulation(u, v, ufl.dx, ufl.dS) #  - ufl.inner(f, v)*ufl.dx
+    residual = bo.generate_fem_formulation(u, v, ufl.dx, ufl.dS) - ufl.inner(f, v)*ufl.dx
 
     solverParameters =\
        {"newton.tolerance": 1e-8,
         "newton.linear.tolerance": 1e-12,
         "newton.linear.preconditioning.method": "ilu",
         "newton.linear.maxiterations":1000,
-        "newton.verbose": False,
+        "newton.verbose": True,
         "newton.linear.verbose": True}
 
 
     scheme = solutionScheme([residual == 0], solver="gmres", parameters=solverParameters)
     scheme.solve(target = uh,
                  )
+
+    uh.plot()
+
 #    dol.solve(residual == 0, u)
 
     from math import sqrt
