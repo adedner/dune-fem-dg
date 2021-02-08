@@ -110,7 +110,7 @@ def shockTransport():
     Model=Transport1D
     Model.initial=riemanProblem(x[0],-0.5, [1], [0])
     Model.domain=[[-1, 0], [1, 0.1], [50, 7]]
-    Model.endTime=1.0,
+    Model.endTime=1.0
     Model.name="shockTransport"
     return Model
 
