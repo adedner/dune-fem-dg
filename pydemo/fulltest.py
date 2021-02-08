@@ -31,11 +31,11 @@ for p in shallowWater.problems + euler.problems:
 
 parameters["fem.ode.odesolver"] = "IM"
 for p in scalar.problems:
-    run(*p(), startLevel=0, polOrder=2, limiter=None,
+    run(p(), startLevel=0, polOrder=2, limiter=None,
               primitive=None, saveStep=None, subsamp=0,
               dt=None,threading=True,grid="alucube",
               parameters=parameters)
-    run(*p(), startLevel=0, polOrder=0, limiter=None,
+    run(p(), startLevel=0, polOrder=0, limiter=None,
               primitive=None, saveStep=None, subsamp=0,
               dt=None,threading=True,grid="yasp",
               parameters=parameters)
