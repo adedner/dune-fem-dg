@@ -120,18 +120,14 @@ for ele_n in ele_ns:
 
 
     scheme = solutionScheme([residual == 0], solver="gmres", parameters=solverParameters)
-    scheme.solve(target = uh,
-                 )
+    scheme.solve(target = uh)
 
     uh.plot()
 
-#    dol.solve(residual == 0, u)
-
-    from math import sqrt
-    errorl2[run_count] = sqrt(integrate( mesh, ufl.dot(gD - uh, gD - uh),    order=V.order*2 ))
+    errorl2[run_count] = np.sqrt(integrate( mesh, ufl.dot(gD - uh, gD - uh),    order=V.order*2 ))
     hmax = 0.
     for e in mesh.elements:
-        vol = sqrt(e.geometry.volume)
+        vol = np.sqrt(e.geometry.volume)
         hmax = max(hmax, vol)
 
     hsizes[run_count] = hmax
