@@ -37,7 +37,7 @@ DUNEVERSION=
 
 FLAGS="-O3 -DNDEBUG -funroll-loops -finline-functions -Wall -ftree-vectorize -fno-stack-protector -mtune=native"
 
-DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid"
+DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid dune-localfunctions"
 DUNEEXTMODULES="dune-alugrid dune-spgrid"
 DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
 
