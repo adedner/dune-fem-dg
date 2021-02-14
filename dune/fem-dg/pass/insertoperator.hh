@@ -7,8 +7,8 @@
 #include <type_traits>
 
 #include <dune/common/tupleutility.hh>
-#include <dune/common/shared_ptr.hh>
 
+#include <dune/fem/common/memory.hh>
 #include <dune/fem/operator/common/operator.hh>
 
 #include <dune/fem-dg/pass/pass.hh>
@@ -106,7 +106,7 @@ namespace Dune
       InsertOperatorPass ( const typename OperatorType::RangeFunctionType::DiscreteFunctionSpaceType &space,
                            const OperatorType &op, PreviousPassType &pass )
         : BaseType( pass ),
-          space_( Dune::stackobject_to_shared_ptr( space ) ),
+          space_( Dune::Fem::referenceToSharedPtr( space ) ),
           operator_( op )
       {}
 
