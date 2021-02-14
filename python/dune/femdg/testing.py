@@ -14,10 +14,16 @@ def run(Model, Stepper=None,
         primitive=None, saveStep=None, subsamp=0,
         dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
         codegen=True,
-        parameters={},
+        parameters=None,
         modifyModel=None):
+
+    # if no parameters is passed set default Runge-Kutta order to be p+1
+    rkOrder = None
+    if parameters is None or not 'fem.ode.order' in parameters:
+        rkOrder = polOrder+1
+
     if Stepper is None:
-        Stepper = femdgStepper(parameters=parameters)
+        Stepper = femdgStepper(order=rkOrder,parameters=parameters)
     try:
         exact = Model.exact
     except:
