@@ -217,12 +217,20 @@ def femDGOperator(Model, space,
             limiter = "minmod"
             limiterstr = limiter if space.grid.type.isSimplex else "lp"
             # force default values for how reconstruction is done
-            parameters["femdg.limiter.admissiblefunctions"] = "default"
+            if parameters is None:
+                from dune.fem import parameter
+                parameter.append({"femdg.limiter.admissiblefunctions":"default"})
+            else:
+                parameters["femdg.limiter.admissiblefunctions"] = "default"
 
     if limiter.lower() == "lp":
         limiter = "minmod"
         # force default values for how reconstruction is done
-        parameters["femdg.limiter.admissiblefunctions"] = "lp"
+        if parameters is None:
+            from dune.fem import parameter
+            parameter.append({"femdg.limiter.admissiblefunctions":"lp"})
+        else:
+            parameters["femdg.limiter.admissiblefunctions"] = "lp"
 
     if limiter.lower() == "scaling":
         # check for scaling limiter interface
