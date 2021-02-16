@@ -48,15 +48,14 @@ namespace Fem
     void deleteCommunicatedDofs( DiscreteFunctionType& df ) const
     {
 #if HAVE_MPI
-      typedef typename BaseType :: SlaveDofsType  SlaveDofsType;
-      const SlaveDofsType& slaves = this->slaveDofs();
+      const auto& auxiliaryDofs = this->auxiliaryDofs();
 
-      // don't delete the last since this is the overall Size
-      const int slaveSize = slaves.size() - 1;
-      for(int slave = 0; slave<slaveSize; ++slave)
+      // don't delete the last since this is the overall size
+      const int auxiliarySize = auxiliaryDofs.size() - 1;
+      for(int auxiliary = 0; auxiliary<auxiliarySize; ++auxiliary)
       {
         typedef typename DiscreteFunctionType :: DofBlockPtrType DofBlockPtrType;
-        DofBlockPtrType block = df.block( slaves[ slave ] );
+        DofBlockPtrType block = df.block( auxiliaryDofs[ auxiliary ] );
         const int blockSize = DiscreteFunctionType :: DiscreteFunctionSpaceType :: localBlockSize ;
         for(int l = 0; l<blockSize; ++l )
           (*block)[ l ] = 0;
