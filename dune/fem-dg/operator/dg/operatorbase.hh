@@ -155,8 +155,7 @@ namespace Fem
       , model_( model )
       , numFlux_( numFlux )
       , space_( gridPart_ )
-      , discreteModel_( model_, numFlux_,
-                        DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
+      , discreteModel_( model_, numFlux_, DiffusionFluxType( gridPart_, model_, parameter ) )
       , previousPass_( InsertFunctionsType::createPass( tuple ) )
       , pass1_( discreteModel_, *previousPass_, space_ )
       , counter_(0)
