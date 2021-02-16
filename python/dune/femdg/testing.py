@@ -170,7 +170,7 @@ def run(Model, Stepper=None,
         except:
             u = exact(grid,t)
         tc.value = t
-        grid.writeVTK(Model.name, subsampling=subsamp,
+        grid.writeVTK(Model.name+'-final', subsampling=subsamp,
                 celldata=[u_h], pointdata={"exact":u})
         # TODO make the gridfunctions from dune-python work nicely with ufl...
         # error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
@@ -181,7 +181,7 @@ def run(Model, Stepper=None,
             error = 0
             pass
     elif Model.name is not None:
-        grid.writeVTK(Model.name, subsampling=subsamp, celldata=[u_h])
+        grid.writeVTK(Model.name+'-final', subsampling=subsamp, celldata=[u_h])
         error = integrate( grid, dot(u_h,u_h), order=5 )
     error = math.sqrt(error)
     print("*************************************")
