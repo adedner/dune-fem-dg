@@ -409,7 +409,6 @@ def ssp3(stages,explicit=True):
     if explicit:
         return lambda op,cfl=None: ExplSSP3(stages,op,cfl)
     else:
-        print("Create implssp3")
         return lambda op,cfl=None: ImplSSP3(stages,op,cfl)
 
 class ExplSSP4_10:
