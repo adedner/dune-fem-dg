@@ -111,22 +111,19 @@ class HelmholtzShuOsher:
         # x = self.op.space.function("tmp", dofVector=x_coeff)
         self.x.as_numpy[:] = x_coeff[:]
         self.op(self.x, self.res)
-        # compute alpha*res -x + rhs (by calling routines on discrete functions)
-        self.res *= self.alpha
-        self.res -= self.x
-        self.res += self.rhs
         # needs speedup, e.g.
         # - 2011: https://technicaldiscovery.blogspot.com/2011/06/speeding-up-python-numpy-cython-and.html
-        #try:
-        #    import numpy, numexpr
-        #    a = numpy.array([self.alpha])
-        #    res = self.res.as_numpy
-        #    rhs = self.rhs.as_numpy
-        #    self.res.as_numpy[:] = numexpr.evaluate('a*res-x_coeff+rhs')
-        #except ModuleNotFoundError:
-        #    self.res.as_numpy[:] *= self.alpha
-        #    self.res.as_numpy[:] -= x_coeff[:]
-        #    self.res.as_numpy[:] += self.rhs.as_numpy[:]
+        try:
+            import numexpr, numpy
+            a = numpy.array([self.alpha])
+            res = self.res.as_numpy
+            rhs = self.rhs.as_numpy
+            self.res.as_numpy[:] = numexpr.evaluate('a*res-x_coeff+rhs')
+        except ModuleNotFoundError:
+            # compute alpha*res -x + rhs (by calling routines on discrete functions)
+            self.res *= self.alpha
+            self.res -= self.x
+            self.res += self.rhs
         return self.res.as_numpy
 
     def solve(self,rhs,target):
