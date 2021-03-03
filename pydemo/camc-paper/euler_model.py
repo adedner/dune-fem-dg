@@ -76,6 +76,7 @@ def model(problem, dim=2, **kwargs):
             return as_vector([U[0],*mref,U[3]])
         Model.boundary = {3: lambda t,x,U: reflect(U,[0,-1]),
                           4: lambda t,x,U: reflect(U,[0,1])}
+
         Model.domain = (reader.dgf, "kh.dgf")
         Model.endTime = 1.5
 

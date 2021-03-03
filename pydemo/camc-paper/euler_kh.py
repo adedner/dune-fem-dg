@@ -50,9 +50,12 @@ elif grid == "naffine":
     from dune.alugrid import aluCubeGrid as grid
     Model.domain = (reader.dgf, "shockvortex_naffine.dgf")
 elif grid == "poly":
-    from dune.polygongrid import polygonGrid as gridPoly
+    try:
+        from dune.polygongrid import polygonGrid as gridPoly
+    except ModuleNotFoundError:
+        assert("dune-polygongrid not found, select other grid or install dune-polygongrid!")
+
     Model.domain = (reader.dgf, "shockvortex_poly.dgf")
-    Model.boundary = Model.polyBoundary
     grid = lambda domain, dimgrid: gridPoly( Model.domain, dualGrid=True )
 
 from dune.fem.view import adaptiveLeafGridView as view
