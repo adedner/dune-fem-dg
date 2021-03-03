@@ -238,8 +238,8 @@ def femDGOperator(Model, space,
             raise KeyError(\
               "femDGOperator: ScalingLimiter selected but scaling limiter interface (lowerBound,upperBound,physical) missing in Model!\n")
     elif limiter.lower() != "unlimited":
-        # check for scaling limiter interface
-        if not hasScalingInterface:
+        # check for limiter interface
+        if not hasLimiterInterface:
             raise KeyError(\
               "femDGOperator: MUSCL type stabilization selected but limiter interface (jump,velocity,physical) missing in Model!\n")
 
