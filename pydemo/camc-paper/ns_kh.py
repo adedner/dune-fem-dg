@@ -44,10 +44,10 @@ elif grid == "naffine":
     from dune.alugrid import aluCubeGrid as grid
     Model.domain = (reader.dgf, "shockvortex_naffine.dgf")
 elif grid == "poly":
-try:
-    from dune.polygongrid import polygonGrid as gridPoly
-except ModuleNotFoundError:
-    assert("dune-polygongrid not found, select other grid or install dune-polygongrid!")
+    try:
+        from dune.polygongrid import polygonGrid as gridPoly
+    except:
+        print("dune-polygongrid not found, select other grid or install dune-polygongrid!")
 
     Model.domain = (reader.dgf, "shockvortex_poly.dgf")
     Model.boundary = Model.polyBoundary

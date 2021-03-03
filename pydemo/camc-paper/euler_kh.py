@@ -52,8 +52,8 @@ elif grid == "naffine":
 elif grid == "poly":
     try:
         from dune.polygongrid import polygonGrid as gridPoly
-    except ModuleNotFoundError:
-        assert("dune-polygongrid not found, select other grid or install dune-polygongrid!")
+    except:
+        print("dune-polygongrid not found, select other grid or install dune-polygongrid!")
 
     Model.domain = (reader.dgf, "shockvortex_poly.dgf")
     grid = lambda domain, dimgrid: gridPoly( Model.domain, dualGrid=True )
