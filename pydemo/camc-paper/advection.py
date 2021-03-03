@@ -18,7 +18,6 @@ problem = args.problem
 from dune.alugrid import aluCubeGrid as aluGrid
 from dune.grid import reader, cartesianDomain
 from dune.fem.view import adaptiveLeafGridView as view
-from dune.polygongrid import polygonGrid
 
 import dune.fem
 dune.fem.parameter.append({"fem.verboserank":0})
@@ -91,6 +90,7 @@ if problem == 6:
 
 ##################
 
+#from dune.polygongrid import polygonGrid
 # domain = (reader.dgf, "triangle.dgf")
 # gridView = view( polygonGrid( domain, dualGrid=True ) )
 # parameters["femdg.limiter.admissiblefunctions"]=3
