@@ -1,7 +1,12 @@
 import os
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument('problem', type=int)
+parser.add_argument('problem', type=int,
+        help="""
+        Possible choices for problem: \n
+        1 = without limiting | 2 = minmod | 3 = minmod & physical |
+        4 = scaling | 5 = adaptive without limiting | 6 = adaptive and limiting
+        """)
 parser.add_argument
 parser.parse_args()
 try:
@@ -17,7 +22,6 @@ from dune.polygongrid import polygonGrid
 
 import dune.fem
 dune.fem.parameter.append({"fem.verboserank":0})
-# dune.fem.parameter.append({"fem.parallel.numberofthreads":8})
 
 from advection_model import model
 from evolve import evolve

@@ -2,14 +2,15 @@ import os, sys
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument('level', type=int)
-parser.add_argument('--space', type=str, default="onb")
-parser.add_argument('--stepper', type=str, default="ssp3")
-parser.add_argument('--dim',   type=int, default=2)
-parser.add_argument('--order', type=int, default=4)
-parser.add_argument('--grid',  type=str, default="cube")
-parser.add_argument('--out',   type=int, default=50)
-parser.add_argument('--modal', type=str, default='')
+parser.add_argument('level', type=int, help="max refinement level (negative means non-adaptive)")
+parser.add_argument('--space', type=str, default="onb",
+        help="onb|legendre|lagrange|equidistant|lobatto|gauss")
+parser.add_argument('--stepper', type=str, default="ssp3",help="ssp2|ssp3|femdg (default: ssp3)")
+parser.add_argument('--dim',   type=int, default=2, help="2|3 (default: 2)")
+parser.add_argument('--order', type=int, default=4,help="[0,...,8] (default: 4)")
+parser.add_argument('--grid',  type=str, default="cube", help="cube|simplex|naffine|poly (default: cube)")
+parser.add_argument('--out',   type=int, default=50,help="number of output steps (default: 50)")
+parser.add_argument('--modal', type=str, default='',help="switch on modal limiter")
 parser.add_argument
 parser.parse_args()
 try:

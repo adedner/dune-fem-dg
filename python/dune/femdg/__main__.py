@@ -17,8 +17,8 @@ rm -rf tmp
 '''
 subprocess.check_output(commands, shell=True)
 
-print("############################################################")
-print("## The tutorial is now located in the 'femdg_tutorial' folder.")
+print("###################################################################")
+print("## The tutorial is now located in the 'femdg_tutorial' folder. ")
 try:
     import matplotlib
 except ImportError:
@@ -27,4 +27,4 @@ try:
     import scipy
 except ImportError:
     print("## Note: some of the examples require the installation of 'scipy'.")
-print("############################################################")
+print("###################################################################")

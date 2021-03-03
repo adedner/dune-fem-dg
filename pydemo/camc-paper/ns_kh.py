@@ -2,13 +2,13 @@ import os, sys
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument('level', type=int)
-parser.add_argument('--space', type=str, default="onb")
-parser.add_argument('--stepper', type=str, default="femdg")
-parser.add_argument('--order', type=int, default=4)
-parser.add_argument('--grid',  type=str, default="cube")
-parser.add_argument('--out',   type=int, default=100)
-parser.add_argument('--mu',   type=float, default=0.001)
+parser.add_argument('level', type=int, help="max refinement level (negative means non-adaptive)")
+parser.add_argument('--space', type=str, default="onb", help="onb|legendre|lagrange|equidistant|lobatto|gauss")
+parser.add_argument('--stepper', type=str, default="ssp3",help="ssp2|ssp3|femdg (default: femdg)")
+parser.add_argument('--order', type=int, default=4,help="[0,...,8] (default: 4)")
+parser.add_argument('--grid',  type=str, default="cube", help="cube|simplex|naffine|poly (default: cube)")
+parser.add_argument('--out',   type=int, default=100,help="number of output steps (default: 100)")
+parser.add_argument('--mu',   type=float, default=0.001, help="viscosity parameter mu (default: 0.001)")
 parser.add_argument
 parser.parse_args()
 try:
