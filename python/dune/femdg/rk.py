@@ -212,6 +212,27 @@ class Heun(RungeKutta):
 # reimplemented here.
 # A lot about DIRK - worth looking into more closely
 # https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20160005923.pdf
+
+class ExplEuler(RungeKutta):
+    def __init__(self, op, cfl=None):
+        A = [[0.]]
+        b = [1.]
+        c = [0.]
+        cfl = 0.45 if cfl is None else cfl
+        RungeKutta.__init__(self,op,cfl,A,b,c)
+class ImplEuler(RungeKutta):
+    def __init__(self, op, cfl=None):
+        A = [[1.]]
+        b = [1]
+        c = [1.]
+        cfl = 0.45 if cfl is None else cfl
+        RungeKutta.__init__(self,op,cfl,A,b,c)
+def euler(explicit=True):
+    if explicit:
+        return lambda op,cfl=None: ExplEuler(op,cfl)
+    else:
+        return lambda op,cfl=None: ImplEuler(op,cfl)
+
 class Midpoint(RungeKutta):
     def __init__(self, op, cfl=None):
         A = [[0.5]]
