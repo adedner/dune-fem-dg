@@ -390,12 +390,12 @@ namespace Fem
       , limitTime_( 0 )
       , computeTime_( 0 )
       , name_( name )
-      , verbose_( Dune::Fem::Parameter::verbose() ) // ||parameter.verbose() )
+      , verbose_( Dune::Fem::Parameter::verbose() ) // && parameter.verbose() )
     {
     }
 
     virtual ~DGLimitedAdvectionOperator() {
-      if( verbose_ )
+      if( verbose_ && counter_ > 0 )
         std::cout << "~DGLimitedAdvectionOperator("<<name_<<"): op calls = " << counter_ << " T_l = " << limitTime_ << "  T_op = " << computeTime_ << std::endl;
     }
 

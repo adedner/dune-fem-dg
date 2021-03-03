@@ -529,11 +529,13 @@ namespace Dune
 # RungeKutta solvers
 def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
 
-    includes = ["dune/fem-dg/solver/rungekuttasolver.hh", "dune/fem-dg/misc/algorithmcreatorselector.hh"]
-    includes += fullOperator._includes
-
     space = fullOperator.domainSpace
     spaceType = space._typeName
+
+    # only need space includes since we use basic operator type
+    includes = ["dune/fem-dg/solver/rungekuttasolver.hh"] # , "dune/fem-dg/misc/algorithmcreatorselector.hh"]
+    #includes += fullOperator._includes
+    includes += space._includes
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
 
