@@ -45,7 +45,7 @@ DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
 # change according to your needs
 if test -f config.opts ; then
   read -p "Found config.opts. Overwrite with default? (y,n) " YN
-  if [ "$YN" != "y" ] ;then
+  if [ "$YN" == "y" ] ;then
     echo "Overwriting config.opts!"
     rm -f config.opts
   fi
@@ -72,35 +72,70 @@ if [ "$FOUND_DUNE_ACTIVATE" == "" ]; then
 echo "
 ## DUNE_VENV_SPECIFIC_SETUP
 
-# set current main working directory
-export DUNE_CONTROL_PATH=\${PWD}
+# setVariable( varname newvalue )
+setVariable() {
+  if [ -n \"\${!1}\" ]; then
+    export _OLD_VIRTUAL_\${1}=\${!1}
+  fi
+  export \${1}=\"\${2}\"
+}
 
-#source \$DUNE_CONTROL_PATH/dune-venv/bin/activate
+# set current main working directory
+setVariable DUNE_CONTROL_PATH \$PWD
+setVariable DUNE_LOG_LEVEL \"info\"
 
 # defines CMAKE_FLAGS
 source \${DUNE_CONTROL_PATH}/config.opts
 
-# critical, debug, info, none
-export DUNE_LOG_LEVEL=info
-export DUNE_LOG_FORMAT='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+setVariable DUNE_PY_DIR \${DUNE_CONTROL_PATH}/cache/
+setVariable DUNE_CMAKE_FLAGS \"\$CMAKE_FLAGS\"
 
-export DUNE_PY_DIR=\${DUNE_CONTROL_PATH}/cache/
-
-export DUNE_CMAKE_FLAGS="\${CMAKE_FLAGS}"
-
+DUNEPYTHONPATH=
 MODULES=\`\$DUNE_CONTROL_PATH/dune-common/bin/dunecontrol --print 2> /dev/null\`
 for MOD in \$MODULES; do
   MODPATH=\"\${PWD}/\${MOD}/build-cmake/python\"
-  MODFOUND=\`echo \$PYTHONPATH | grep \$MODPATH\`
+  MODFOUND=\`echo \$DUNEPYTHONPATH | grep \$MODPATH\`
   if [ \"\$MODFOUND\" == \"\" ]; then
-    export PYTHONPATH=\$PYTHONPATH:\$MODPATH
+    DUNEPYTHONPATH=\$DUNEPYTHONPATH:\$MODPATH
   fi
 done
+
+setVariable PYTHONPATH \$DUNEPYTHONPATH
 
 echo \"DUNE_LOG_LEVEL=\$DUNE_LOG_LEVEL\"
 echo \"Change with 'export DUNE_LOG_LEVEL={none,critical,info,debug}' if necessary!\"
 
 # python \$DUNE_CONTROL_PATH/dune-common/bin/setup-dunepy.py
+save_function() {
+    local ORIG_FUNC=\$(declare -f \$1)
+    local NEWNAME_FUNC=\"\$2\${ORIG_FUNC#\$1}\"
+    eval \"\$NEWNAME_FUNC\"
+}
+
+restoreVariable() {
+  VARNAME=_OLD_VIRTUAL_\$1
+  if [ -n \"\${!VARNAME}\" ]; then
+    export \${1}=\${!VARNAME}
+    unset \${VARNAME}
+  else
+    unset \${1}
+  fi
+}
+
+save_function deactivate venv_deactivate
+deactivate() {
+  restoreVariable DUNE_CONTROL_PATH
+  restoreVariable DUNE_PY_DIR
+  restoreVariable DUNE_CMAKE_FLAGS
+  restoreVariable DUNE_LOG_LEVEL
+  restoreVariable PYTHONPATH
+
+  # call original deactivate
+  venv_deactivate
+  # self destroy
+  unset venv_deactivate
+  unset deactivate
+}
 " >> $WORKDIR/dune-venv/bin/activate
 #> activate.sh
 fi
