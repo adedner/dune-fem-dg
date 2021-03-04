@@ -105,8 +105,8 @@ def evolve(gridView, order, Model, outName,
     maxSize  = gridView.comm.sum( operator.gridSizeInterior() )
     print(maxSize)
     maxSize *= 2**(gridView.dimension*maxLevel)
-    print(maxSize)
-    maxSize = 51200
+    #print(maxSize)
+    #maxSize = 51200
 
     minMax = lambda U_h: None
     if limiter == "scaling":
