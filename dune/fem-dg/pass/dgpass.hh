@@ -181,7 +181,6 @@ namespace Fem
         minLimit_(2.0*std::numeric_limits<double>::min()),
         volumeQuadOrd_( volumeQuadOrd ),
         faceQuadOrd_( faceQuadOrd ),
-        numberOfElements_( 0 ),
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
         localMassMatrix_( InverseMassProviderType :: getObject( MassKeyType( gridPart_ ) ) ),
 #else
@@ -338,7 +337,7 @@ namespace Fem
       arg_ = const_cast<ArgumentType*>(&arg);
       dest_ = &dest;
 
-      numberOfElements_ = 0;
+      this->numberOfElements_ = 0;
 
       if( firstThread && dest_ )
       {
@@ -391,11 +390,6 @@ namespace Fem
     virtual void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
       doFinalize( dest, true );
-    }
-
-    size_t numberOfElements() const
-    {
-      return numberOfElements_;
     }
 
     //! this pass needs communication only when hasFlux on discrete model is true
@@ -528,7 +522,7 @@ namespace Fem
                          const bool alsoSetEntity = false ) const
     {
       // increase element counter
-      ++numberOfElements_ ;
+      ++this->numberOfElements_ ;
 
       const bool hasSource = discreteModel_.hasSource();
       const bool hasMass   = discreteModel_.hasMass();
@@ -1025,7 +1019,6 @@ namespace Fem
     const double minLimit_;
 
     const int volumeQuadOrd_, faceQuadOrd_;
-    mutable size_t numberOfElements_ ;
     LocalMassMatrixStorageType localMassMatrix_;
     mutable bool reallyCompute_;
   };

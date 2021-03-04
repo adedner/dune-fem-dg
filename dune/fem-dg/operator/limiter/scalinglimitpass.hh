@@ -263,18 +263,15 @@ namespace Fem
         // prepare, i.e. set argument and destination
         prepare(arg, dest);
 
-        elementCounter_ = 0;
         // do limitation
         const auto endit = spc_.end();
         for( auto it = spc_.begin(); (it != endit); ++it )
         {
           // for initialization of thread passes for only a few iterations
-          if( elementCounter_ > breakAfter) break;
           const auto& en = *it;
           Dune::Timer localTime;
           applyLocalImp(en);
           stepTime_[2] += localTime.elapsed();
-          ++elementCounter_;
         }
 
         // finalize
@@ -463,11 +460,6 @@ namespace Fem
       return tmp;
     }
 
-    size_t numberOfElements() const
-    {
-      return elementCounter_;
-    }
-
     //! In the preparations, store pointers to the actual arguments and
     //! destinations. Filter out the "right" arguments for this pass.
     void prepare(const ArgumentType& arg, DestinationType& dest) const
@@ -488,6 +480,8 @@ namespace Fem
                      DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::assign( U , dest, firstThread );
 
       limitedElements_ = 0;
+      this->numberOfElements_ = 0;
+
       discreteModel_.clearIndicator();
 
       arg_ = const_cast<ArgumentType*>(&arg);
@@ -614,6 +608,8 @@ namespace Fem
 
       // check argument is not zero
       assert( arg_ );
+
+      ++this->numberOfElements_;
 
       //- statements
       // set entity to caller
@@ -915,7 +911,6 @@ namespace Fem
     //! true if grid is cartesian like
     mutable int limitedElements_;
     mutable std::vector<double> stepTime_;
-    mutable size_t elementCounter_;
 
   }; // end DGLimitPass
 

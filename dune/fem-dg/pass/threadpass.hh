@@ -239,7 +239,6 @@ namespace Fem
       firstStage_( false ),
       arg_(0), dest_(0),
       nonBlockingComm_(),
-      numberOfElements_( 0 ),
       volumeQuadOrd_( volumeQuadOrd ),
       faceQuadOrd_( faceQuadOrd ),
       firstCall_( true ),
@@ -450,12 +449,6 @@ namespace Fem
     using BaseType::receiveCommunication;
     using BaseType::space;
 
-    //! return number of elements visited on last application
-    size_t numberOfElements () const
-    {
-      return numberOfElements_;
-    }
-
     //! switch upwind direction
     void switchUpwind()
     {
@@ -467,8 +460,8 @@ namespace Fem
     //! overload compute method to use thread iterators
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
-      // reset number of elements
-      numberOfElements_ = 0;
+      // reset number of elements (see LocalPass)
+      this->numberOfElements_ = 0;
 
       // set time for all passes, this is used in prepare of pass
       // and therefore has to be done before prepare is called
@@ -553,7 +546,7 @@ namespace Fem
         for(int i=0; i<maxThreads; ++i )
         {
           // get number of elements
-          numberOfElements_ += pass( i ).numberOfElements();
+          this->numberOfElements_ += pass( i ).numberOfElements();
 
           if( sumComputeTime_ )
           {
@@ -763,7 +756,6 @@ namespace Fem
     // non-blocking communication handler
     NonBlockingCommHandleType nonBlockingComm_;
 
-    mutable size_t numberOfElements_;
     const int volumeQuadOrd_;
     const int faceQuadOrd_;
     mutable bool firstCall_;

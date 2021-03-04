@@ -599,18 +599,16 @@ namespace Fem
         // prepare, i.e. set argument and destination
         prepare(arg, dest);
 
-        elementCounter_ = 0;
         // do limitation
         const auto endit = spc_.end();
         for( auto it = spc_.begin(); (it != endit); ++it )
         {
           // for initialization of thread passes for only a few iterations
-          //if( elementCounter_ > breakAfter) break;
           const auto& entity = *it;
           Dune::Timer localTime;
           applyLocalImp( entity );
           stepTime_[2] += localTime.elapsed();
-          ++elementCounter_;
+          ++this->numberOfElements_;
         }
 
         // finalize
@@ -689,11 +687,6 @@ namespace Fem
       return tmp;
     }
 
-    size_t numberOfElements() const
-    {
-      return elementCounter_;
-    }
-
     //! In the preparations, store pointers to the actual arguments and
     //! destinations. Filter out the "right" arguments for this pass.
     void prepare(const ArgumentType& arg, DestinationType& dest) const
@@ -736,6 +729,7 @@ namespace Fem
 
       limitedElements_ = 0;
       notPhysicalElements_ = 0;
+      this->numberOfElements_ = 0;
 
       arg_ = const_cast<ArgumentType*>(&arg);
       dest_ = &dest;
@@ -1881,7 +1875,6 @@ namespace Fem
     const bool cartesianGrid_;
     mutable int limitedElements_, notPhysicalElements_;
     mutable std::vector<double> stepTime_;
-    mutable size_t elementCounter_;
 
     //! true if troubled cell indicator should be calculated
     mutable bool calcIndicator_;
