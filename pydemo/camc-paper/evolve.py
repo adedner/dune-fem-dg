@@ -152,7 +152,6 @@ def evolve(gridView, order, Model, outName,
             un.assign(U_h)
 
         operator.setTime(t)
-        minMax( U_h )
         dt = stepper(U_h)
         timeSteps += 1
 
