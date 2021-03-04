@@ -27,7 +27,7 @@ if ! test -d $WORKDIR/dune-venv ; then
   python3 -m venv $WORKDIR/dune-venv
   source $WORKDIR/dune-venv/bin/activate
   pip install --upgrade pip
-  pip install $CMAKEPIP ufl numpy matplotlib mpi4py
+  pip install $CMAKEPIP fenics-ufl numpy matplotlib mpi4py
 else
   source $WORKDIR/dune-venv/bin/activate
 fi
