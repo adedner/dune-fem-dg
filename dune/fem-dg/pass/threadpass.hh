@@ -252,10 +252,12 @@ namespace Fem
 
       // initialize thread pass here since it otherwise fails when parameters
       // are passed from the Python side
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i)
       {
-        createInnerPass( i, i == 0 );
+        const int maxThreads = Fem::ThreadManager::maxThreads();
+        for(int i=0; i<maxThreads; ++i)
+        {
+          createInnerPass( i, i == 0 );
+        }
       }
 
       /*
@@ -267,12 +269,14 @@ namespace Fem
       */
 
 #ifndef NDEBUG
-      // check that all objects have been created
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i)
       {
-        assert( discreteModels_[ i ] );
-        assert( passes_[ i ] );
+        // check that all objects have been created
+        const int maxThreads = Fem::ThreadManager::maxThreads();
+        for(int i=0; i<maxThreads; ++i)
+        {
+          assert( discreteModels_[ i ] );
+          assert( passes_[ i ] );
+        }
       }
 
       if( Fem :: Parameter :: verbose() )
