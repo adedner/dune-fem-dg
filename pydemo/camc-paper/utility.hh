@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <limits>
 #include <dune/common/fvector.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/fem/space/shapefunctionset/orthonormal.hh>
@@ -67,6 +68,6 @@ int minMax( const DiscreteFunction& solution )
   if( minVal[ 0 ] < 0 )
     return -1;
   if( isNan )
-    return 1e308;
+    return std::numeric_limits< int >::max();
   return 0;
 }
