@@ -216,7 +216,6 @@ namespace Fem
       if( elem == 0 )
       {
         const auto end = space_.end();
-        size_t elem = 0;
         for( auto it = space_.begin(); it != end; ++it, ++elem );
       }
       return elem;
