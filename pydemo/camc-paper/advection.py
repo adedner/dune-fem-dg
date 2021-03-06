@@ -1,4 +1,8 @@
 import os
+
+# set number of threads to be used for thread parallel version
+os.environ['OMP_NUM_THREADS'] = '4'
+
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('problem', type=int,
@@ -31,13 +35,14 @@ domain = (reader.dgf, "unitsquare.dgf")
 os.makedirs("advection", exist_ok=True)
 
 ##################
+threading=True
 
 if problem == 1:
     gridView = view( aluGrid( domain, dimgrid=2 ) )
     gridView.hierarchicalGrid.globalRefine(3)
     evolve(gridView, order, Model, "advection/none",
            space="onb", limiter=None,
-           maxLevel=-1, threading=False, codegen=True, outputs=5)
+           maxLevel=-1, threading=threading, codegen=True, outputs=5)
 
 ##################
 
@@ -45,7 +50,7 @@ if problem == 2:
     gridView = view( aluGrid( domain, dimgrid=2 ) )
     gridView.hierarchicalGrid.globalRefine(3)
     evolve(gridView, order, Model, "advection/minmod",
-           space="onb", maxLevel=-1, threading=False, codegen=True, outputs=5)
+           space="onb", maxLevel=-1, threading=threading, codegen=True, outputs=5)
 
 if problem == 3:
     from ufl import conditional
@@ -58,7 +63,7 @@ if problem == 3:
     gridView.hierarchicalGrid.globalRefine(3)
     evolve(gridView, order, Model, "advection/physical",
            space="lobatto", limiter="lp",
-           maxLevel=-1, threading=False, codegen=True, outputs=5)
+           maxLevel=-1, threading=threading, codegen=True, outputs=5)
 
 if problem == 4:
     from ufl import conditional
@@ -71,7 +76,7 @@ if problem == 4:
     evolve(gridView, order, Model, "advection/scaling",
            #space="lobatto", limiter="scaling",
            space="legendre", limiter="scaling",
-           maxLevel=-1, threading=False, codegen=True, outputs=5)
+           maxLevel=-1, threading=threading, codegen=True, outputs=5)
 
 ##################
 

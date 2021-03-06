@@ -252,21 +252,22 @@ namespace Fem
 
       // initialize thread pass here since it otherwise fails when parameters
       // are passed from the Python side
+#if 1
+      // initialize each thread pass by the thread itself to avoid NUMA effects
       {
+        // see threadhandle.hh
+        Fem :: ThreadHandle :: runLocked( *this );
+      }
+#else
+      {
+        // fall back if the above does not work
         const int maxThreads = Fem::ThreadManager::maxThreads();
         for(int i=0; i<maxThreads; ++i)
         {
           createInnerPass( i, i == 0 );
         }
       }
-
-      /*
-      // initialize each thread pass by the thread itself to avoid NUMA effects
-      {
-        // see threadhandle.hh
-        Fem :: ThreadHandle :: runLocked( *this );
-      }
-      */
+#endif
 
 #ifndef NDEBUG
       {
