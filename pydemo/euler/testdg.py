@@ -1,5 +1,7 @@
-# import mpi4py.rc
-# mpi4py.rc.threaded = False
+import os
+
+# set number of threads to be used for thread parallel version
+os.environ['OMP_NUM_THREADS'] = '4'
 
 from dune.fem import parameter
 from dune.femdg.testing import run
@@ -14,6 +16,7 @@ dim = 2
 gamma = 1.4
 
 parameter.append({"fem.verboserank": -1})
+#parameter.append({"fem.threads.verbose": True})
 
 primitive=lambda Model,uh: {"pressure": Model.toPrim(uh)[2]}
 parameters = {"fem.ode.odesolver": "EX",
@@ -40,7 +43,7 @@ Model.exact = None
 run(Model,
     startLevel=0, polOrder=2, limiter="default",
     primitive=primitive, saveStep=0.16, subsamp=2,
-    dt=None,threading=False,grid="alucube", space="dgonb",
+    dt=None,threading=True,grid="alucube", space="dgonb",
     parameters=parameters)
 
 # print(str(parameter))
