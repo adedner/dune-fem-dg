@@ -7,6 +7,7 @@
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
+#include <dune/fem/quadrature/cornerpointset.hh>
 
 #include <dune/fem-dg/pass/pass.hh>
 
@@ -233,8 +234,8 @@ namespace Fem
       delDofs_( spc ),
       iterators_( spc.gridPart() ),
       singleDiscreteModel_( discreteModel ),
-      discreteModels_( Fem::ThreadManager::maxThreads(), nullptr ),
-      passes_( Fem::ThreadManager::maxThreads(), nullptr ),
+      discreteModels_( Fem::ThreadManager::maxThreads() ),
+      passes_( Fem::ThreadManager::maxThreads() ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
       firstStage_( false ),
       arg_(0), dest_(0),
@@ -247,21 +248,36 @@ namespace Fem
       sumComputeTime_( parameter.getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
       // initialize quadratures before entering multithread mode
-      initializeQuadratures( spc,  volumeQuadOrd, faceQuadOrd );
+      InnerPassType::initializeQuadratures( spc,  volumeQuadOrd, faceQuadOrd );
 
+      // initialize thread pass here since it otherwise fails when parameters
+      // are passed from the Python side
+#if 1
       // initialize each thread pass by the thread itself to avoid NUMA effects
       {
         // see threadhandle.hh
         Fem :: ThreadHandle :: runLocked( *this );
       }
+#else
+      {
+        // fall back if the above does not work
+        const int maxThreads = Fem::ThreadManager::maxThreads();
+        for(int i=0; i<maxThreads; ++i)
+        {
+          createInnerPass( i, i == 0 );
+        }
+      }
+#endif
 
 #ifndef NDEBUG
-      // check that all objects have been created
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i)
       {
-        assert( discreteModels_[ i ] );
-        assert( passes_[ i ] );
+        // check that all objects have been created
+        const int maxThreads = Fem::ThreadManager::maxThreads();
+        for(int i=0; i<maxThreads; ++i)
+        {
+          assert( discreteModels_[ i ] );
+          assert( passes_[ i ] );
+        }
       }
 
       if( Fem :: Parameter :: verbose() )
@@ -282,51 +298,7 @@ namespace Fem
       }
     }
 
-    static void initializeQuadratures( const DiscreteFunctionSpaceType& space, const int volQuadOrder, const int faceQuadOrder )
-    {
-      const auto& gridPart = space.gridPart();
-      for( const auto& entity : space )
-      {
-        // get quadrature for destination space order
-        VolumeQuadratureType quad0( entity, space.order() + 1 );
-
-        // get point quadrature
-        VolumeQuadratureType quad1( entity, 0 );
-
-        // get quadrature
-        VolumeQuadratureType quad2( entity, InnerPassType::defaultVolumeQuadratureOrder(space, entity) );
-
-        if( volQuadOrder >= 0 )
-        {
-          // get quadrature
-          VolumeQuadratureType quad3( entity, volQuadOrder );
-        }
-
-        const auto end = gridPart.iend( entity );
-        for( auto it = gridPart.ibegin( entity ); it != end; ++it )
-        {
-          const auto& intersection = *it ;
-          FaceQuadratureType interQuad0( gridPart, intersection, 0, FaceQuadratureType::INSIDE);
-          FaceQuadratureType interQuad1( gridPart, intersection,
-              InnerPassType::defaultFaceQuadratureOrder(space, entity), FaceQuadratureType::INSIDE);
-          if( faceQuadOrder >= 0 )
-          {
-            FaceQuadratureType interQuad2( gridPart, intersection, faceQuadOrder, FaceQuadratureType::INSIDE);
-          }
-        }
-
-        return ;
-      }
-    }
-
-    virtual ~ThreadPass ()
-    {
-      for(int i=0; i<Fem::ThreadManager::maxThreads(); ++i)
-      {
-        delete passes_[ i ];
-        delete discreteModels_[ i ];
-      }
-    }
+    virtual ~ThreadPass () {}
 
     template <class AdaptationType>
     void setAdaptation( AdaptationType& adHandle, double weight )
@@ -604,6 +576,29 @@ namespace Fem
     }
 
     //! parallel section of compute
+    void createInnerPass(const int thread, const bool isMainThread ) const
+    {
+      // initialization (called from constructor of this class)
+      if( ! passes_[ thread ] )
+      {
+        // use separate discrete discrete model for each thread
+        discreteModels_[ thread ].reset( new DiscreteModelType( singleDiscreteModel_ ));
+        const bool verbose = Dune::Fem::Parameter::verbose() && isMainThread;
+        if( parameter_ )
+        {
+          // create dg passes, the last bool disables communication in the pass itself
+          passes_[ thread ].reset(new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), *parameter_, volumeQuadOrd_, faceQuadOrd_, verbose ));
+        }
+        else
+        {
+          // create dg passes, the last bool disables communication in the pass itself
+          passes_[ thread ].reset(new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), volumeQuadOrd_, faceQuadOrd_, verbose ));
+        }
+
+      }
+    }
+
+    //! parallel section of compute
     void runThread() const
     {
       const int thread = Fem::ThreadManager::thread() ;
@@ -613,20 +608,7 @@ namespace Fem
       // initialization (called from constructor of this class)
       if( ! passes_[ thread ] )
       {
-        // use separate discrete discrete model for each thread
-        discreteModels_[ thread ] = new DiscreteModelType( singleDiscreteModel_ );
-        const bool verbose = Dune::Fem::Parameter::verbose() && Fem::ThreadManager::isMaster();
-        if( parameter_ )
-        {
-          // create dg passes, the last bool disables communication in the pass itself
-          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), *parameter_, volumeQuadOrd_, faceQuadOrd_, verbose );
-        }
-        else
-        {
-          // create dg passes, the last bool disables communication in the pass itself
-          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), volumeQuadOrd_, faceQuadOrd_, verbose );
-        }
-
+        createInnerPass( thread, Fem::ThreadManager::isMaster() );
         return ;
       }
 
@@ -744,8 +726,8 @@ namespace Fem
 
     mutable ThreadIteratorType iterators_;
     const DiscreteModelType& singleDiscreteModel_;
-    mutable std::vector< DiscreteModelType* > discreteModels_;
-    mutable std::vector< InnerPassType* > passes_;
+    mutable std::vector< std::unique_ptr< DiscreteModelType > > discreteModels_;
+    mutable std::vector< std::unique_ptr< InnerPassType > > passes_;
     mutable std::vector< double > passComputeTime_;
     mutable bool firstStage_;
 

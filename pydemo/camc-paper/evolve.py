@@ -36,7 +36,7 @@ def evolve(gridView, order, Model, outName,
            maxLevel=-1, startTime=0.,
            parameters={},
            stepper="femdg",
-           codegen=True, outputs=100, threading=False,
+           codegen=True, outputs=100, threading=True,
            **kwargs):
     isRank0 = gridView.comm.rank == 0
 
@@ -103,10 +103,7 @@ def evolve(gridView, order, Model, outName,
     operator.applyLimiter(U_h)
 
     maxSize  = gridView.comm.sum( operator.gridSizeInterior() )
-    print(maxSize)
     maxSize *= 2**(gridView.dimension*maxLevel)
-    #print(maxSize)
-    #maxSize = 51200
 
     minMax = lambda U_h: None
     if limiter == "scaling":

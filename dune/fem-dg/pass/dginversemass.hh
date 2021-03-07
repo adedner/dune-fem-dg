@@ -99,7 +99,9 @@ namespace Dune
         localMassMatrix_( space, [this](const int order) { return Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
         arg_( 0 ),
         dest_( 0 )
-      {}
+      {
+        initializeQuadratures( space, Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType>::volumeOrder(space.order() ) );
+      }
 
       //! constructor for use with thread pass
       explicit DGInverseMassPass ( const DiscreteModelType& discreteModel,
@@ -112,7 +114,10 @@ namespace Dune
             ( volQuadOrd == -1 ) ? Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order) : volQuadOrd; } ),
         arg_( 0 ),
         dest_( 0 )
-      {}
+      {
+        initializeQuadratures( space,
+            std::max( volQuadOrd, Capabilities::DefaultQuadrature<DiscreteFunctionSpaceType>::volumeOrder(space.order() ) ) );
+      }
 
       void printTexInfo ( std::ostream &out ) const
       {
@@ -182,6 +187,17 @@ namespace Dune
       void applyLocalProcessBoundary( const EntityType& entity, const NBChecker& ) const
       {
         DUNE_THROW(InvalidStateException,"DGInverseMassPass does not need a second phase for ThreadPass");
+      }
+
+      //! initialize all quadratures used in this Pass (for thread parallel runs)
+      static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
+                                         const int volQuadOrder  = -1,
+                                         const int faceQuadOrder = -1 )
+      {
+        std::vector< int > volQuadOrds  = {{ 0 }};
+        if( volQuadOrder > 0 ) volQuadOrds.push_back( volQuadOrder );
+        std::vector< int > faceQuadOrds;
+        BaseType::initializeQuadratures( space, volQuadOrds, faceQuadOrds );
       }
 
     protected:

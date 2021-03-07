@@ -181,8 +181,8 @@ namespace Fem
       // we need the flux here
       assert(problem.hasFlux());
 
-      // intialize volume quadratures, otherwise we run into troubles with the threading
-      initializeVolumeQuadratures( geoInfo_.geomTypes( 0 ) );
+      // initialize volume quadratures, otherwise we run into troubles with the threading
+      initializeQuadratures( spc_, volumeQuadOrd_ );
     }
 
     //! Destructor
@@ -697,7 +697,21 @@ namespace Fem
       //end limiting process
     }
 
+  public:
+    // called from ThreadPass to initialize quadrature singleton storages
+    static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
+                                       const int volQuadOrder  = -1,
+                                       const int faceQuadOrder = -1)
+    {
+      std::vector< int > volQuadOrds = {{ 0, space.order() + 1, space.order() * 2, volQuadOrder }};
+      if( volQuadOrder > 0 ) volQuadOrds.push_back( volQuadOrder );
+      std::vector< int > faceQuadOrds;
+      if( faceQuadOrder > 0 ) faceQuadOrds.push_back( faceQuadOrder );
+      BaseType::initializeQuadratures( space, volQuadOrds, faceQuadOrds );
+    }
+
   protected:
+
     // check physicality on given quadrature
     template <class QuadratureType, class LocalFunctionImp>
     bool checkPhysicalQuad(const QuadratureType& quad,
@@ -741,22 +755,6 @@ namespace Fem
 
       // solution is physical
       return physical;
-    }
-
-    void initializeVolumeQuadratures( const std::vector< GeometryType >& geomTypes ) const
-    {
-      for( size_t i=0; i<geomTypes.size(); ++ i )
-      {
-        const GeometryType& type = geomTypes[ i ];
-        // get quadrature for destination space order
-        VolumeQuadratureType quad0( type, spc_.order() + 1 );
-
-        // get point quadrature
-        VolumeQuadratureType quad1( type, 0 );
-
-        // get quadrature
-        VolumeQuadratureType quad2( type, 2*spc_.order() );
-      }
     }
 
     template <class BasisFunctionSetType, class PointType>

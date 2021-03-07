@@ -10,7 +10,7 @@ if [ "$DUNE_CONTROL_PATH" != "" ]; then
 fi
 
 # create necessary python virtual environment
-# this script assumes the name dune-venv.
+# this script assumes the name venv.
 # Otherwise copy the instructions from the script
 # to build you own
 
@@ -23,13 +23,14 @@ if awk 'BEGIN {exit !('$CMAKE_VERSION' < '$REQUIRED_VERSION')}'; then
 fi
 
 # create necessary python virtual environment
-if ! test -d $WORKDIR/dune-venv ; then
-  python3 -m venv $WORKDIR/dune-venv
-  source $WORKDIR/dune-venv/bin/activate
+VENVDIR=$WORKDIR/venv
+if ! test -d $VENVDIR ; then
+  python3 -m venv $VENVDIR
+  source $VENVDIR/bin/activate
   pip install --upgrade pip
   pip install $CMAKEPIP fenics-ufl numpy matplotlib mpi4py
 else
-  source $WORKDIR/dune-venv/bin/activate
+  source $VENVDIR/bin/activate
 fi
 
 #change appropriately, i.e. 2.8 or leave empty which refers to master
@@ -66,7 +67,7 @@ CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > config.opts
 fi
 
-FOUND_DUNE_ACTIVATE=`grep "DUNE_VENV_SPECIFIC_SETUP" $WORKDIR/dune-venv/bin/activate`
+FOUND_DUNE_ACTIVATE=`grep "DUNE_VENV_SPECIFIC_SETUP" $VENVDIR/bin/activate`
 
 if [ "$FOUND_DUNE_ACTIVATE" == "" ]; then
 echo "
@@ -75,7 +76,7 @@ echo "
 # setVariable( varname newvalue )
 setVariable() {
   if [ -n \"\${!1}\" ]; then
-    export _OLD_VIRTUAL_\${1}=\${!1}
+    export _OLD_VIRTUAL_\${1}=\"\${!1}\"
   fi
   export \${1}=\"\${2}\"
 }
@@ -136,7 +137,7 @@ deactivate() {
   unset venv_deactivate
   unset deactivate
 }
-" >> $WORKDIR/dune-venv/bin/activate
+" >> $VENVDIR/bin/activate
 #> activate.sh
 fi
 
@@ -167,14 +168,16 @@ for MOD in $DUNEFEMMODULES ; do
 done
 
 # load environment variables
-source dune-venv/bin/activate
+source $VENVDIR/bin/activate
 
 # build all DUNE modules using dune-control
 ./dune-common/bin/dunecontrol --opts=config.opts all
 python ./dune-common/bin/setup-dunepy.py
 
-echo "Build finished (hopefully successful). Use
+echo "####################################################
 
-source dune-venv/bin/activate
+Build finished (hopefully successful). Use
+
+source ./$VENVDIR/bin/activate
 
 to activate the virtual environment!"

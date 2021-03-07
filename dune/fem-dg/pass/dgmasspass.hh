@@ -224,6 +224,7 @@ namespace Dune
         // remove pointer
         finalize( argument, destination );
       }
+
     protected:
       template < class ConstLocalFunction, class LocalFunctionType >
       void multiplyBlock( const int dimRange,
@@ -434,6 +435,8 @@ namespace Dune
         arg_( 0 ),
         dest_( 0 )
       {
+        // initialize quadratures, otherwise we run into troubles with the threadi
+        initializeQuadratures( spc );
       }
 
       //! constructor for use with thread pass
@@ -447,6 +450,8 @@ namespace Dune
         arg_( 0 ),
         dest_( 0 )
       {
+        // initialize quadratures, otherwise we run into troubles with the threadi
+        initializeQuadratures( spc, volQuadOrd );
       }
 
       ~DGMassInverseMassPass() { MassInverseMassProviderType :: removeObject( massInverseMass_ ); }
@@ -519,6 +524,17 @@ namespace Dune
       void applyLocalProcessBoundary( const EntityType& entity, const NBChecker& ) const
       {
         DUNE_THROW(InvalidStateException,"DGInverseMassPass does not need a second phase for ThreadPass");
+      }
+
+      //! initialize all quadratures used in this Pass (for thread parallel runs)
+      static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
+                                         const int volQuadOrder  = -1,
+                                         const int faceQuadOrder = -1 )
+      {
+        std::vector< int > volQuadOrds  = {{ 0, 2*space.order() }};
+        if( volQuadOrder > 0 ) volQuadOrds.push_back( volQuadOrder );
+        std::vector< int > faceQuadOrds;
+        BaseType::initializeQuadratures( space, volQuadOrds, faceQuadOrds );
       }
 
     protected:

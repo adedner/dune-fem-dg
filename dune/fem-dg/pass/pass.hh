@@ -17,6 +17,7 @@
 #include <dune/fem/common/memory.hh>
 #include <dune/fem/common/tupleutility.hh>
 #include <dune/fem/operator/common/operator.hh>
+#include <dune/fem/space/common/allgeomtypes.hh>
 
 namespace Dune
 {
@@ -490,6 +491,68 @@ namespace Dune
 
         // accumulate time
         computeTime_ += timer.elapsed();
+      }
+
+      // called from ThreadPass to initialize quadrature singleton storages
+      static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
+                                         const int volQuadOrder  = -1,
+                                         const int faceQuadOrder = -1)
+      {
+        // do nothing here, should be overloaded in derived class if needed
+      }
+
+
+    protected:
+      //! initialize all quadratures used in this Pass (for thread parallel runs)
+      static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
+                                         const std::vector<int>& volQuadOrders,
+                                         const std::vector<int>& faceQuadOrders )
+      {
+        typedef typename DiscreteModelImp::Traits::VolumeQuadratureType VolumeQuadratureType;
+        typedef typename DiscreteModelImp::Traits::FaceQuadratureType   FaceQuadratureType;
+
+        typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+        typedef typename GridPartType :: IndexSetType IndexSetType;
+        typedef typename GridPartType :: GridType    GridType ;
+        typedef AllGeomTypes< IndexSetType, GridType> GeometryInformationType;
+
+        GeometryInformationType geomInfo( space.gridPart().indexSet() );
+        const std::vector< GeometryType >& elemTypes = geomInfo.geomTypes( 0 );
+        const bool singleGeomType = elemTypes.size() == 1;
+
+        // for all geometry types
+        for( const GeometryType& type : elemTypes )
+        {
+          for( const auto order : volQuadOrders )
+          {
+            // get quadrature for destination space order
+            VolumeQuadratureType quad( type, order );
+          }
+        }
+
+        const auto& gridPart = space.gridPart();
+        for( const auto& entity : space )
+        {
+          for( const auto order : volQuadOrders )
+          {
+            // get quadrature for destination space order
+            VolumeQuadratureType quad( entity, order );
+          }
+
+          const auto end = gridPart.iend( entity );
+          for( auto it = gridPart.ibegin( entity ); it != end; ++it )
+          {
+            const auto& intersection = *it ;
+            for( const int order : faceQuadOrders )
+            {
+              FaceQuadratureType interQuad( gridPart, intersection, order, FaceQuadratureType::INSIDE);
+            }
+          }
+
+          // if only one geometry present we can stop here
+          if( singleGeomType )
+            return ;
+        }
       }
 
     protected:
