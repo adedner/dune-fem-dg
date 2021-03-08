@@ -325,7 +325,7 @@ namespace Fem
     // select non-blocking communication handle
     typedef typename
       std::conditional< threading,
-          NonBlockingCommHandle< DestinationType >,
+          NonBlockingCommHandle< LimiterDestinationType >,
           EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
 
     typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
@@ -336,7 +336,7 @@ namespace Fem
     typedef LocalCDGPass< DiscreteModel1Type, StartPassType, advectPassId >       InnerPass2Type;
 
     typedef typename std::conditional< threading,
-            ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
+            ThreadPass < InnerPass2Type, ThreadIteratorType, true /* nonblockingcomm */ >,
             InnerPass2Type > :: type                                              Pass2Type;
 
     typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;

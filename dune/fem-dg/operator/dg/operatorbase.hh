@@ -132,7 +132,7 @@ namespace Fem
 
     typedef LocalCDGPass< DiscreteModelType, InsertFunctionPassType, cdgpass >   InnerPassType;
     typedef typename std::conditional< threading,
-         ThreadPass< InnerPassType, ThreadIteratorType, true >,
+         ThreadPass< InnerPassType, ThreadIteratorType, true /* nonblockingcomm */ >,
          InnerPassType > :: type                                                 Pass1Type;
 
     typedef typename AdvTraits::DiscreteFunctionSpaceType AdvDFunctionSpaceType;

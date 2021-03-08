@@ -100,7 +100,7 @@ namespace Fem
     // select non-blocking communication handle
     typedef typename
       std::conditional< threading,
-          NonBlockingCommHandle< RangeFunctionType >,
+          NonBlockingCommHandle< DomainFunctionType >,
           EmptyNonBlockingComm > :: type                                      NonBlockingCommHandleType;
 
     typedef Fem::ThreadIterator< GridPartType >                               ThreadIteratorType;

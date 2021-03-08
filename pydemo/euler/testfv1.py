@@ -1,5 +1,7 @@
-# import mpi4py.rc
-# mpi4py.rc.threaded = False
+import os
+# set number of threads to be used for thread parallel version
+os.environ['OMP_NUM_THREADS'] = '4'
+
 from dune.fem import parameter
 from dune.femdg.testing import run
 
@@ -33,13 +35,13 @@ parameters = {"fem.ode.odesolver": "EX",
 
 Model = problem()
 # use shorter end time for testing
-Model.endTime = 0.025
+Model.endTime = 0.05
 Model.exact = None
 
 run(Model,
-    startLevel=0, limiter="default",
+    startLevel=1, limiter="default",
     primitive=primitive, saveStep=0.16, subsamp=2,
-    dt=None,threading=False,grid="alucube", space="finitevolume",codegen=False,
+    dt=None,threading=True,grid="alucube", space="finitevolume",codegen=False,
     parameters=parameters)
 
 # print(str(parameter))
