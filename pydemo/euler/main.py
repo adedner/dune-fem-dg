@@ -1,3 +1,8 @@
+import os
+
+# set number of threads to be used for thread parallel version
+os.environ['OMP_NUM_THREADS'] = '4'
+
 from dune.fem import parameter
 from dune.femdg.testing import run
 
@@ -28,13 +33,13 @@ parameters = {"fem.ode.odesolver": "EX",
 #-----------------
 
 Model = problem()
-Model.endTime = 0.01
+#Model.endTime = 0.1501
 # Model.exact = None
 
 run(Model,
     startLevel=0, polOrder=2, limiter="default",
-    primitive=primitive, saveStep=0.05, subsamp=2,
-    dt=None,threading=False,grid="yasp",
+    primitive=None, saveStep=0.16, subsamp=0,
+    dt=None,threading=True,grid="yasp",
     space="dgonb",
     #space="dglagrange",
     #space=("dglagrange","lobatto"),
