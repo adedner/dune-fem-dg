@@ -1,7 +1,29 @@
-import os
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument('-n','--num-threads', type=int,
+        help="""
+        Number of threads to use when running the test""")
+parser.add_argument('-s','--scheme', type=int, default=0,
+        help="""
+        Scheme: 0 == DG | 1 == FV0 | 2 == FV1""")
+parser.add_argument('-o','--order', type=int, default=2,
+        help="""
+        Polynomial order of DG scheme (default = 2)""")
+parser.add_argument
+parser.parse_args()
+try:
+    args = parser.parse_args()
+except SystemExit:
+    sys.exit(0)
 
+nThreads = args.num_threads
+scheme = args.scheme
+dgOrder = args.order
+print(f"Running with scheme {scheme} with {nThreads} threads!")
+
+import os
 # set number of threads to be used for thread parallel version
-os.environ['OMP_NUM_THREADS'] = '4'
+os.environ['OMP_NUM_THREADS'] = str(nThreads)
 
 import time
 from dune.grid import structuredGrid, cartesianDomain
@@ -21,11 +43,11 @@ from euler import sod as problem
 Model = problem(dim,gamma)
 
 parameter.append({"fem.verboserank": -1})
-parameter.append({"fem.timeprovider.factor": 0.25})
+parameter.append({"fem.timeprovider.factor": 0.35})
 parameter.append("parameter")
 
 parameters = {"fem.ode.odesolver": "EX",
-              "fem.timeprovider.factor": "0.35",
+              "fem.timeprovider.factor": 0.35,
               "dgadvectionflux.method": "EULER-HLLC",
               "femdg.limiter.admissiblefunctions": 1,
               "femdg.limiter.tolerance": 1e-8}
@@ -35,7 +57,6 @@ grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR     = grid.dimension + 2
 t        = 0
-dt       = 1e-3
 count    = 0
 saveStep = 0.15
 saveTime = saveStep
@@ -50,14 +71,14 @@ def initialize(space):
         u_h = spacelag.interpolate(initial, name='tmp')
         return space.interpolate(u_h, name='u_h')
 
-def useODESolver(polOrder=2, limiter='default'):
+def useODESolver(polOrder=2, limiter='default', codegen=True):
     global count, t, dt, saveTime
     polOrder = polOrder
     if False:
         # needs change in dune/fem-dg/operator/dg/passtraits.hh
         space = create.space("dglegendre", grid, order=polOrder, dimRange=dimR, hierarchical=False)
     else:
-        space = create.space("dgonb", grid, order=polOrder, dimRange=dimR)
+        space = create.space("dgonb", grid, order=polOrder, dimRange=dimR, codegen=True)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
     operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
@@ -75,9 +96,7 @@ def useODESolver(polOrder=2, limiter='default'):
     tcount = 0
     while t < Model.endTime:
         ode.solve(u_h)
-        # operator.applyLimiter( u_h );
         dt = ode.deltaT()
-        print('dt = ',dt)
         t += dt
         tcount += 1
         if tcount%100 == 0:
@@ -98,7 +117,7 @@ def useODESolver(polOrder=2, limiter='default'):
         #cellvector={"velocity":v},
         number=count, subsampling=2)
 
-scheme = 1
+scheme = 0
 
 if scheme == 0:
     # grid = structuredGrid(x0,x1,N)
@@ -106,7 +125,7 @@ if scheme == 0:
     grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
     grid.hierarchicalGrid.globalRefine(1)
     # grid = create.view("adaptive", grid)
-    useODESolver(2,'default')      # third order with limiter
+    useODESolver(dgOrder,'default')      # third order with limiter
 elif scheme == 1:
     #N = [n*4 for n in N]
     #grid = structuredGrid(x0,x1,N)

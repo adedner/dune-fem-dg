@@ -127,7 +127,7 @@ def sod(dim=2,gamma=1.4):
     Vl, Vr = [1.,0.,0.,1.], [0.125,0,0,0.1]
     Model.initial=riemanProblem( Model, x[0], x0, Vl, Vr)
     Model.domain=[[0, 0], [1, 0.25], [64, 16]]
-    Model.endTime=0.25
+    Model.endTime=0.15
     def chorin(gv,t):
         gf = gv.function("chorin","chorin.hh", Vl,Vr,gamma,x0,t,name="chorin")
         lgf = gf.localFunction() # this seems to fail?
