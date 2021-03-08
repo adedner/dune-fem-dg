@@ -42,20 +42,27 @@ from euler import sod as problem
 
 Model = problem(dim,gamma)
 
-parameter.append({"fem.verboserank": -1})
+parameter.append({"fem.verboserank": 0})
 parameter.append({"fem.timeprovider.factor": 0.35})
-parameter.append("parameter")
+parameter.append({"fem.threads.verbose" : True })
+parameter.append({"fem.adaptation.method" : "none"})
+
+#parameter.append("parameter")
 
 parameters = {"fem.ode.odesolver": "EX",
+              "fem.ode.order" : 3,
               "fem.timeprovider.factor": 0.35,
-              "dgadvectionflux.method": "EULER-HLLC",
-              "femdg.limiter.admissiblefunctions": 1,
-              "femdg.limiter.tolerance": 1e-8}
+#              "femdg.limiter.admissiblefunctions" : 1,
+              "femdg.nonblockingcomm" : True
+ #            "dgadvectionflux.method": "EULER-LLF",
+        }
+
+parameter.append(parameters)
 
 x0,x1,N = Model.domain
-grid = structuredGrid(x0,x1,N)
+# grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-dimR     = grid.dimension + 2
+dimR = Model.dimRange
 t        = 0
 count    = 0
 saveStep = 0.15
@@ -63,26 +70,28 @@ saveTime = saveStep
 
 def initialize(space):
     return space.interpolate(Model.initial, name='u_h')
-    if space.order == 0:
-        return space.interpolate(initial, name='u_h')
-    else:
-        lagOrder = 1 # space.order
-        spacelag = create.space("lagrange", space.grid, order=lagOrder, dimRange=space.dimRange)
-        u_h = spacelag.interpolate(initial, name='tmp')
-        return space.interpolate(u_h, name='u_h')
+    #if space.order == 0:
+    #    return space.interpolate(initial, name='u_h')
+    #else:
+    #    lagOrder = 1 # space.order
+    #    spacelag = create.space("lagrange", space.grid, order=lagOrder, dimRange=space.dimRange)
+    #    u_h = spacelag.interpolate(initial, name='tmp')
+    #    return space.interpolate(u_h, name='u_h')
 
-def useODESolver(polOrder=2, limiter='default', codegen=True):
+def useODESolver(polOrder=2, limiter='default', codegen=True, spc='onb'):
     global count, t, dt, saveTime
     polOrder = polOrder
-    if False:
-        # needs change in dune/fem-dg/operator/dg/passtraits.hh
-        space = create.space("dglegendre", grid, order=polOrder, dimRange=dimR, hierarchical=False)
+    if spc == 'lobatto':
+        from dune.fem.space import dglagrange
+        space = dglagrange( grid, order=polOrder, dimRange=dimR, pointType='lobatto', codegen=False)
+        #space = create.space("dglegendre", grid, order=polOrder, dimRange=dimR, hierarchical=False)
     else:
-        space = create.space("dgonb", grid, order=polOrder, dimRange=dimR, codegen=True)
+        from dune.fem.space import dgonb
+        space = dgonb(grid, order=polOrder, dimRange=dimR, codegen=False)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
-    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    ode = rungeKuttaSolver( operator, parameters=parameters )
+    operator = femDGOperator(Model, space, limiter=limiter, threading=False )
+    ode = rungeKuttaSolver( operator )
 
     operator.applyLimiter( u_h )
     print("number of elements: ",grid.size(0),flush=True)
@@ -94,7 +103,10 @@ def useODESolver(polOrder=2, limiter='default', codegen=True):
         number=count, subsampling=2)
     start = time.time()
     tcount = 0
+
+    #dt = 0.0001325
     while t < Model.endTime:
+        #ode.setTimeStepSize( dt )
         ode.solve(u_h)
         dt = ode.deltaT()
         t += dt
@@ -109,6 +121,10 @@ def useODESolver(polOrder=2, limiter='default', codegen=True):
                 #cellvector={"velocity":v},
                 number=count, subsampling=2)
             saveTime += saveStep
+        if t + dt > Model.endTime:
+            print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
+            break
+
     print("time loop:",time.time()-start)
     print("number of time steps ", tcount)
     grid.writeVTK(Model.name,
@@ -123,9 +139,9 @@ if scheme == 0:
     # grid = structuredGrid(x0,x1,N)
     #grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
-    grid.hierarchicalGrid.globalRefine(1)
+    grid.hierarchicalGrid.globalRefine(3)
     # grid = create.view("adaptive", grid)
-    useODESolver(dgOrder,'default')      # third order with limiter
+    useODESolver(dgOrder,'default',spc='onb')      # third order with limiter
 elif scheme == 1:
     #N = [n*4 for n in N]
     #grid = structuredGrid(x0,x1,N)
@@ -142,3 +158,5 @@ elif scheme == 2:
     #grid = structuredGrid(x0,x1,N)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,'default')      # FV scheme with limiter
+
+parameter.write("param.log")
