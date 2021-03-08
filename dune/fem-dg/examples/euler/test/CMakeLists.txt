@@ -1,9 +1,11 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/euler/")
 
 # specify type of grid implemention, dimension and polynomial order
-set( GRIDTYPE ALUGRID_CUBE )
+
+#set( GRIDTYPE YASPGRID )
+#set( GRIDTYPE ALUGRID_CUBE )
 #set( GRIDTYPE SPGRID_COUNT_FLOPS )
-#set( GRIDTYPE SPGRID )
+set( GRIDTYPE SPGRID )
 set( GRIDDIM 2 )
 set( POLORDER 2 )
 
@@ -21,9 +23,16 @@ dune_add_test_case( NAME euler
 add_code_generate_targets( euler )
 
 if( NOT FEMDG_FAST_TESTBUILD )
-  dune_add_test_case( NAME euler_wrapper
-                      SOURCES ${MAIN}
-                      COMPILE_DEFINITIONS "POLORDER=${POLORDER}" EULER_WRAPPER_TEST )
+set(EFFCOMP_POLORD 4)
+# efficiency comparison with Python
+dune_add_test_case( NAME euler_effcomp
+                    SOURCES ${MAIN}
+                    COMPILE_DEFINITIONS DGRIDDIM=${GRIDDIM} POLORDER=${EFFCOMP_POLORD} )
+
+# efficiency comparison with Python
+dune_add_test_case( NAME euler_effcomp_ufl
+                    SOURCES ${MAIN}
+                    COMPILE_DEFINITIONS GRIDDIM=${GRIDDIM} POLORDER=${EFFCOMP_POLORD} EULER_WRAPPER_TEST )
 
   dune_add_test_case( NAME eulerall
                       SOURCES ${MAIN}

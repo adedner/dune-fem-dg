@@ -1,0 +1,52 @@
+fem.verboserank: 0
+
+# PROBLEM SELECTION 
+#------------------
+# possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffractio
+problem: sod
+femdg.stepper.endtime: 0.1
+# problemflag: 0
+# riemanndata: [1., -1., 1.,    1., 1., 1.]
+
+# number of threads used in OMP program
+fem.parallel.numberofthreads: 4
+
+# coarsest level that should be present
+fem.adaptation.coarsestLevel: 3
+# finest level that should be present
+fem.adaptation.finestLevel: 6
+fem.eoc.steps: 3
+fem.timeprovider.factor: 0.4
+femdg.limiter.indicator: jump
+#femdg.limiter.admissiblefunctions: muscl
+finitevolume.linearprogramming.tol: 1e-12
+
+#femdg.stepper.fixedtimestep: 0.0001325
+femdg.nonblockingcomm: false
+
+femdg.stepper.printcount: 100
+fem.io.outputformat: none
+fem.io.savestep: 0.16
+
+fem.ode.odesolver: EX
+fem.ode.order: 3
+fem.timeprovider.factor: 0.25
+fem.timeprovider.updatestep: 1
+
+fem.io.macroGridFile_2d: 
+fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+
+fem.eoc.outputpath: ./data
+#femdg.fixedtimestepeocloopfactor: 1
+
+# GENERAL
+#--------
+paramfile: ../../parameter/paramBase
+paramfile: ../../parameter/paramPhysicalConstants
+
+Re: 1. # Reynold's number
+Pr: 1. # Prandtl's number
+
+
+#paramfile: ../../parameter/paramSolver
+#paramfile: parameters/euler

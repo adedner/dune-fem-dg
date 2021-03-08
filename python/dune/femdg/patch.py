@@ -190,7 +190,7 @@ def codeFemDg(self):
                   'const Entity &entity', 'const Point &x',
                   'const DDomainType &normal',
                   'const DRangeType &u'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True, inline=True,
             predefined=predefined)
 
     velocity = getattr(Model,"velocity",None)
@@ -201,7 +201,7 @@ def codeFemDg(self):
             args=['const double &t',
                   'const Entity &entity', 'const Point &x',
                   'const DRangeType &u'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
 
     # TODO: fill in diffusion time step from Model
@@ -212,8 +212,14 @@ def codeFemDg(self):
             'double', 'diffusionTimeStep',
             args=['const Entity& entity', 'const Point &x',
                   'const T& circumEstimate', 'const DRangeType &u'],
-            targs=['class Entity, class Point, class T'], const=True,
+            targs=['class Entity, class Point, class T'], const=True,inline=True,
             predefined=predefined)
+
+    hasPhysical = hasattr(Model,"physical")
+    # add static variable for hasPhysical
+    code.append([Declaration(
+                 Variable("constexpr bool", "hasPhysical"), initializer=hasPhysical,
+                 static=True)])
 
     physical = getattr(Model,"physical",True)
     if not isinstance(physical,bool):
@@ -224,11 +230,13 @@ def codeFemDg(self):
         if physicalBound is not None:
             physical = physical*physicalBound
 
+    # add method physical
     self.generateMethod(code, physical,
             'double', 'physical',
             args=['const Entity &entity', 'const Point &x',
                   'const DRangeType &u'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'],
+            const=True,inline=True,
             predefined=predefined)
 
     w = Coefficient(space)
@@ -243,7 +251,7 @@ def codeFemDg(self):
             args=['const Intersection& it', 'const Point &x',
                   'const DRangeType &u',
                   'const DRangeType &w'],
-            targs=['class Intersection, class Point'], const=True,
+            targs=['class Intersection, class Point'], const=True,inline=True,
             predefined=jmpPredefined)
 
     # still missing
@@ -252,7 +260,7 @@ def codeFemDg(self):
             'void', 'adjustAverageValue',
             args=['const Entity& entity', 'const Point &x',
                   'DRangeType &u'],
-            targs=['class Entity, class Point'], const=True, evalSwitch=False,
+            targs=['class Entity, class Point'], const=True,evalSwitch=False,inline=True,
             predefined=predefined)
 
     hasAdvFlux = hasattr(Model,"F_c")
@@ -307,7 +315,7 @@ def codeFemDg(self):
                   'const DDomainType &normal',
                   'const DRangeType &u',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
     self.generateMethod(code, boundaryDFlux,
             'bool', 'diffusionBoundaryFlux',
@@ -318,7 +326,7 @@ def codeFemDg(self):
                   'const DRangeType &u',
                   'const DJacobianRangeType &jac',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
 
     self.generateMethod(code, hasBoundaryValue,
@@ -328,7 +336,7 @@ def codeFemDg(self):
                   'const Entity& entity', 'const Point &x',
                   'const DRangeType &u',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
     self.generateMethod(code, boundaryValue,
             'bool', 'boundaryValue',
@@ -338,7 +346,7 @@ def codeFemDg(self):
                   'const DDomainType &normal',
                   'const DRangeType &u',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
 
     limiterModifiedDict = getattr(Model,"limitedRange",None)
@@ -353,7 +361,7 @@ def codeFemDg(self):
     self.generateMethod(code, limiterModified,
             'void', 'limitedRange',
             args=['LimitedRange& limRange'],
-            targs=['class LimitedRange'], const=True, evalSwitch=False,
+            targs=['class LimitedRange'], const=True, evalSwitch=False,inline=True,
             predefined=predefined)
     obtainBounds = Method("void","obtainBounds",
                           targs=['class LimitedRange'],

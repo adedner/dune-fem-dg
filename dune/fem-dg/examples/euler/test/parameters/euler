@@ -1,3 +1,48 @@
+fem.verboserank: 0
+
+# PROBLEM SELECTION 
+#------------------
+# possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffractio
+problem: sod
+femdg.stepper.endtime: 0.15
+# problemflag: 0
+# riemanndata: [1., -1., 1.,    1., 1., 1.]
+
+# number of threads used in OMP program
+fem.parallel.numberofthreads: 1
+
+# coarsest level that should be present
+fem.adaptation.coarsestLevel: 3
+# finest level that should be present
+fem.adaptation.finestLevel: 4
+fem.eoc.steps: 1
+fem.timeprovider.factor: 0.35
+femdg.limiter.indicator: jump
+
+#femdg.stepper.fixedtimestep: 0.0001325
+femdg.nonblockingcomm: false
+
+femdg.stepper.printcount: 100
+fem.io.outputformat: none
+fem.io.savestep: 0.16
+
+fem.ode.odesolver: EX
+fem.ode.order: 3
+fem.timeprovider.factor: 0.35
+fem.timeprovider.updatestep: 1
+
+fem.io.macroGridFile_2d:
+fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+
+fem.eoc.outputpath: ./data
+#femdg.fixedtimestepeocloopfactor: 1
+
+# GENERAL
+#--------
+paramfile: ../../parameter/paramBase
+
+
+
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble"
@@ -8,7 +53,7 @@ problem: sod
 # LIMITER SETTINGS
 #-----------------
 # 0 = only dg solution | 1 = only reconstruction | 2 = both 
-#femdg.limiter.admissiblefunctions: 1 
+femdg.limiter.admissiblefunctions: 1 
 # tolerance for shock indicator 
 femdg.limiter.tolerance: 1
 # threshold for avoiding over-excessive limitation 
@@ -74,8 +119,8 @@ fem.adaptation.finestLevel: 6
 # DOMAIN SETUP
 #-------------
 fem.io.macroGridFile_1d:  ../../grids/unitcube1.dgf
-#fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
-fem.io.macroGridFile_2d:  ../../grids/grid2d_nonaffine.dgf
+fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+#fem.io.macroGridFile_2d:  ../../grids/grid2d_nonaffine.dgf
 fem.io.macroGridFile_3d:  ../../grids/unitcube3.dgf
 
 

@@ -439,9 +439,9 @@ namespace Fem
     }
 
     // we have physical check for this model
-    bool hasPhysical() const
+    constexpr bool hasPhysical() const
     {
-      return true;
+      return AdvectionModelImp::hasPhysical;
     }
 
     // calculate jump between left and right value
@@ -450,7 +450,12 @@ namespace Fem
                          const DomainType& x,
                          const RangeType& u) const
     {
-      return advection().physical( entity, x, u ) > 0;
+      if constexpr ( AdvectionModelImp::hasPhysical )
+      {
+        return advection().physical( entity, x, u ) > 0;
+      }
+      else
+        return true;
     }
 
     // adjust average value if necessary
