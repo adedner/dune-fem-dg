@@ -38,9 +38,16 @@ def uflExpr(Model,space,t):
                             physicalBound*physicalBound_
         else: upperBound=space.dimRange*["std::numeric_limits<double>::min()"]
 
-    maxSpeed = getattr(Model,"maxLambda",None)
-    if maxSpeed is not None:
-        maxSpeed = maxSpeed(t,x,u,n)
+    maxWaveSpeed = getattr(Model,"maxWaveSpeed",None)
+    # check for deprecated maxLambda
+    if maxWaveSpeed is None:
+        maxWaveSpeed = getattr(Model,"maxLambda",None)
+        if maxWaveSpeed is not None:
+            print("WARNING: maxLambda is deprecated, use maxWaveSpeed instead!")
+
+    if maxWaveSpeed is not None:
+        maxWaveSpeed = maxWaveSpeed(t,x,u,n)
+
     velocity = getattr(Model,"velocity",None)
     if velocity is not None:
         velocity = velocity(t,x,u)
@@ -114,7 +121,7 @@ def uflExpr(Model,space,t):
         # for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
     # jump = None # TODO: see comment above
-    return maxSpeed, velocity, diffusionTimeStep, physical, jump,\
+    return maxWaveSpeed, velocity, diffusionTimeStep, physical, jump,\
            boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue,\
            physicalBound
 
@@ -122,7 +129,7 @@ def codeFemDg(self):
     code = self._code()
     code.append(AccessModifier("public"))
     # TODO: why isn't this being used - see jump? Code duplication going on here...
-    # velocity, maxSpeed, velocity, diffusionTimeStep, physical, jump,\
+    # velocity, maxWaveSpeed, velocity, diffusionTimeStep, physical, jump,\
     #        boundaryAFlux,boundaryDFlux,boundaryValues,hasBoundaryValues = self._patchExpr
     space = self._space
     Model = self._Model
@@ -181,11 +188,18 @@ def codeFemDg(self):
     predefined.update( {t: arg_t} )
     self.predefineCoefficients(predefined,'x')
 
-    maxSpeed = getattr(Model,"maxLambda",None)
-    if maxSpeed is not None:
-        maxSpeed = maxSpeed(t,x,u,n)
-    self.generateMethod(code, maxSpeed,
-            'double', 'maxSpeed',
+    maxWaveSpeed = getattr(Model,"maxWaveSpeed",None)
+    # check for deprecated maxLambda
+    if maxWaveSpeed is None:
+        maxWaveSpeed = getattr(Model,"maxLambda",None)
+        if maxWaveSpeed is not None:
+            print("WARNING: maxLambda is deprecated, use maxWaveSpeed instead!")
+
+    if maxWaveSpeed is not None:
+        maxWaveSpeed = maxWaveSpeed(t,x,u,n)
+
+    self.generateMethod(code, maxWaveSpeed,
+            'double', 'maxWaveSpeed',
             args=['const double &t',
                   'const Entity &entity', 'const Point &x',
                   'const DDomainType &normal',

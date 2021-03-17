@@ -400,7 +400,7 @@ namespace Fem
     }
 
     template <class LocalEvaluation>
-    inline void maxSpeed( const LocalEvaluation& local,
+    inline void maxWaveSpeed( const LocalEvaluation& local,
                           const DomainType& unitNormal,
                           const RangeType& u,
                           double& advspeed,
@@ -409,7 +409,7 @@ namespace Fem
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      advspeed = advection().maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed = advection().maxWaveSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 

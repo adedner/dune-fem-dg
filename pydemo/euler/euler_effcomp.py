@@ -12,6 +12,9 @@ parser.add_argument('-o','--order', type=int, default=4,
 parser.add_argument('-r','--refineloops', type=int, default=1,
         help="""
         Number of repeats on refined grid (default = 1)""")
+parser.add_argument('-g','--grid', type=str, default='Yasp',
+        help="""
+        Grid: 'Yasp' | 'ALUCube' | 'SP' (default = 'Yasp')""")
 parser.add_argument
 parser.parse_args()
 try:
@@ -23,6 +26,7 @@ nThreads = args.num_threads
 scheme = args.scheme
 dgOrder = args.order
 refineloops = args.refineloops
+gridname = args.grid
 print(f"Running with scheme {scheme}, polynomial order {dgOrder} with {nThreads} threads!")
 
 import os
@@ -46,9 +50,10 @@ from euler import sod as problem
 #from euler import radialSod3 as problem
 
 Model = problem(dim,gamma)
+# for efficiency test only run until 0.1
+Model.endTime = 0.1
 
 parameter.append({"fem.verboserank": 0})
-parameter.append({"fem.timeprovider.factor": 0.35})
 parameter.append({"fem.threads.verbose" : True })
 parameter.append({"fem.adaptation.method" : "none"})
 
@@ -56,7 +61,8 @@ parameter.append({"fem.adaptation.method" : "none"})
 
 parameters = {"fem.ode.odesolver": "EX",
               "fem.ode.order" : 3,
-              "fem.timeprovider.factor": 0.35,
+              "fem.timeprovider.factor": 0.4,
+              "finitevolume.linearprogramming.tol": 1e-12,
 #              "femdg.limiter.admissiblefunctions" : 1,
               "femdg.nonblockingcomm" : False
  #            "dgadvectionflux.method": "EULER-LLF",
@@ -111,7 +117,7 @@ def useODESolver(grid, polOrder=2, limiter='default', codegen=True, spc='onb', l
         grid.writeVTK(Model.name,
             pointdata=[u_h],
             # celldata={"density":rho, "pressure":p}, # bug: density not shown correctly
-            #celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
+            #celldata={"pressure":p, "maxWaveSpeed":Model.maxWaveSpeed(0,0,u_h,as_vector([1,0]))},
             #cellvector={"velocity":v},
             number=count, subsampling=2)
 
@@ -130,7 +136,7 @@ def useODESolver(grid, polOrder=2, limiter='default', codegen=True, spc='onb', l
                 count += 1
                 grid.writeVTK(Model.name,
                     pointdata=[u_h],
-                    #celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
+                    #celldata={"pressure":p, "maxWaveSpeed":Model.maxWaveSpeed(0,0,u_h,as_vector([1,0]))},
                     #cellvector={"velocity":v},
                     number=count, subsampling=2)
                 saveTime += saveStep
@@ -143,36 +149,28 @@ def useODESolver(grid, polOrder=2, limiter='default', codegen=True, spc='onb', l
         grid.hierarchicalGrid.globalRefine(1)
         #grid.writeVTK(Model.name,
         #    pointdata=[u_h],
-        #    #celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
+        #    #celldata={"pressure":p, "maxWaveSpeed":Model.maxWaveSpeed(0,0,u_h,as_vector([1,0]))},
         #    #cellvector={"velocity":v},
         #    number=count, subsampling=2)
 
 scheme = 0
 
-if scheme == 0:
-    # grid = structuredGrid(x0,x1,N)
-    #grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-    grid = adaptiveLeafGridView(create.grid("SP", cartesianDomain(x0,x1,N)))
-    # grid = adaptiveLeafGridView(create.grid("ALUCube", cartesianDomain(x0,x1,N)))
-    grid.hierarchicalGrid.globalRefine(3)
+if scheme == 0: # DG scheme
+    spc='hlegendre'
+    limiter='default'
+elif scheme == 1: # FV scheme
+    dgOrder=0
+    spc='onb'
+    limiter=None
+elif scheme == 2: # FV 2nd order
+    dgOrder=0
+    spc='onb'
+    limiter='default'
 
-    # grid = create.view("adaptive", grid)
-    useODESolver(grid, dgOrder,'default',spc='hlegendre', loops=refineloops)
-elif scheme == 1:
-    #N = [n*4 for n in N]
-    #grid = structuredGrid(x0,x1,N)
-    grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-    #grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
-    grid.hierarchicalGrid.globalRefine(1)
-    # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-    useODESolver(grid, 0,None)           # FV scheme
-elif scheme == 2:
-    #grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-    grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
-    grid.hierarchicalGrid.globalRefine(1)
-    #N = [n*6 for n in N]
-    #grid = structuredGrid(x0,x1,N)
-    # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-    useODESolver(grid, 0,'default')      # FV scheme with limiter
+grid = adaptiveLeafGridView(create.grid(gridname, cartesianDomain(x0,x1,N)))
+grid.hierarchicalGrid.globalRefine(3)
+
+# grid = create.view("adaptive", grid)
+useODESolver(grid, dgOrder, limiter=limiter,spc=spc, loops=refineloops)
 
 parameter.write("param.log")

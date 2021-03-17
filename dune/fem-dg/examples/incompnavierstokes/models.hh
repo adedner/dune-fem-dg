@@ -362,7 +362,7 @@ namespace Fem
 
     // here x is in global coordinates
     template <class LocalEvaluation>
-    inline void maxSpeed( const LocalEvaluation& local,
+    inline void maxWaveSpeed( const LocalEvaluation& local,
                           const DomainType& normal,
                           const RangeType& u,
                           double& advspeed,

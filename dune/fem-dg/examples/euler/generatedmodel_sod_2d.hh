@@ -354,7 +354,7 @@ struct Additional
     static constexpr double gamma = 1.4;
 
     template< class Entity, class Point >
-    double maxSpeed ( const double &t, const Entity &entity, const Point &x, const DDomainType &normal, const DRangeType &u ) const
+    double maxWaveSpeed ( const double &t, const Entity &entity, const Point &x, const DDomainType &normal, const DRangeType &u ) const
     {
       double result;
       using std::abs;

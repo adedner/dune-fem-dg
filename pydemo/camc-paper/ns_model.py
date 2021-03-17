@@ -52,7 +52,7 @@ def model(problem, dim=2, mu=0.001, **kwargs):
                              ])
 
         # interface method needed for LLF and time step control
-        def maxLambda(t,x,U,n):
+        def maxWaveSpeed(t,x,U,n):
             rho, v, p = Model.toPrim(U)
             return abs(dot(v,n)) + sqrt(Model.gamma*p/rho)
         def velocity(t,x,U):

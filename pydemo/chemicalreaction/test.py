@@ -33,7 +33,7 @@ class Model:
         return f - r
     def F_c(t,x,U):
         return as_matrix([ [*(Model.velocity(t,x,U)*u)] for u in U ])
-    def maxLambda(t,x,U,n):
+    def maxWaveSpeed(t,x,U,n):
         return abs(dot(Model.velocity(t,x,U),n))
     def velocity(t,x,U):
         return Model.transportVelocity

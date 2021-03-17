@@ -10,7 +10,7 @@ class Transport1D:
 
     boundary = {range(1,5): lambda t,x,u: u}
 
-    def maxLambda(t,x,U,n):
+    def maxWaveSpeed(t,x,U,n):
         return abs(n[0])
     def velocity(t,x,U):
         return as_vector([1,0])
@@ -26,7 +26,7 @@ def LinearAdvectionDiffusion1D(v,eps):
         if v is not None:
             def F_c(t,x,U):
                 return as_matrix( [[ *(v*U[0]) ]] )
-            def maxLambda(t,x,U,n):
+            def maxWaveSpeed(t,x,U,n):
                 return abs(dot(v,n))
             def velocity(t,x,U):
                 return v
@@ -83,7 +83,7 @@ class Burgers1D:
 
     boundary = {range(1,5): lambda t,x,u: u}
 
-    def maxLambda(t,x,U,n):
+    def maxWaveSpeed(t,x,U,n):
         return abs(U[0]*n[0])
     def velocity(t,x,U):
         return as_vector( [U[0],0] )
