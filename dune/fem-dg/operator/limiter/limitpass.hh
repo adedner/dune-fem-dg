@@ -233,8 +233,6 @@ namespace Fem
 
     // get LagrangePointSet of pol order 1
     typedef CornerPointSet< GridPartType >                                 CornerPointSetType;
-    // get lagrange point set of order 1
-    typedef std::map< Dune::GeometryType, CornerPointSetType >             CornerPointSetContainerType;
 
     typedef typename LimiterUtilityType::KeyType         KeyType;
     typedef typename LimiterUtilityType::CheckType       CheckType;
@@ -407,7 +405,6 @@ namespace Fem
       linProg_(),
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
-      cornerPointSetContainer_(),
       uTmpLocal_( spc_ ),
       uEn_(),
       uEnAvg_(),
@@ -436,7 +433,9 @@ namespace Fem
       usedAdmissibleFunctions_( usedAdmissibleFunctions() ),
       extTroubledCellIndicator_( indicator_ == 3
            ? new ModalSmoothnessIndicator< ArgumentFunctionType >() : nullptr ),
-      counter_( 0 )
+      counter_( 0 ),
+      overallLimited_( 0 ),
+      verbose_( verbose )
     {
       if( usedAdmissibleFunctions_ == lp )
       {
@@ -444,7 +443,7 @@ namespace Fem
                         parameter.getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
       }
 
-      if( verbose )
+      if( verbose_ )
       {
         std::cout << "LimitDGPass (Grid is ";
         if( cartesianGrid_ )
@@ -469,12 +468,20 @@ namespace Fem
     }
 
     //! Destructor
-    virtual ~LimitDGPass() {
-      // std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+    virtual ~LimitDGPass()
+    {
+      /*
+      if( verbose_ )
+      {
+        std::cout << "~LimitDGPass: op calls " << counter_ << " limEl: " << overallLimited_ << std::endl;
+        std::cout << "~LimitDGPass: lp: " << stepTime_[2] << "  indi: " << stepTime_[0] << "  proj: " << stepTime_[1] << std::endl;
+      }
+      */
     }
 
     void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
+      std::abort();
       extTroubledCellIndicator_ = indicator;
     }
 
@@ -633,15 +640,13 @@ namespace Fem
         {
           // for initialization of thread passes for only a few iterations
           const auto& entity = *it;
-          Dune::Timer localTime;
+          //Dune::Timer localTime;
           applyLocalImp( entity );
-          stepTime_[2] += localTime.elapsed();
-          ++this->numberOfElements_;
+          //stepTime_[2] += localTime.elapsed();
         }
 
         // finalize
         finalize(arg, dest);
-        ++counter_;
         this->computeTime_ += timer.elapsed();
       }
       else
@@ -711,7 +716,7 @@ namespace Fem
     {
       //std::cout << stepTime_[1] << " step time limit \n";
       std::vector<double> tmp( stepTime_ );
-      stepTime_[0] = stepTime_[1] = stepTime_[2] = 0.0;
+      //stepTime_[0] = stepTime_[1] = stepTime_[2] = 0.0;
       return tmp;
     }
 
@@ -726,6 +731,8 @@ namespace Fem
     //! destinations. Filter out the "right" arguments for this pass.
     void prepare(const ArgumentType& arg, DestinationType& dest, const bool firstThread ) const
     {
+      if( firstThread ) ++counter_;
+
       // get reference to U
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( arg ));
 
@@ -809,12 +816,14 @@ namespace Fem
     //! Some management (thread parallel version)
     void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
     {
+      overallLimited_ += limitedElements_;
       /*
-      if( limitedElements_ > 0 )
+      if( limitedElements_ > 0 && counter_ >0 )
       {
         std::cout << " Time: " << currentTime_
                   << " Elements limited: " << limitedElements_
                   << " due to side effects: " << notPhysicalElements_
+                  << " overall: " << this->numberOfElements_
                   << std::endl;
       }
       */
@@ -897,6 +906,9 @@ namespace Fem
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
     {
+      // increase element counter
+      ++this->numberOfElements_;
+
       // timer for shock detection
       Dune::Timer indiTime;
 
@@ -956,7 +968,7 @@ namespace Fem
       ///////////////////////////////////////////////////
 
       // check physicality of data at quadrature points
-      // evaluate average returns true if all quadrature points hold physical values
+      // evaluate average returns true if one quadrature point holds unphysical values
       const bool oneNotPhysical = evalAverage( en, uEn, enVal ); // returns enVal
 
       // make sure that the average value is physical,
@@ -1024,7 +1036,7 @@ namespace Fem
         }
 
         // call problem adaptation for setting refinement marker
-        discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
+        // discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
       }
 
       ///////////////////////////////////////////////////
@@ -1059,6 +1071,8 @@ namespace Fem
       // if nothing to limit then just return here
       if ( ! limiter ) return ;
 
+      double lpTime = 0;
+
       // increase number of limited elements
       ++limitedElements_;
 
@@ -1067,11 +1081,14 @@ namespace Fem
       // use linear function from LP reconstruction
       if( usedAdmissibleFunctions_ == lp )
       {
+        Dune::Timer timer;
         // compute average values on neighboring elements
         fillAverageValues( en, enIndex, *uEnAvg_, enVal );
         assert( linProg_ );
         // compute optimal linear reconstruction
         linProg_->applyLocal( en, gridPart_.indexSet(), values_, gradient );
+        lpTime = timer.elapsed();
+        stepTime_[2] += lpTime;
       }
       else
       {
@@ -1133,7 +1150,7 @@ namespace Fem
 
       assert( checkPhysical(en, geo, limitEn) );
 
-      stepTime_[1] += indiTime.elapsed();
+      stepTime_[1] += (indiTime.elapsed() - lpTime);
 
       //end limiting process
     }
@@ -1340,7 +1357,8 @@ namespace Fem
         // for affine mapping we only need to set higher moments to zero
         if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v &&
             affineMapping )
-        { // note: the following assumes an ONB made up of moments and affine mapping
+        {
+          // note: the following assumes an ONB made up of moments and affine mapping
           const int numBasis = uTmpLocal_.numDofs()/dimRange;
           for(int i=1; i<numBasis; ++i)
           {
@@ -1770,7 +1788,7 @@ namespace Fem
       {
         std::cout << "wrong indicator selection\n";
         assert(0);
-        abort();
+        std::abort();
       }
 
       for(int r=0; r<dimRange; ++r)
@@ -1827,11 +1845,6 @@ namespace Fem
     LimitDGPass(const LimitDGPass&);
     LimitDGPass& operator=(const LimitDGPass&);
 
-    const CornerPointSetType& cornerPointSet( const GeometryType& geomType ) const
-    {
-      return cornerPointSetContainer_[ geomType ];
-    }
-
   protected:
     DiscreteModelCallerType &caller () const
     {
@@ -1856,8 +1869,6 @@ namespace Fem
 
     const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
-
-    CornerPointSetContainerType cornerPointSetContainer_;
 
     mutable TemporaryLocalFunctionType uTmpLocal_;
 
@@ -1921,6 +1932,8 @@ namespace Fem
     TroubledCellIndicatorType extTroubledCellIndicator_;
 
     mutable int counter_;
+    mutable int overallLimited_;
+    const bool verbose_;
   }; // end DGLimitPass
 
 } // namespace

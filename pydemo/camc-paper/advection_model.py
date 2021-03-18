@@ -19,7 +19,7 @@ def model(dim):
         if v is not None:
             def F_c(t,x,U):
                 return as_matrix( [[ *(v*U[0]) ]] )
-            def maxLambda(t,x,U,n):
+            def maxWaveSpeed(t,x,U,n):
                 return abs(dot(v,n))
             def velocity(t,x,U):
                 return v

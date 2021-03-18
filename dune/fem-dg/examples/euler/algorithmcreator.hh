@@ -41,8 +41,9 @@
 #include "models.hh"
 
 #ifdef EULER_WRAPPER_TEST
+#warning "Using UFL generated code!"
 #include <dune/fem-dg/models/modelwrapper.hh>
-#include "generatedmodel.hh"
+#include "generatedmodel_sod_2d.hh"
 #endif
 
 //--------- PROBLEMCREATORSELECTOR ----------
@@ -64,9 +65,9 @@ namespace Fem
                                    Adaptivity::Enum::yes,
                                    //DiscreteFunctionSpaces::Enum::orthonormal,
                                    //DiscreteFunctionSpaces::Enum::lagrange,
-                                   DiscreteFunctionSpaces::Enum::gausslobatto,
+                                   //DiscreteFunctionSpaces::Enum::gausslobatto,
                                    //DiscreteFunctionSpaces::Enum::gausslegendre,
-                                   //DiscreteFunctionSpaces::Enum::hierarchic_legendre,
+                                   DiscreteFunctionSpaces::Enum::hierarchic_legendre,
                                    Solver::Enum::fem,
                                    AdvectionLimiter::Enum::limited,
                                    Matrix::Enum::matrixfree,

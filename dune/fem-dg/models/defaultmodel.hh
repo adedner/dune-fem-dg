@@ -456,13 +456,24 @@ namespace Fem
      *                        Needed for the time step estimation.
      */
     template <class LocalEvaluation>
+    inline void maxWaveSpeed (const LocalEvaluation&,
+                              const DomainType& normal,
+                              const RangeType& u,
+                              double& advspeed,
+                              double& totalspeed ) const
+    {
+      advspeed = totalspeed = 0;
+    }
+
+    template <class LocalEvaluation>
+    [[deprecated("Use maxWaveSpeed instead!")]]
     inline void maxSpeed (const LocalEvaluation&,
                           const DomainType& normal,
                           const RangeType& u,
                           double& advspeed,
                           double& totalspeed ) const
     {
-      advspeed = totalspeed = 0;
+      DUNE_THROW(NotImplemented,"Deprecated: use maxWaveSpeed instead!");
     }
 
     /**

@@ -38,9 +38,16 @@ def uflExpr(Model,space,t):
                             physicalBound*physicalBound_
         else: upperBound=space.dimRange*["std::numeric_limits<double>::min()"]
 
-    maxSpeed = getattr(Model,"maxLambda",None)
-    if maxSpeed is not None:
-        maxSpeed = maxSpeed(t,x,u,n)
+    maxWaveSpeed = getattr(Model,"maxWaveSpeed",None)
+    # check for deprecated maxLambda
+    if maxWaveSpeed is None:
+        maxWaveSpeed = getattr(Model,"maxLambda",None)
+        if maxWaveSpeed is not None:
+            print("WARNING: maxLambda is deprecated, use maxWaveSpeed instead!")
+
+    if maxWaveSpeed is not None:
+        maxWaveSpeed = maxWaveSpeed(t,x,u,n)
+
     velocity = getattr(Model,"velocity",None)
     if velocity is not None:
         velocity = velocity(t,x,u)
@@ -114,7 +121,7 @@ def uflExpr(Model,space,t):
         # for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
     # jump = None # TODO: see comment above
-    return maxSpeed, velocity, diffusionTimeStep, physical, jump,\
+    return maxWaveSpeed, velocity, diffusionTimeStep, physical, jump,\
            boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue,\
            physicalBound
 
@@ -122,7 +129,7 @@ def codeFemDg(self):
     code = self._code()
     code.append(AccessModifier("public"))
     # TODO: why isn't this being used - see jump? Code duplication going on here...
-    # velocity, maxSpeed, velocity, diffusionTimeStep, physical, jump,\
+    # velocity, maxWaveSpeed, velocity, diffusionTimeStep, physical, jump,\
     #        boundaryAFlux,boundaryDFlux,boundaryValues,hasBoundaryValues = self._patchExpr
     space = self._space
     Model = self._Model
@@ -181,16 +188,23 @@ def codeFemDg(self):
     predefined.update( {t: arg_t} )
     self.predefineCoefficients(predefined,'x')
 
-    maxSpeed = getattr(Model,"maxLambda",None)
-    if maxSpeed is not None:
-        maxSpeed = maxSpeed(t,x,u,n)
-    self.generateMethod(code, maxSpeed,
-            'double', 'maxSpeed',
+    maxWaveSpeed = getattr(Model,"maxWaveSpeed",None)
+    # check for deprecated maxLambda
+    if maxWaveSpeed is None:
+        maxWaveSpeed = getattr(Model,"maxLambda",None)
+        if maxWaveSpeed is not None:
+            print("WARNING: maxLambda is deprecated, use maxWaveSpeed instead!")
+
+    if maxWaveSpeed is not None:
+        maxWaveSpeed = maxWaveSpeed(t,x,u,n)
+
+    self.generateMethod(code, maxWaveSpeed,
+            'double', 'maxWaveSpeed',
             args=['const double &t',
                   'const Entity &entity', 'const Point &x',
                   'const DDomainType &normal',
                   'const DRangeType &u'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True, inline=True,
             predefined=predefined)
 
     velocity = getattr(Model,"velocity",None)
@@ -201,7 +215,7 @@ def codeFemDg(self):
             args=['const double &t',
                   'const Entity &entity', 'const Point &x',
                   'const DRangeType &u'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
 
     # TODO: fill in diffusion time step from Model
@@ -212,8 +226,14 @@ def codeFemDg(self):
             'double', 'diffusionTimeStep',
             args=['const Entity& entity', 'const Point &x',
                   'const T& circumEstimate', 'const DRangeType &u'],
-            targs=['class Entity, class Point, class T'], const=True,
+            targs=['class Entity, class Point, class T'], const=True,inline=True,
             predefined=predefined)
+
+    hasPhysical = hasattr(Model,"physical")
+    # add static variable for hasPhysical
+    code.append([Declaration(
+                 Variable("constexpr bool", "hasPhysical"), initializer=hasPhysical,
+                 static=True)])
 
     physical = getattr(Model,"physical",True)
     if not isinstance(physical,bool):
@@ -224,11 +244,13 @@ def codeFemDg(self):
         if physicalBound is not None:
             physical = physical*physicalBound
 
+    # add method physical
     self.generateMethod(code, physical,
             'double', 'physical',
             args=['const Entity &entity', 'const Point &x',
                   'const DRangeType &u'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'],
+            const=True,inline=True,
             predefined=predefined)
 
     w = Coefficient(space)
@@ -243,7 +265,7 @@ def codeFemDg(self):
             args=['const Intersection& it', 'const Point &x',
                   'const DRangeType &u',
                   'const DRangeType &w'],
-            targs=['class Intersection, class Point'], const=True,
+            targs=['class Intersection, class Point'], const=True,inline=True,
             predefined=jmpPredefined)
 
     # still missing
@@ -252,7 +274,7 @@ def codeFemDg(self):
             'void', 'adjustAverageValue',
             args=['const Entity& entity', 'const Point &x',
                   'DRangeType &u'],
-            targs=['class Entity, class Point'], const=True, evalSwitch=False,
+            targs=['class Entity, class Point'], const=True,evalSwitch=False,inline=True,
             predefined=predefined)
 
     hasAdvFlux = hasattr(Model,"F_c")
@@ -307,7 +329,7 @@ def codeFemDg(self):
                   'const DDomainType &normal',
                   'const DRangeType &u',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
     self.generateMethod(code, boundaryDFlux,
             'bool', 'diffusionBoundaryFlux',
@@ -318,7 +340,7 @@ def codeFemDg(self):
                   'const DRangeType &u',
                   'const DJacobianRangeType &jac',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
 
     self.generateMethod(code, hasBoundaryValue,
@@ -328,7 +350,7 @@ def codeFemDg(self):
                   'const Entity& entity', 'const Point &x',
                   'const DRangeType &u',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
     self.generateMethod(code, boundaryValue,
             'bool', 'boundaryValue',
@@ -338,7 +360,7 @@ def codeFemDg(self):
                   'const DDomainType &normal',
                   'const DRangeType &u',
                   'RRangeType &result'],
-            targs=['class Entity, class Point'], const=True,
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
 
     limiterModifiedDict = getattr(Model,"limitedRange",None)
@@ -353,7 +375,7 @@ def codeFemDg(self):
     self.generateMethod(code, limiterModified,
             'void', 'limitedRange',
             args=['LimitedRange& limRange'],
-            targs=['class LimitedRange'], const=True, evalSwitch=False,
+            targs=['class LimitedRange'], const=True, evalSwitch=False,inline=True,
             predefined=predefined)
     obtainBounds = Method("void","obtainBounds",
                           targs=['class LimitedRange'],

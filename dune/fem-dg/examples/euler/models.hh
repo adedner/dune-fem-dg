@@ -297,13 +297,13 @@ namespace Fem
 
     // here x is in global coordinates
     template <class LocalEvaluation>
-    inline void maxSpeed( const LocalEvaluation& local,
+    inline void maxWaveSpeed( const LocalEvaluation& local,
                           const DomainType& normal,
                           const RangeType& u,
                           double& advspeed,
                           double& totalspeed ) const
     {
-      advspeed = eulerFlux_.maxSpeed( gamma_ , normal , u );
+      advspeed = eulerFlux_.maxWaveSpeed( gamma_ , normal , u );
       totalspeed = advspeed;
     }
 

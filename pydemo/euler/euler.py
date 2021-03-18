@@ -37,7 +37,7 @@ def CompressibleEuler(dim, gamma):
                                  (rE+p)*v ])
             return as_matrix(res)
 
-        def maxLambda(t,x,U,n):
+        def maxWaveSpeed(t,x,U,n):
             rho, v, p = Model.toPrim(U)
             return abs(dot(v,n)) + sqrt(gamma*p/rho)
         def velocity(t,x,U):

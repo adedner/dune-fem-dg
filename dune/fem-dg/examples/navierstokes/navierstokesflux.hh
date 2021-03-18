@@ -64,9 +64,9 @@ namespace Fem
           du[dimDomain*r+d][d] = u[r];
     }
 
-    inline double maxSpeed( const DomainType& n, const RangeType& u ) const
+    inline double maxWaveSpeed( const DomainType& n, const RangeType& u ) const
     {
-      return eulerFlux_.maxSpeed( gamma_, n, u );
+      return eulerFlux_.maxWaveSpeed( gamma_, n, u );
     }
 
     inline void diffusion( const RangeType& u,

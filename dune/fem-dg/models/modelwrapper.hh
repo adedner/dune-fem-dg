@@ -400,7 +400,7 @@ namespace Fem
     }
 
     template <class LocalEvaluation>
-    inline void maxSpeed( const LocalEvaluation& local,
+    inline void maxWaveSpeed( const LocalEvaluation& local,
                           const DomainType& unitNormal,
                           const RangeType& u,
                           double& advspeed,
@@ -409,7 +409,7 @@ namespace Fem
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      advspeed = advection().maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed = advection().maxWaveSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 
@@ -439,9 +439,9 @@ namespace Fem
     }
 
     // we have physical check for this model
-    bool hasPhysical() const
+    constexpr bool hasPhysical() const
     {
-      return true;
+      return AdvectionModelImp::hasPhysical;
     }
 
     // calculate jump between left and right value
@@ -450,7 +450,12 @@ namespace Fem
                          const DomainType& x,
                          const RangeType& u) const
     {
-      return advection().physical( entity, x, u ) > 0;
+      if constexpr ( AdvectionModelImp::hasPhysical )
+      {
+        return advection().physical( entity, x, u ) > 0;
+      }
+      else
+        return true;
     }
 
     // adjust average value if necessary

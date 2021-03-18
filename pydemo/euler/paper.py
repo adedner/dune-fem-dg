@@ -28,7 +28,7 @@ class Model:
     boundary = {range(1,5): lambda t,x,U: U}
 
     # interface method needed for LLF and time step control
-    def maxLambda(t,x,U,n):
+    def maxWaveSpeed(t,x,U,n):
         rho, v, p = Model.toPrim(U)
         return abs(dot(v,n)) + sqrt(Model.gamma*p/rho)
 

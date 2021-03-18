@@ -25,7 +25,7 @@ def ShallowWater(topo,g):
                     [h*v[0], h*v[1]],
                     [h*v[0]*v[0] + p, h*v[0]*v[1]],
                     [h*v[0]*v[1], h*v[1]*v[1] + p] ] )
-        def maxLambda(t,x,U,n):
+        def maxWaveSpeed(t,x,U,n):
             h,v = U[0], Model.velo(U)
             return abs(dot(v,n)) + sqrt(g*h)
         def velocity(t,x,U):
@@ -70,8 +70,8 @@ def bgModel(OrigModel,space):
             # U = OrigModel.toCons(V+bg_h)
             # return OrigModel.F_c(t,x,U)-OrigModel.F_c(t,x,bg_h)
             return OrigModel.F_c(t,x,U+bg_h)-OrigModel.F_c(t,x,bg_h)
-        def maxLambda(t,x,U,n):
-            return OrigModel.maxLambda(t,x,U+bg_h,n)
+        def maxWaveSpeed(t,x,U,n):
+            return OrigModel.maxWaveSpeed(t,x,U+bg_h,n)
         def velocity(t,x,U):
             return OrigModel.velocity(t,x,U+bg_h)
         def physical(t,x,U):

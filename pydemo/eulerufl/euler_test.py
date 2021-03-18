@@ -84,7 +84,7 @@ order = 2
 for ele_n in ele_ns:
     # Mesh and function space.
     domain = cartesianDomain([0, 0], [0.5*pi, 0.5*pi], [ele_n, ele_n])
-    mesh   = aluCubeGrid(domain, serial = True, dimgrid = 2)
+    mesh   = aluCubeGrid(domain)
 
     V = dglegendre(mesh, dimRange = 4, storage = 'istl', order = order)
 

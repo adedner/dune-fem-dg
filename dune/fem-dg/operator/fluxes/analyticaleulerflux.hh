@@ -202,7 +202,7 @@ namespace Fem
      * \f[ c_s (\rho,p) = \sqrt{\gamma\frac{p}{\rho}}. \f]
      */
     template <class RangeType>
-    inline FieldType maxSpeed(const FieldType gamma, const DomainType& n, const RangeType& u) const
+    inline FieldType maxWaveSpeed(const FieldType gamma, const DomainType& n, const RangeType& u) const
     {
       assert( u[0] > FieldType( 1e-10 ) );
       // make sure that n is unit normal

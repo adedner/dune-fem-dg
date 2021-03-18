@@ -28,7 +28,7 @@ def modelOrig(gridView, order, g, topo, T, U, bndConditions):
         def S_e(t,x,U,DU):
             return as_vector([ 0, *(-U[0]*g*grad(Model.topography)) ])
 
-        def maxLambda(t,x,U,n):
+        def maxWaveSpeed(t,x,U,n):
             h, v = Model.toPrim(U)
             return abs(dot(v,n)) + sqrt(g*h)
         def velocity(t,x,U):
@@ -78,7 +78,7 @@ def modelWB(gridView, g, topo, T, U, bndConditions):
                                   -U[0]*g*DU[dim+1,1],
                                0 ])
 
-        def maxLambda(t,x,U,n):
+        def maxWaveSpeed(t,x,U,n):
             h, v = Model.toPrim(U)
             return abs(dot(v,n)) + sqrt(g*h)
         def velocity(t,x,U):

@@ -90,7 +90,7 @@ def useODESolver(polOrder=2, limiter='default'):
     grid.writeVTK(name,
         pointdata=[u_h],
         # celldata={"density":rho, "pressure":p}, # bug: density not shown correctly
-        #celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
+        #celldata={"pressure":p, "maxWaveSpeed":Model.maxWaveSpeed(0,0,u_h,as_vector([1,0]))},
         #cellvector={"velocity":v},
         number=count, subsampling=2)
     start = time.time()
@@ -107,7 +107,7 @@ def useODESolver(polOrder=2, limiter='default'):
             count += 1
             grid.writeVTK(name,
                 pointdata=[u_h],
-                #celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
+                #celldata={"pressure":p, "maxWaveSpeed":Model.maxWaveSpeed(0,0,u_h,as_vector([1,0]))},
                 #cellvector={"velocity":v},
                 number=count, subsampling=2)
             saveTime += saveStep
@@ -115,7 +115,7 @@ def useODESolver(polOrder=2, limiter='default'):
     print("number of time steps ", tcount)
     grid.writeVTK(name,
         pointdata=[u_h],
-        #celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
+        #celldata={"pressure":p, "maxWaveSpeed":Model.maxWaveSpeed(0,0,u_h,as_vector([1,0]))},
         #cellvector={"velocity":v},
         number=count, subsampling=2)
 

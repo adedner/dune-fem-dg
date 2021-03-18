@@ -98,8 +98,8 @@ namespace Fem
       double maxspeedl, maxspeedr, maxspeed;
       double viscparal, viscparar, viscpara;
 
-      model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
-      model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
+      model_.maxWaveSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+      model_.maxWaveSpeed( right, normal, uRight, viscparar, maxspeedr );
 
       maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
       viscpara = (viscparal > viscparar) ? viscparal : viscparar;

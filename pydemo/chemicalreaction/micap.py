@@ -181,7 +181,7 @@ class Model:
                            [*(Model.velocity(t,x,U) * cu)],
                            [*(Model.velocity(t,x,U) * cb)]
                          ])
-    def maxLambda(t,x,U,n):
+    def maxWaveSpeed(t,x,U,n):
         return abs(dot(Model.velocity(t,x,U),n))
     def velocity(t,x,U):
         return transportVelocity

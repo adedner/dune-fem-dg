@@ -82,7 +82,7 @@ namespace Fem
       // set gLeft
       anaflux.mv( normal, gLeft );
 
-      model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+      model_.maxWaveSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
 
       model_.setEntity( right.entity() );
 
@@ -90,7 +90,7 @@ namespace Fem
       // add to gLeft
       anaflux.umv( normal, gLeft );
 
-      model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
+      model_.maxWaveSpeed( right, normal, uRight, viscparar, maxspeedr );
 
       const double maxspeed = std::max( maxspeedl, maxspeedr);
       const double viscpara = std::max( viscparal, viscparar);
