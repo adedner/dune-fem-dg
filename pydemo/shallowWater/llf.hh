@@ -80,8 +80,8 @@ namespace Dune
         double maxspeedl, maxspeedr;
         double viscparal, viscparar;
 
-        model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
-        model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
+        model_.maxWaveSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+        model_.maxWaveSpeed( right, normal, uRight, viscparar, maxspeedr );
 
         const double maxspeed = std::max( maxspeedl, maxspeedr);
         const double viscpara = std::max( viscparal, viscparar);

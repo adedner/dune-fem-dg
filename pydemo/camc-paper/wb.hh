@@ -90,8 +90,8 @@ struct WB : public Dune::Fem::DGAdvectionFluxPythonUserDefine< ModelImp >
 
     double maxspeedl, maxspeedr;
     double viscparal, viscparar;
-    model().maxSpeed( eval, normal, uLeft,  viscparal, maxspeedl );
-    model().maxSpeed( eval, normal, uRight, viscparar, maxspeedr );
+    model().maxWaveSpeed( eval, normal, uLeft,  viscparal, maxspeedl );
+    model().maxWaveSpeed( eval, normal, uRight, viscparar, maxspeedr );
 
     const double maxspeed = std::max( maxspeedl, maxspeedr);
     const double viscpara = std::max( viscparal, viscparar);
