@@ -9,6 +9,17 @@ if [ "$DUNE_CONTROL_PATH" != "" ]; then
   fi
 fi
 
+# check for system installation
+if test -f /usr/share/dune/cmake/modules/DuneMacros.cmake || test -f /usr/bin/dunecontrol ; then
+  echo "DUNE system installation seems to exists, remove it first by running:"
+  echo ""
+  echo "sudo apt remove libdune*"
+  echo "sudo apt autoremove"
+  echo ""
+  exit 1
+fi
+
+
 # create necessary python virtual environment
 # this script assumes the name venv.
 # Otherwise copy the instructions from the script
@@ -178,6 +189,6 @@ echo "####################################################
 
 Build finished (hopefully successful). Use
 
-source ./$VENVDIR/bin/activate
+source $VENVDIR/bin/activate
 
 to activate the virtual environment!"
