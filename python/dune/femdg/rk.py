@@ -56,7 +56,6 @@ class HelmholtzButcher:
         self.op = op
         self._alpha = None
         self.res = op.space.interpolate(op.space.dimRange*[0],name="res")
-        self.x   = op.space.interpolate(op.space.dimRange*[0],name="res")
         self.counter = 0
         self.inner_counter = 0
     @property
@@ -70,8 +69,8 @@ class HelmholtzButcher:
         xtmp = self.op.space.function("x_tmp", dofVector=x_coeff)
         xtmp *= self.alpha
         xtmp += self.baru
-        self.op(self.x, self.res)
-        self.res -= self.x
+        self.op(xtmp, self.res)
+        self.res -= xtmp
         return self.res.as_numpy
 
     def solve(self,baru,target):
@@ -94,7 +93,6 @@ class HelmholtzShuOsher:
         self.op = op
         self._alpha = None
         self.res = op.space.interpolate(op.space.dimRange*[0],name="res")
-        self.x   = op.space.interpolate(op.space.dimRange*[0],name="res")
         self.counter = 0
         self.inner_counter = 0
     @property
