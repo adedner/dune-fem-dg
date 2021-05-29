@@ -70,8 +70,8 @@ class HelmholtzButcher:
         # x = self.op.space.function("tmp", dofVector=x_coeff)
         ## for now copy dof vector
         self.x.as_numpy[:]  = x_coeff[:]
-        self.x.as_numpy[:] *= self.alpha
-        self.x.as_numpy[:] += self.baru.as_numpy[:]
+        self.x *= self.alpha
+        self.x += self.baru
         #self.x *= self.alpha
         #self.x += self.baru
         self.op(self.x, self.res)
@@ -87,8 +87,8 @@ class HelmholtzButcher:
 
         sol_coeff = target.as_numpy
         sol_coeff[:] = newton_krylov(self.f, sol_coeff,
-                                         verbose=False,
-                                         callback=callb, inner_callback=icallb)
+                                     verbose=False,
+                                     callback=callb, inner_callback=icallb)
         self.counter = counter
         self.inner_counter = inner_counter # linear iterations not crrect
 # Set up problem: rhs + a*L[y] - y = 0
@@ -275,9 +275,9 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
             self.op(self.q2, self.tmp)
             self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             self.q2.axpy(dt*self.mu21, self.tmp)
-            self.q2.assgin(tmp)
-            self.helmholtz.solve(self.tmp, self.q2)
-        u.as_numpy[:] *= (1-self.lamsps)
+            self.helmholtz.solve(self.q2,self.tmp)
+            self.q2.assign(self.tmp)
+        u *= (1-self.lamsps)
         u.axpy(self.lamsps, self.q2)
         self.op(self.q2, self.tmp)
         self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
@@ -313,7 +313,7 @@ class ExplSSP2:
         self.op.stepTime(self.c(i),dt)
         self.op(u,self.tmp)
         self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
-        u.as_numpy[:] *= (self.stages-1)/self.stages
+        u *= (self.stages-1)/self.stages
         u.axpy(dt/self.stages, self.tmp)
         u.axpy(1/self.stages, self.q2)
         self.op.applyLimiter( u )
@@ -368,7 +368,7 @@ class ExplSSP3:
             self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
-        u.as_numpy[:] *= (self.n-1)/(2*self.n-1)
+        u *= (self.n-1)/(2*self.n-1)
         u.axpy(self.n/(2*self.n-1), self.q2)
         while i <= self.stages:
             self.op.stepTime(self.c(i),dt)
@@ -423,7 +423,7 @@ class ImplSSP3:
             self.q2.axpy(dt*self.mu21, self.tmp)
             self.helmholtz.solve(self.q2,self.tmp)
             self.q2.assign(self.tmp)
-        u.as_numpy[:] *= (1-self.lamsps)
+        u *= (1-self.lamsps)
         u.axpy(self.lamsps, self.q2)
         self.op(self.q2, self.tmp)
         self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
@@ -465,9 +465,9 @@ class ExplSSP4_10:
             u.axpy(dt/6, self.tmp)
             i += 1
 
-        self.q2.as_numpy[:] *= 1/25
+        self.q2 *= 1/25
         self.q2.axpy(9/25, u)
-        u.as_numpy[:] *= -5
+        u *= -5
         u.axpy(15, self.q2)
 
         while i <= 9:
@@ -480,7 +480,7 @@ class ExplSSP4_10:
         self.op.stepTime(self.c(i), dt)
         self.op(u, self.tmp)
         self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
-        u.as_numpy[:] *= 3/5
+        u *= 3/5
         u.axpy(1, self.q2)
         u.axpy(dt/10, self.tmp)
         self.op.applyLimiter( u )
