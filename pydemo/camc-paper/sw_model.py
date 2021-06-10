@@ -125,5 +125,12 @@ def model(gridView, order, g, problem, wb):
         eta = h(0)+topography
         U0 = [eta,0,0]
         endTime = 2
+        boundary = {range(1,5): lambda t,x,u: u}
+    elif problem == "dambreak":
+        topography = 0
+        eta = conditional( x[0] < 0.5, 1, 0.5 )
+        U0 = [eta,0,0]
+        endTime = 0.2
+        boundary = {range(1,5): lambda t,x,u: u}
     return modelWB(gridView,g,topography,endTime,U0,boundary) if wb\
            else modelOrig(gridView,order,g,topography,endTime,U0,boundary)
