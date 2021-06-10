@@ -1,0 +1,13 @@
+DGF
+
+Interval
+-0.4   -0.4   % first corner
+ 1.2    0.4   % second corner
+ 12     6    % 40 cells in each direction (x, y)
+#
+
+BoundaryDomain
+1 -0.401 -1     -0.399 1
+2  1.199 -1      1.201 1
+default 3
+#
