@@ -439,7 +439,7 @@ namespace Fem
     {
       if( usedAdmissibleFunctions_ == lp )
       {
-        linProg_.reset( new LinearProgramming( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
+        linProg_.reset( new LinearProgramming( gridPart_.gridView(), BoundaryValue( *this ),
                         parameter.getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
       }
 
