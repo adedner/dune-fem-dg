@@ -1,6 +1,7 @@
 #ifndef DUNE_FEM_DG_INTERPOLATE_HH
 #define DUNE_FEM_DG_INTERPOLATE_HH
 
+#include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem/function/common/discretefunction.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
 #include <dune/fem-dg/pass/threadhandle.hh>
@@ -36,6 +37,7 @@ namespace Dune
         ldv.reserve( v_.space().blockMapper().maxNumDofs() * DiscreteFunction::DiscreteFunctionSpaceType::localBlockSize );
 
         typename GridFunction::LocalFunctionType uLocal( u_ );
+        LocalInterpolation< typename DiscreteFunction::DiscreteFunctionSpaceType > interpolation( v_.space() );
 
         const auto endit = iterators_.end();
         // iterate over selected partition
@@ -44,7 +46,7 @@ namespace Dune
           const auto& entity = *it;
 
           // obtain local interpolation
-          const auto interpolation = v_.space().interpolation( entity );
+          auto guard = bindGuard( interpolation, entity );
 
           // resize local dof vector
           ldv.resize( v_.space().basisFunctionSet( entity ).size() );

@@ -16,6 +16,7 @@
 #include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
 #include <dune/fem/space/common/capabilities.hh>
+#include <dune/fem/space/common/interpolate.hh>
 
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
@@ -409,6 +410,7 @@ namespace Fem
       uEn_(),
       uEnAvg_(),
       limitEn_(),
+      interpolEn_( spc_ ),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
       dofConversion_(dimRange),
       faceQuadOrd_( fQ ),
@@ -504,7 +506,6 @@ namespace Fem
     {
       int defaultVolOrd = 0;
       int defaultFceOrd = 0;
-      const auto& gridPart = space.gridPart();
       for( const auto& entity : space )
       {
         // initialize the corner point set needed here
@@ -1144,6 +1145,7 @@ namespace Fem
       assert( limitEn_ );
       DestLocalFunctionType& limitEn = *limitEn_;
       auto limguard = bindGuard( limitEn, en );
+      auto interpolGuad = bindGuard( interpolEn_, en );
 
       // project linearFunction onto limitEn
       interpolate( en, geo, limit, linearFunction_, limitEn );
@@ -1338,17 +1340,15 @@ namespace Fem
       uTmpLocal_.init( en );
       uTmpLocal_.clear();
 
-      const auto interpolation = spc_.interpolation( en );
-
       const bool constantValue = linearFunction.isConstant();
       if( constantValue )
       {
         const ConstantFunction& constFct = linearFunction;
-        interpolation( constFct, uTmpLocal_.localDofVector() );
+        interpolEn_( constFct, uTmpLocal_.localDofVector() );
       }
       else
       {
-        interpolation( linearFunction, uTmpLocal_.localDofVector() );
+        interpolEn_( linearFunction, uTmpLocal_.localDofVector() );
       }
 
       // check physicality of projected data
@@ -1373,7 +1373,7 @@ namespace Fem
         {
           // general interpolation of constant value
           const ConstantFunction& constFct = linearFunction;
-          interpolation( constFct, uTmpLocal_.localDofVector() );
+          interpolEn_( constFct, uTmpLocal_.localDofVector() );
         }
       }
 
@@ -1875,6 +1875,8 @@ namespace Fem
     mutable std::unique_ptr< LocalFunctionType > uEn_;
     mutable std::unique_ptr< LocalFunctionType > uEnAvg_;
     mutable std::unique_ptr< DestLocalFunctionType > limitEn_;
+
+    mutable LocalInterpolation<DiscreteFunctionSpaceType> interpolEn_;
 
     const double orderPower_;
     const DofConversionUtilityType dofConversion_;

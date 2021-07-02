@@ -1,6 +1,7 @@
 #ifndef DUNE_FEMDG_SCALINGLIMITPASS_HH
 #define DUNE_FEMDG_SCALINGLIMITPASS_HH
 
+#include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 
 //*************************************************************
@@ -167,6 +168,7 @@ namespace Fem
       scaledFunction_( gridPart_, discreteModel_.model(), spc_.order() ),
       uEn_(),
       limitEn_(),
+      interpolEn_( spc_ ),
       indexSet_( gridPart_.indexSet() ),
       cornerPointSetContainer_(),
       dofConversion_(dimRange),
@@ -622,6 +624,7 @@ namespace Fem
       assert( uEn_ );
       auto guard = bindGuard( *uEn_, en );
       const LocalFunctionType& uEn = *uEn_;
+      auto interpolGuard = bindGuard( interpolEn_, en );
 
       // get reference to cell average
       RangeType& enVal = scaledFunction_.enVal_;
@@ -683,8 +686,7 @@ namespace Fem
         // set all dofs to zero
         limitEn.clear();
 
-        const auto interpolation = spc_.interpolation( en );
-        interpolation( scaledFunction_, limitEn.localDofVector() );
+        interpolEn_( scaledFunction_, limitEn.localDofVector() );
 
         // set indicator 1
         discreteModel_.markIndicator();
@@ -881,6 +883,8 @@ namespace Fem
 
     mutable std::unique_ptr< LocalFunctionType > uEn_;
     mutable std::unique_ptr< DestLocalFunctionType > limitEn_;
+
+    mutable LocalInterpolation< DiscreteFunctionSpaceType > interpolEn_;
 
     const IndexSetType& indexSet_;
 

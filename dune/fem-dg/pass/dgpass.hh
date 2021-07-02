@@ -972,7 +972,6 @@ namespace Fem
     {
       int defaultVolOrd = 0;
       int defaultFceOrd = 0;
-      const auto& gridPart = space.gridPart();
       for( const auto& entity : space )
       {
         defaultVolOrd = defaultVolumeQuadratureOrder( space, entity );
