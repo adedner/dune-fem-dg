@@ -9,13 +9,13 @@ femdg.stepper.endtime: 0.15
 # riemanndata: [1., -1., 1.,    1., 1., 1.]
 
 # number of threads used in OMP program
-fem.parallel.numberofthreads: 1
+fem.parallel.numberofthreads: 4
 
 # coarsest level that should be present
 fem.adaptation.coarsestLevel: 0
 # finest level that should be present
 fem.adaptation.finestLevel: 4
-fem.eoc.steps: 3
+fem.eoc.steps: 5
 fem.timeprovider.factor: 0.35
 femdg.limiter.indicator: jump
 
@@ -74,7 +74,6 @@ gridsol.savestep: 0.5
 gridsol.firstwrite: 0.5
 gridsol.filename: straka-checkpoint
 
-fem.eoc.steps: 3
 femdg.stepper.printcount: 100
 
 # coarsest level that should be present (also initial refinement)
