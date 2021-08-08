@@ -11,7 +11,7 @@
 
 #include <dune/fem-dg/pass/pass.hh>
 
-#include "threadhandle.hh"
+#include <dune/fem/misc/threads/threadpool.hh>
 
 namespace Dune
 {
@@ -255,8 +255,11 @@ namespace Fem
 #if 1
       // initialize each thread pass by the thread itself to avoid NUMA effects
       {
-        // see threadhandle.hh
-        Fem :: ThreadHandle :: runLocked( *this );
+        // lambda calling parallel code
+        auto threadedRun = [this] () { this->runThread(); };
+
+        // see threadpool.hh
+        Fem :: ThreadPool :: runLocked( threadedRun );
       }
 #else
       {
@@ -486,12 +489,15 @@ namespace Fem
         arg_  = &arg ;
         dest_ = &dest ;
 
+        // lambda calling parallel code
+        auto threadedRun = [this] () { this->runThread(); };
+
         ////////////////////////////////////////////////////////////
         // BEGIN PARALLEL REGION, first stage, element integrals
         ////////////////////////////////////////////////////////////
         {
-          // see threadhandle.hh
-          Fem :: ThreadHandle :: run( *this );
+          // see threadpool.hh
+          Fem :: ThreadPool :: run( threadedRun );
         }
         /////////////////////////////////////////////////
         // END PARALLEL REGION
@@ -506,8 +512,8 @@ namespace Fem
           // mark second stage
           firstStage_ = false ;
 
-          // see threadhandle.hh
-          Fem :: ThreadHandle :: run( *this );
+          // see threadpool.hh
+          Fem :: ThreadPool :: run( threadedRun );
         }
         /////////////////////////////////////////////////
         // END PARALLEL REGION
