@@ -633,8 +633,9 @@ namespace Fem
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
-            assert( iterators_.thread( *it ) == thread );
-            myPass.applyLocalInterior( *it, nbChecker );
+            const auto entity = *it;
+            assert( iterators_.thread( entity ) == thread );
+            myPass.applyLocalInterior( entity, nbChecker );
           }
 
           // receive ghost data (only master thread)
@@ -652,8 +653,9 @@ namespace Fem
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
-            assert( iterators_.thread( *it ) == thread );
-            myPass.applyLocalProcessBoundary( *it, nbChecker );
+            const auto entity = *it;
+            assert( iterators_.thread( entity ) == thread );
+            myPass.applyLocalProcessBoundary( entity, nbChecker );
           }
 
           assert( arg_ );
@@ -674,8 +676,9 @@ namespace Fem
         const Iterator endit = iterators_.end();
         for (Iterator it = iterators_.begin(); it != endit; ++it)
         {
-          assert( iterators_.thread( *it ) == thread );
-          myPass.applyLocal( *it, nbChecker );
+          const auto entity = *it;
+          assert( iterators_.thread( entity ) == thread );
+          myPass.applyLocal( entity, nbChecker );
         }
 
         assert( arg_ );

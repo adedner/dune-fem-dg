@@ -99,7 +99,7 @@ namespace Dune
       // return time
       double time () const { return time_; }
 
-      // set inside local funtions to entity
+      // set inside local functions to entity
       void setEntity ( const EntityType &entity )
       {
         localFunctionsInside_.init( entity );

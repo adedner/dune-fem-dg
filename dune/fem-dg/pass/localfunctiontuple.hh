@@ -118,6 +118,7 @@ namespace Dune
       typedef LocalFunctionTuple< DiscreteFunctionTuple, Entity, TupleSize > ThisType;
 
       template< int pos > struct SetEntity;
+      template< int pos > struct Unbind;
       template< int pos > struct Evaluate;
       template< int pos > struct EvaluateQuadrature;
       template< int pos > struct Jacobian;
@@ -153,6 +154,11 @@ namespace Dune
       LocalFunctionTuple ( Factory factory )
       : localFunctionTuple_( Dune::transformTuple< LocalFunctionEvaluator, Factory >( std::move(factory) ) )
       {}
+
+      ~LocalFunctionTuple ()
+      {
+        Fem::ForLoop< Unbind, 0, TupleSize-1 >::apply( localFunctions() );
+      }
 
       /** \brief set local functions to given entity
        *
@@ -296,6 +302,20 @@ namespace Dune
                           const EntityType &entity )
       {
         std::get< pos >( localFunctions ).init( entity );
+      }
+    };
+
+
+    // Implementation of LocalFunctionTuple::SetEntity
+    // -----------------------------------------------
+
+    template< class DiscreteFunctionTuple, class Entity, size_t TupleSize >
+    template< int pos >
+    struct LocalFunctionTuple< DiscreteFunctionTuple, Entity, TupleSize >::Unbind
+    {
+      static void apply ( LocalFunctionTupleType &localFunctions )
+      {
+        std::get< pos >( localFunctions ).unbind();
       }
     };
 

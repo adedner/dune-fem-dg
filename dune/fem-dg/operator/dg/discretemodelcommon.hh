@@ -309,7 +309,7 @@ namespace Fem
     // are thread private
     ModelType  model_;
 
-    const AdvectionFluxType& numflux_;
+    AdvectionFluxType numflux_;
     mutable RangeType uBnd_;
   };                                              /*@LST0E@*/
 

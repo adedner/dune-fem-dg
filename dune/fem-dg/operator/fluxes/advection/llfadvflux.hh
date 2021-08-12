@@ -105,7 +105,8 @@ namespace Fem
       // conservation property
       gRight = gLeft;
 
-      model_.setEntity( left.entity() );
+      // model is an internal object so we can avoid this
+      //model_.setEntity( left.entity() );
 
       return maxspeed * faceArea;
     }

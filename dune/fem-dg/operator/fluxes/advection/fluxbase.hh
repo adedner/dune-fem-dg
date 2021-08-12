@@ -104,7 +104,9 @@ namespace Fem
       return 0.0;
     }
   protected:
-    const ModelType& model_;
+    // NOTE: model is stored as object for various reasons
+    // such as thread safety and model states
+    ModelType model_;
     const ParameterType param_;
   };
 

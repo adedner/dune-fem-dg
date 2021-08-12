@@ -101,7 +101,11 @@ namespace Fem
     enum { evaluateJacobian = false };
 
   protected:
-    const Model& model_;
+    // store an instance here so that for thread parallel
+    // runs class variables are thread private since discrete models
+    // are thread private
+    Model model_;
+
     const LimiterFunctionType limiterFunction_;
     mutable DomainType velocity_;
     const DomainFieldType veloEps_;
