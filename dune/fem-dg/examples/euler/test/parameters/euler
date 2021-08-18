@@ -3,13 +3,13 @@ fem.verboserank: 0
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffractio
-problem: sod
-femdg.stepper.endtime: 0.15
+problem: vortex
+femdg.stepper.endtime: 100.0
 # problemflag: 0
 # riemanndata: [1., -1., 1.,    1., 1., 1.]
 
 # number of threads used in OMP program
-fem.parallel.numberofthreads: 4
+fem.parallel.numberofthreads: 12
 
 # coarsest level that should be present
 fem.adaptation.coarsestLevel: 0
@@ -19,12 +19,12 @@ fem.eoc.steps: 5
 fem.timeprovider.factor: 0.35
 femdg.limiter.indicator: jump
 
-#femdg.stepper.fixedtimestep: 0.0001325
-femdg.nonblockingcomm: false
+femdg.stepper.fixedtimestep: 0.005
+#femdg.nonblockingcomm: false
 
-femdg.stepper.printcount: 100
+femdg.stepper.printcount: 1000
 fem.io.outputformat: none
-fem.io.savestep: 0.16
+fem.io.savestep: 10.0
 
 fem.ode.odesolver: EX
 fem.ode.order: 3
@@ -32,7 +32,8 @@ fem.timeprovider.factor: 0.35
 fem.timeprovider.updatestep: 1
 
 fem.io.macroGridFile_2d:
-fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+#fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+fem.io.macroGridFile_2d:  ../../grids/unitcube2_per.dgf
 
 fem.eoc.outputpath: ./data
 #femdg.fixedtimestepeocloopfactor: 1
@@ -61,6 +62,8 @@ femdg.limiter.epsilon: 1e-8
 # add indicator to outputvariables 
 femdg.limiter.indicatoroutput: true
 
+femdg.limiter.indicator: none
+
 # DATA WRITER
 #------------
 fem.io.datafileprefix: RC
@@ -73,8 +76,6 @@ fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 dea
 gridsol.savestep: 0.5
 gridsol.firstwrite: 0.5
 gridsol.filename: straka-checkpoint
-
-femdg.stepper.printcount: 100
 
 # coarsest level that should be present (also initial refinement)
 fem.adaptation.coarsestLevel: 0
