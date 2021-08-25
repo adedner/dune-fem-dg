@@ -125,8 +125,8 @@ def uflExpr(Model,space,t):
            boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue,\
            physicalBound
 
-def codeFemDg(self):
-    code = self._code()
+def codeFemDg(self, *args, **kwargs):
+    code = self._code( ellipticBndConditions = False )
     code.append(AccessModifier("public"))
     # TODO: why isn't this being used - see jump? Code duplication going on here...
     # velocity, maxWaveSpeed, velocity, diffusionTimeStep, physical, jump,\

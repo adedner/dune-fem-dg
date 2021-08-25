@@ -14,7 +14,7 @@
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
-#include <dune/fem/schemes/diffusionmodel.hh>
+#include <dune/fem/schemes/conservationlawmodel.hh>
 
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
@@ -280,7 +280,7 @@ namespace Fem
                            JacobianRangeType& result ) const
     {
       assert( hasAdvection );
-      advection().diffusiveFlux( local.quadraturePoint(), u, du, result );
+      advection().flux( local.quadraturePoint(), u, du, result );
     }
 
     template <class LocalEvaluation>
@@ -374,7 +374,7 @@ namespace Fem
                     JacobianRangeType& diff ) const
     {
       assert( hasDiffusion );
-      diffusion().diffusiveFlux( local.quadraturePoint(), u, du, diff);
+      diffusion().flux( local.quadraturePoint(), u, du, diff);
     }
 
 

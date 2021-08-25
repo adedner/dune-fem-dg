@@ -126,15 +126,17 @@ def femDGModels(Model, space, initialTime=0):
             diffModel += inner(as_vector(Model.S_impl(t,x,u,grad(u))),v)*dx
             print("Model.S_s is deprecated. Use S_i instead!")
 
-    from dune.fem.model import elliptic
+    from dune.fem.model import conservationlaw
+    #from dune.fem.model import integrands as conservationlaw
     virtualize = False
 
-    advModel  = elliptic(space.grid, advModel,
-                      modelPatch=transform(Model,space,t,"Adv"),
-                      virtualize=virtualize)
-    diffModel = elliptic(space.grid, diffModel,
-                      modelPatch=transform(Model,space,t,"Diff"),
-                      virtualize=virtualize)
+    advModel  = conservationlaw(space.grid, advModel,
+                                modelPatch=transform(Model,space,t,"Adv"),
+                                virtualize=virtualize)
+
+    diffModel = conservationlaw(space.grid, diffModel,
+                                modelPatch=transform(Model,space,t,"Diff"),
+                                virtualize=virtualize)
 
     Model._ufl = {"u":u,"v":v,"n":n,"x":x,"t":t}
 
@@ -420,7 +422,7 @@ def femDGOperator(Model, space,
     includes += ["dune/fem-dg/python/operator.hh"]
     includes += ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
     includes += space._includes + destinationIncludes
-    includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
+    includes += ["dune/fem/schemes/conservationlawmodel.hh", "dune/fempy/parameter.hh"]
     includes += advModel._includes + diffModel._includes
 
     additionalType = additionalClass + '< typename ' + spaceType + '::FunctionSpaceType >'
