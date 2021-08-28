@@ -201,7 +201,6 @@ namespace Fem
 
     template <class LocalEvaluation>
     inline double diffusionTimeStep( const LocalEvaluation& local,
-                                     const double circumEstimate,
                                      const RangeType& u ) const
     {
       // look at Ch. Merkle Diplom thesis, pg. 38
@@ -211,7 +210,7 @@ namespace Fem
       const RangeFieldType mu = problem_.mu( u );
 
       // ksi = 0.25
-      return mu * circumEstimate * alpha_ / (0.25 * u[0] * local.volume());
+      return mu * alpha_ / (0.25 * u[0]);
     }
 
 

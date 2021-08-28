@@ -224,9 +224,8 @@ def codeFemDg(self, *args, **kwargs):
         diffusionTimeStep = diffusionTimeStep(t,x,u)
     self.generateMethod(code, diffusionTimeStep,
             'double', 'diffusionTimeStep',
-            args=['const Entity& entity', 'const Point &x',
-                  'const T& circumEstimate', 'const DRangeType &u'],
-            targs=['class Entity, class Point, class T'], const=True,inline=True,
+            args=['const Entity& entity', 'const Point &x', 'const DRangeType &u'],
+            targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
 
     hasPhysical = hasattr(Model,"physical")

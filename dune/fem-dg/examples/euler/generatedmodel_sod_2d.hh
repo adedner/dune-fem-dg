@@ -372,8 +372,8 @@ struct Additional
       return result;
     }
 
-    template< class Entity, class Point, class T >
-    double diffusionTimeStep ( const Entity& entity, const Point &x, const T& circumEstimate, const DRangeType &u ) const
+    template< class Entity, class Point>
+    double diffusionTimeStep ( const Entity& entity, const Point &x, const DRangeType &u ) const
     {
       double result;
       result = double( (0) );

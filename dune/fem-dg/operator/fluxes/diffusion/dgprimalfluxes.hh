@@ -868,11 +868,9 @@ namespace Fem
         (left.intersection().conforming() ? faceLengthSqr
           : (nonconformingFactor_ * faceLengthSqr));
 
-      const double diffTimeLeft =
-        model_.diffusionTimeStep( left, faceVolumeEstimate, uLeft );
+      const double diffTimeLeft = diffusionTimeStep( left, faceVolumeEstimate, uLeft );
 
-      const double diffTimeRight =
-        model_.diffusionTimeStep( right, faceVolumeEstimate, uRight );
+      const double diffTimeRight = diffusionTimeStep( right, faceVolumeEstimate, uRight );
 
       // take minimum to proceed
       const double diffTimeStep = std::max( diffTimeLeft, diffTimeRight );
@@ -1003,13 +1001,20 @@ namespace Fem
       //  --Time step boundary
       //
       ////////////////////////////////////////////////////
-      const double diffTimeStep =
-        model_.diffusionTimeStep( left, faceLengthSqr, uLeft );
-
-      return diffTimeStep * cflDiffinv_;
+      return diffusionTimeStep( left, faceLengthSqr, uLeft ) * cflDiffinv_;
     }
 
   protected:
+    template <class LocalEvaluation>
+    double diffusionTimeStep(const LocalEvaluation& local,
+                             const double faceVolumeEstimate,
+                             const RangeType& u) const
+    {
+      // apply proper scaling to obtain h^2 scaling of time step estimate
+      return (faceVolumeEstimate / local.volume()) *
+        model_.diffusionTimeStep( local, u ); // model only provides scaling with diffusion coefficient
+    }
+
     GridPartType&                 gridPart_;
     const EnumType                method_;
     double                        penalty_;

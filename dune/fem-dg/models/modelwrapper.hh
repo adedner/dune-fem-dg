@@ -290,16 +290,15 @@ namespace Fem
     {
       if( hasDiffusion )
       {
-        maxValue = diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), 0.0, u );
+        maxValue = diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), u );
       }
     }
 
-    template <class LocalEvaluation, class T>
+    template <class LocalEvaluation>
     inline double diffusionTimeStep( const LocalEvaluation& local,
-                                     const T& circumEstimate,
                                      const RangeType& u ) const
     {
-      return diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
+      return diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), u );
     }
 
     // is not used

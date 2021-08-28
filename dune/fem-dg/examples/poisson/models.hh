@@ -278,7 +278,6 @@ namespace Poisson
      */
     template <class LocalEvaluation>
     inline double diffusionTimeStep (const LocalEvaluation& local,
-                                     const double circumEstimate,
                                      const RangeType& u) const
     {
       return 0;
