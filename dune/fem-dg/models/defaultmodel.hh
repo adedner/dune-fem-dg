@@ -481,12 +481,10 @@ namespace Fem
      * the diffusion term.
      *
      * \param[in]  local local evaluation
-     * \param[in]  circumEstimate estimation of the circum
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      */
     template <class LocalEvaluation>
     inline double diffusionTimeStep( const LocalEvaluation& local,
-                                     const double circumEstimate,
                                      const RangeType& u ) const
     {
       return 0;
