@@ -5,8 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 from io import StringIO
 
-from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
-
 from dune.typeregistry import generateTypeName
 from dune.generator import Constructor, Method
 from dune.generator.importclass import load as classLoad
