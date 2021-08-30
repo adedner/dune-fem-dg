@@ -5,8 +5,11 @@
 
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/function/common/gridfunctionadapter.hh>
+#include <dune/fem/function/localfunction/mutable.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/misc/compatibility.hh>
+#include <dune/fem/operator/common/temporarylocalmatrix.hh>
+#include <dune/fem/operator/common/localcontribution.hh>
 
 #include <dune/fem-dg/algorithm/sub/steadystate.hh>
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
@@ -14,6 +17,7 @@
 #include <dune/fem-dg/misc/matrixutils.hh>
 #include <dune/fem-dg/operator/fluxes/advection/parameters.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/dgprimalfluxes.hh>
+
 #include "assemblertraits.hh"
 
 namespace Dune
@@ -57,6 +61,12 @@ namespace Fem
     typedef typename Traits::MatrixContainerType                  LinearOperatorType;
     typedef LinearOperatorType                                    MatrixType;
     typedef DomainDiscreteFunctionType                            DestinationType;
+
+    typedef Dune::Fem::AddLocalContribution< LinearOperatorType > LocalMatrixContributionType;
+    //typedef Dune::Fem::TemporaryLocalMatrix<
+    //  typename DomainDiscreteFunctionType::DiscreteFunctionSpaceType,
+    //  typename RangeDiscreteFunctionType::DiscreteFunctionSpaceType > TemporaryLocalMatrixType;
+    //typedef TemporaryLocalMatrixType  LocalMatrixContributionType;
 
     template< class Row, class Col >
     using FakeMatrixAdapter = MatrixType;
@@ -152,7 +162,6 @@ namespace Fem
       //typedef RangeType           RangeTuple;
       //typedef JacobianRangeType   JacobianTuple;
 
-      typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       matrix_->clear();
       if( rhs_ )
       {
@@ -169,12 +178,21 @@ namespace Fem
 
       Dune::Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > rhsLocal( space_ );
 
+      LocalMatrixContributionType localOpEn( *matrix_ );
+      LocalMatrixContributionType localOpNb( *matrix_ );
+      LocalMatrixContributionType localOpNbNb( *matrix_ );
+      LocalMatrixContributionType localOpNbEn( *matrix_ );
+      //LocalMatrixContributionType localOpEn( space_, space_ );
+      //LocalMatrixContributionType localOpNb( space_, space_ );
+      //LocalMatrixContributionType localOpNbNb( space_, space_ );
+      //LocalMatrixContributionType localOpNbEn( space_, space_ );
+
       for( const auto& entity : elements( space_.gridPart() ) )
       {
         const GeometryType &geometry = entity.geometry();
         const double volume = geometry.volume();
 
-        LocalMatrixType localOpEn = matrix_->localMatrix( entity, entity );
+        auto guard = Dune::Fem::bindGuard( localOpEn, entity, entity );
 
         if( rhs_ )
         {
@@ -253,7 +271,7 @@ namespace Fem
             adphi -= arhsdphi;
 
             // get column object and call axpy method
-            localOpEn.column( i ).axpy( std::get<size>(phi_[qp.index()]), std::get<size>(dphi_[qp.index()]), aphi, adphi, weight );
+            localOpEn.matrixColumn( i ).axpy( std::get<size>(phi_[qp.index()]), std::get<size>(dphi_[qp.index()]), aphi, adphi, weight );
           }
 
           if( rhs_ )
@@ -272,11 +290,15 @@ namespace Fem
             if ( space_.continuous(intersection) ) continue;
             if( intersection.conforming() )
             {
-              assembleIntersection< true > ( entity, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
+              assembleIntersection< true > ( entity, intersection, space_, baseSet,
+                                             localOpEn, localOpNb, localOpNbNb, localOpNbEn,
+                                             rhsLocal, rhs_ != 0 );
             }
             else
             {
-              assembleIntersection< false > ( entity, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
+              assembleIntersection< false > ( entity, intersection, space_, baseSet,
+                                              localOpEn, localOpNb, localOpNbNb, localOpNbEn,
+                                              rhsLocal, rhs_ != 0 );
             }
           }
           else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
@@ -312,8 +334,10 @@ namespace Fem
                 const double weight = faceQuadInside.weight( pt );
                 valueEn_[pt] -= valueNb_[pt];
                 dvalueEn_[pt] -= dvalueNb_[pt];
-                localOpEn.column( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),
-                                            valueEn_[pt], dvalueEn_[pt], weight );
+                const auto& phiFaceEn  = std::get<size>(phiFaceEn_[pt]);
+                const auto& dphiFaceEn = std::get<size>(dphiFaceEn_[pt]);
+                localOpEn.matrixColumn( i ).axpy(phiFaceEn, dphiFaceEn,
+                                           valueEn_[pt], dvalueEn_[pt], weight );
               }
             }
             // now move affine part to right hand side
@@ -337,7 +361,7 @@ namespace Fem
         // accumulate right hand side
         if( rhs_ )
         {
-          rhs_->localFunction( entity ) += rhsLocal ;
+          rhs_->addLocalDofs( entity, rhsLocal.localDofVector() );
         }
 
       } // end grid iteration
@@ -407,12 +431,14 @@ namespace Fem
       const RangeType uZero(0);
       const JacobianRangeType uJacZero(0);
 
+      MutableLocalFunction< DestinationType > rhsLocal( *rhs_ );
+
       for( const auto& entity : elements( space_.gridPart() ) )
       {
         const GeometryType &geometry = entity.geometry();
         const double volume = geometry.volume();
 
-        LocalFunctionType rhsLocal = rhs_->localFunction( entity );
+        auto uGuard = Dune::Fem::bindGuard( rhsLocal, entity );
 
         const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
 
@@ -467,11 +493,13 @@ namespace Fem
                                const IntersectionType& intersection,
                                const DiscreteFunctionSpaceType& dfSpace,
                                const BasisFunctionSetType& baseSet,
-                               typename MatrixType::LocalMatrixType& localOpEn,
+                               LocalMatrixContributionType& localOpEn,
+                               LocalMatrixContributionType& localOpNb,
+                               LocalMatrixContributionType& localOpNbNb,
+                               LocalMatrixContributionType& localOpNbEn,
                                LocalFunction& rhsLocal,
                                const bool assembleRHS ) const
     {
-      typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       // make sure we got the right conforming statement
       assert( intersection.conforming() == conforming );
 
@@ -481,7 +509,7 @@ namespace Fem
       const int neighborOrder = dfSpace.order( neighbor );
 
       // get local matrix for face entries
-      LocalMatrixType localOpNb = matrix_->localMatrix( entity, neighbor );
+      auto nGuard = Dune::Fem::bindGuard( localOpNb, entity, neighbor );
       const BasisFunctionSetType &baseSetNb = localOpNb.rangeBasisFunctionSet();
 
       // get neighbor's base function set
@@ -549,9 +577,9 @@ namespace Fem
           dvalueEn_[pt] -= rhsDValueEn_[pt];
           valueNb_[pt] -= rhsValueNb_[pt];
           dvalueNb_[pt] -= rhsDValueNb_[pt];
-          localOpEn.column( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),
+          localOpEn.matrixColumn( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),
                                       valueEn_[pt], dvalueEn_[pt], weight );
-          localOpNb.column( i ).axpy( std::get<size>(phiFaceNb_[pt]), std::get<size>(dphiFaceNb_[pt]),
+          localOpNb.matrixColumn( i ).axpy( std::get<size>(phiFaceNb_[pt]), std::get<size>(dphiFaceNb_[pt]),
                                       valueNb_[pt], dvalueNb_[pt], -weight );
         }
       }
@@ -559,8 +587,8 @@ namespace Fem
       // assemble part from neighboring row
       if( oneSidedEvaluation )
       {
-        LocalMatrixType localOpNbNb = matrix_->localMatrix( neighbor, neighbor );
-        LocalMatrixType localOpNbEn = matrix_->localMatrix( neighbor, entity );
+        auto nnGuard = Dune::Fem::bindGuard( localOpNbNb, neighbor, neighbor );
+        auto neGuard = Dune::Fem::bindGuard( localOpNbEn, neighbor, entity   );
         for( int i = 0; i < numBasisFunctionsEn; ++i )
         {
           // compute flux for one base function, i.e.,
@@ -579,9 +607,9 @@ namespace Fem
             dvalueEn_[pt] -= rhsDValueEn_[pt];
             valueNb_[pt] -= rhsValueNb_[pt];
             dvalueNb_[pt] -= rhsDValueNb_[pt];
-            localOpNbNb.column( i ).axpy( std::get<size>(phiFaceNb_[pt]), std::get<size>(dphiFaceNb_[pt]),  // +
+            localOpNbNb.matrixColumn( i ).axpy( std::get<size>(phiFaceNb_[pt]), std::get<size>(dphiFaceNb_[pt]),  // +
                                           valueNb_[pt], dvalueNb_[pt], -weight );
-            localOpNbEn.column( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),  // -
+            localOpNbEn.matrixColumn( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),  // -
                                           valueEn_[pt], dvalueEn_[pt], weight );
           }
         }
@@ -886,15 +914,15 @@ namespace Fem
     const size_t                       maxNumBasisFunctions_;
 
     // storage for all flux values
-    mutable std::vector< RangeType >         valueEn_;
-    mutable std::vector< JacobianRangeType > dvalueEn_;
-    mutable std::vector< RangeType >         valueNb_;
-    mutable std::vector< JacobianRangeType > dvalueNb_;
-    mutable std::vector< RangeType >         rhsValueEn_;
-    mutable std::vector< JacobianRangeType > rhsDValueEn_;
-    mutable std::vector< RangeType >         rhsValueNb_;
-    mutable std::vector< JacobianRangeType > rhsDValueNb_;
-    mutable std::vector< RangeType >         bndValues_;
+    mutable Dune::DynamicVector< RangeType >         valueEn_;
+    mutable Dune::DynamicVector< JacobianRangeType > dvalueEn_;
+    mutable Dune::DynamicVector< RangeType >         valueNb_;
+    mutable Dune::DynamicVector< JacobianRangeType > dvalueNb_;
+    mutable Dune::DynamicVector< RangeType >         rhsValueEn_;
+    mutable Dune::DynamicVector< JacobianRangeType > rhsDValueEn_;
+    mutable Dune::DynamicVector< RangeType >         rhsValueNb_;
+    mutable Dune::DynamicVector< JacobianRangeType > rhsDValueNb_;
+    mutable Dune::DynamicVector< RangeType >         bndValues_;
 
     // store all basis functions
     mutable RangeEvalType         phi_;

@@ -130,8 +130,8 @@ namespace Fem
     };
 
     // work arround internal compiler error
-    enum { simplexTopoId =  Dune::Impl::SimplexTopology< GridType::dimension >::type::id,
-           cubeTopoId    =  Dune::Impl::CubeTopology< GridType::dimension >::type::id,
+    enum { simplexTopoId =  GeometryTypes::cube( GridType::dimension ).id(), //Dune::Impl::SimplexTopology< GridType::dimension >::type::id,
+           cubeTopoId    =  GeometryTypes::simplex( GridType::dimension ).id(), //Dune::Impl::CubeTopology< GridType::dimension >::type::id,
            myTopo        =  Dune::Capabilities::hasSingleGeometryType< GridType >::topologyId
          };
 
@@ -175,8 +175,11 @@ namespace Fem
     typedef SigmaDiscreteFunctionImp                                 SigmaDiscreteFunctionType;
     typedef typename SigmaDiscreteFunctionType::DiscreteFunctionSpaceType SigmaDiscreteFunctionSpaceType;
 
-    typedef typename DiscreteFunctionType::LocalFunctionType         LocalFunctionType;
-    typedef typename SigmaDiscreteFunctionType::LocalFunctionType    SigmaLocalFunctionType;
+    typedef ConstLocalFunction< DiscreteFunctionType >               ConstLocalFunctionType;
+    typedef ConstLocalFunctionType                                   LocalFunctionType;
+
+    typedef ConstLocalFunction< SigmaDiscreteFunctionType >          ConstSigmaLocalFunctionType;
+    typedef ConstSigmaLocalFunctionType                              SigmaLocalFunctionType;
     typedef typename SigmaLocalFunctionType::RangeType               GradientRangeType;
 
     typedef typename DiscreteFunctionSpaceType::DomainFieldType      DomainFieldType;
@@ -202,6 +205,7 @@ namespace Fem
     // CACHING
     typedef typename DGOperatorType::FaceQuadratureType              FaceQuadratureType ;
     typedef typename DGOperatorType::VolumeQuadratureType            VolumeQuadratureType ;
+
 
     typedef std::vector< double >                                    ErrorIndicatorType;
   protected:
@@ -345,17 +349,23 @@ namespace Fem
       clear();
       henMin = 1e10;
 
+      ConstLocalFunctionType uLocal( uh_ );
+      ConstLocalFunctionType uOutside( uh_ );
+
+      SigmaLocalFunctionType sigmaLocal( sigma_ );
+      SigmaLocalFunctionType sigmaOutside( sigma_ );
+
       for( const auto& entity : elements( dfSpace_.gridPart() ) )
       {
-        const LocalFunctionType uLocal = uh_.localFunction( entity );
-        const SigmaLocalFunctionType sigmaLocal = sigma_.localFunction( entity );
+        auto uGuard = Dune::Fem::bindGuard( uLocal, entity );
+        auto sGuard = Dune::Fem::bindGuard( sigmaLocal, entity );
 
         estimateLocal( rhs, entity, uLocal, sigmaLocal );
 
         for (const auto& intersection : intersections(gridPart_, entity) )
         {
           if( intersection.neighbor() )
-            estimateIntersection( intersection, entity, uLocal, sigmaLocal );
+            estimateIntersection( intersection, entity, uLocal, uOutside, sigmaLocal, sigmaOutside );
           else
             estimateBoundary( intersection,entity,uLocal, sigmaLocal);
         }
@@ -787,7 +797,10 @@ namespace Fem
     //! caclulate error on boundary intersections
     void estimateIntersection ( const IntersectionType &intersection,
                                 const ElementType &inside,
-                                const LocalFunctionType &uInside, const SigmaLocalFunctionType &sigmaInside )
+                                const LocalFunctionType &uInside,
+                                LocalFunctionType& uOutside,
+                                const SigmaLocalFunctionType &sigmaInside,
+                                SigmaLocalFunctionType& sigmaOutside )
     {
       const ElementType& outside = intersection.outside();
 
@@ -799,8 +812,8 @@ namespace Fem
       const bool isOutsideInterior = (outside.partitionType() == InteriorEntity);
       if( !isOutsideInterior || (insideIndex < outsideIndex) )
       {
-        const LocalFunctionType uOutside = uh_.localFunction( outside );
-        const SigmaLocalFunctionType sigmaOutside = sigma_.localFunction( outside );
+        auto uGuard = Dune::Fem::bindGuard( uOutside, outside );
+        auto sGuard = Dune::Fem::bindGuard( sigmaOutside, outside );
 
         // const double volume = std::max( inside.geometry().volume() , outside.geometry().volume() );
         // const double h = 2.*volume / intersection.geometry().volume();
