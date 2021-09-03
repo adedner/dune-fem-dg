@@ -513,13 +513,25 @@ namespace Fem
 
         defaultVolOrd = defaultVolumeQuadratureOrder( space, entity );
         defaultFceOrd = defaultFaceQuadratureOrder( space, entity );
+
         break ;
       }
 
-      std::vector< int > volQuadOrds  = {{0, space.order() + 1, defaultVolOrd }};
+      std::vector< int > volQuadOrds  = {{0, 1, space.order() + 1, defaultVolOrd }};
       if( volQuadOrder > 0 ) volQuadOrds.push_back( volQuadOrder );
       std::vector< int > faceQuadOrds = {{0, defaultFceOrd }};
       if( faceQuadOrder > 0 ) faceQuadOrds.push_back( faceQuadOrder );
+
+      for( const auto& entity : space )
+      {
+        typedef typename DiscreteFunctionSpaceType::LocalMassMatrixType::VolumeQuadratureType QuadratureType;
+        for( const auto order : volQuadOrds )
+        {
+          QuadratureType quad( entity, order );
+        }
+        break;
+      }
+
       BaseType::initializeQuadratures( space, volQuadOrds, faceQuadOrds );
     }
 
