@@ -464,9 +464,6 @@ namespace Fem
 
       // we need the flux here
       assert(problem.hasFlux());
-
-      // initialize quadratures, otherwise we run into troubles with the threading
-      initializeQuadratures( spc_, volumeQuadOrd_, faceQuadOrd_ );
     }
 
     //! Destructor
@@ -497,42 +494,6 @@ namespace Fem
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
       return Capabilities::DefaultQuadrature< DiscreteFunctionSpaceType >::surfaceOrder( space.order( entity ) );
-    }
-
-    //! initialize all quadratures used in this Pass (for thread parallel runs)
-    static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
-                                       const int volQuadOrder  = -1,
-                                       const int faceQuadOrder = -1 )
-    {
-      int defaultVolOrd = 0;
-      int defaultFceOrd = 0;
-      for( const auto& entity : space )
-      {
-        // initialize the corner point set needed here
-        CornerPointSetType cps( entity );
-
-        defaultVolOrd = defaultVolumeQuadratureOrder( space, entity );
-        defaultFceOrd = defaultFaceQuadratureOrder( space, entity );
-
-        break ;
-      }
-
-      std::vector< int > volQuadOrds  = {{0, 1, space.order() + 1, defaultVolOrd }};
-      if( volQuadOrder > 0 ) volQuadOrds.push_back( volQuadOrder );
-      std::vector< int > faceQuadOrds = {{0, defaultFceOrd }};
-      if( faceQuadOrder > 0 ) faceQuadOrds.push_back( faceQuadOrder );
-
-      for( const auto& entity : space )
-      {
-        typedef typename DiscreteFunctionSpaceType::LocalMassMatrixType::VolumeQuadratureType QuadratureType;
-        for( const auto order : volQuadOrds )
-        {
-          QuadratureType quad( entity, order );
-        }
-        break;
-      }
-
-      BaseType::initializeQuadratures( space, volQuadOrds, faceQuadOrds );
     }
 
   protected:
