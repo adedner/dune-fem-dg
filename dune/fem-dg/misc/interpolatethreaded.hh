@@ -104,10 +104,16 @@ namespace Dune
       ////////////////////////////////////////////////////////////
       // BEGIN PARALLEL REGION, first stage, element integrals
       ////////////////////////////////////////////////////////////
+      try
       {
         // see threadpool.hh
         Fem :: ThreadPool :: run( runThread );
       }
+      catch ( const Dune::Fem::SingleThreadModeError& e )
+      {
+        Dune::Fem::interpolate( u, v );
+      }
+
       /////////////////////////////////////////////////
       // END PARALLEL REGION
       /////////////////////////////////////////////////
