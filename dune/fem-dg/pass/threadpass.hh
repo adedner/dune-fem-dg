@@ -247,9 +247,6 @@ namespace Fem
       parameter_( &parameter ),
       sumComputeTime_( parameter.getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
-      // initialize quadratures before entering multithread mode
-      InnerPassType::initializeQuadratures( spc,  volumeQuadOrd, faceQuadOrd );
-
       // initialize thread pass here since it otherwise fails when parameters
       // are passed from the Python side
 #if 1
@@ -447,29 +444,7 @@ namespace Fem
         pass( i ).setTime( time() );
       }
 
-      // for the first call we only run on one thread to avoid
-      // clashes with the singleton storages for quadratures
-      // and base function caches etc.
-      // after one grid traversal everything should be set up
-      if( firstCall_ )
-      {
-        // for the first call we need to receive data already here,
-        // since the flux calculation is done at once
-        if( useNonBlockingCommunication() )
-        {
-          // RECEIVE DATA, send was done on call of operator() (see pass.hh)
-          receiveCommunication( arg );
-        }
-
-        // use the default compute method of the given pass
-        // and break after 3 elements have been computed
-        // This is only for initialization storage caches
-        pass( 0 ).compute( arg, dest, 3 );
-
-        // set tot false since first call has been done
-        firstCall_ = false ;
-      }
-
+      try
       {
         // update thread iterators in case grid changed
         iterators_.update();
@@ -549,6 +524,27 @@ namespace Fem
         computeTime_ += accCompTime ;
 
       } // end if first call
+      catch (const Dune::Fem::SingleThreadModeError& e )
+      {
+        // reset all passes
+        for(int i=0; i<maxThreads; ++i )
+        {
+          pass( i ).finalize( arg, dest, false );
+        }
+
+        // for the first call we need to receive data already here,
+        // since the flux calculation is done at once
+        if( useNonBlockingCommunication() )
+        {
+          // RECEIVE DATA, send was done on call of operator() (see pass.hh)
+          receiveCommunication( arg );
+        }
+
+        // Compute pass in single thread mode
+        pass( 0 ).compute( arg, dest );
+        // get number of elements
+        this->numberOfElements_ = pass( 0 ).numberOfElements();
+      }
 
       // if useNonBlockingComm_ is disabled then communicate here if communication is required
       if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() )
