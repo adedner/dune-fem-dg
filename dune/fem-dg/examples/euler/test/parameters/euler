@@ -3,23 +3,22 @@ fem.verboserank: 0
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffractio
-problem: vortex
-femdg.stepper.endtime: 100.0
+problem: sod
 # problemflag: 0
 # riemanndata: [1., -1., 1.,    1., 1., 1.]
 
 # number of threads used in OMP program
-fem.parallel.numberofthreads: 12
+fem.parallel.numberofthreads: 4
 
 # coarsest level that should be present
 fem.adaptation.coarsestLevel: 0
 # finest level that should be present
 fem.adaptation.finestLevel: 4
-fem.eoc.steps: 5
+fem.eoc.steps: 4
 fem.timeprovider.factor: 0.35
 femdg.limiter.indicator: jump
 
-femdg.stepper.fixedtimestep: 0.005
+#femdg.stepper.fixedtimestep: 0.005
 #femdg.nonblockingcomm: false
 
 femdg.stepper.printcount: 1000
@@ -32,8 +31,8 @@ fem.timeprovider.factor: 0.35
 fem.timeprovider.updatestep: 1
 
 fem.io.macroGridFile_2d:
-#fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
-fem.io.macroGridFile_2d:  ../../grids/unitcube2_per.dgf
+fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+#fem.io.macroGridFile_2d:  ../../grids/unitcube2_per.dgf
 
 fem.eoc.outputpath: ./data
 #femdg.fixedtimestepeocloopfactor: 1

@@ -3,11 +3,11 @@ include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/euler/")
 # specify type of grid implemention, dimension and polynomial order
 
 #set( GRIDTYPE YASPGRID )
-#set( GRIDTYPE ALUGRID_CUBE )
+set( GRIDTYPE ALUGRID_CUBE )
 #set( GRIDTYPE SPGRID_COUNT_FLOPS )
-set( GRIDTYPE SPGRID )
+#set( GRIDTYPE SPGRID )
 set( GRIDDIM 2 )
-set( POLORDER 3 )
+set( POLORDER 2 )
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
