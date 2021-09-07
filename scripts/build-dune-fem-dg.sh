@@ -25,12 +25,19 @@ fi
 # Otherwise copy the instructions from the script
 # to build you own
 
-CMAKE_VERSION=`cmake --version | head -1 | cut -d " " -f 3 | cut -d " " -f 1`
-REQUIRED_VERSION="3.13.3"
-# check if cmake version is ok
-if awk 'BEGIN {exit !('$CMAKE_VERSION' < '$REQUIRED_VERSION')}'; then
+CMAKE_NOT_FOUND=`command -v cmake`
+
+if [ "$CMAKE_NOT_FOUND" == "" ]; then
   CMAKEPIP=cmake
-  echo "Installing cmake since current version is not new enough!"
+  echo "Installing cmake since no cmake was found!"
+else
+  CMAKE_VERSION=`cmake --version | head -1 | cut -d " " -f 3 | cut -d " " -f 1`
+  REQUIRED_VERSION="3.13.3"
+  # check if cmake version is ok
+  if awk 'BEGIN {exit !('$CMAKE_VERSION' < '$REQUIRED_VERSION')}'; then
+    CMAKEPIP=cmake
+    echo "Installing cmake since current version is not new enough!"
+  fi
 fi
 
 # create necessary python virtual environment
