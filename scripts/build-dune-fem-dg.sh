@@ -100,7 +100,7 @@ setVariable() {
 }
 
 # set current main working directory
-setVariable DUNE_CONTROL_PATH \$PWD
+setVariable DUNE_CONTROL_PATH \"$WORKDIR\"
 setVariable DUNE_LOG_LEVEL \"info\"
 
 # defines CMAKE_FLAGS
@@ -112,7 +112,7 @@ setVariable DUNE_CMAKE_FLAGS \"\$CMAKE_FLAGS\"
 DUNEPYTHONPATH=
 MODULES=\`\$DUNE_CONTROL_PATH/dune-common/bin/dunecontrol --print 2> /dev/null\`
 for MOD in \$MODULES; do
-  MODPATH=\"\${PWD}/\${MOD}/build-cmake/python\"
+  MODPATH=\"\$DUNE_CONTROL_PATH/\${MOD}/build-cmake/python\"
   MODFOUND=\`echo \$DUNEPYTHONPATH | grep \$MODPATH\`
   if [ \"\$MODFOUND\" == \"\" ]; then
     DUNEPYTHONPATH=\$DUNEPYTHONPATH:\$MODPATH
