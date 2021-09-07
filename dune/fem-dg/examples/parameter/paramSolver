@@ -9,7 +9,7 @@ fem.ode.miniterations: 95
 fem.ode.maxiterations: 105
 fem.ode.cflStart: 1.
 #fem.ode.cflMax: 5
-fem.timeprovider.factor: 0.15
+fem.timeprovider.factor: 0.95
 fem.timeprovider.updatestep: 1
 
 # parameter for the implicit solvers 

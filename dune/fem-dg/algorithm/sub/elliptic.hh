@@ -17,6 +17,7 @@
 #include <dune/fem/space/discontinuousgalerkin/space.hh>
 #include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem/function/common/localfunctionadapter.hh>
+#include <dune/fem/function/localfunction/const.hh>
 
 // dune-fem-dg includes
 #include <dune/fem/misc/fmatrixconverter.hh>
@@ -134,10 +135,12 @@ namespace Fem
       typedef typename DF::JacobianRangeType                             UJacobianRangeType;
 
       SigmaLocal( const DF &df, const Operator &oper )
-      : df_(df), oper_(oper), localdf_(df_), reSpace_( oper.gradientSpace() ), localre_( reSpace_ )
+      : df_(df), oper_(oper), localdf_(df_), uOutside_( df_ ),
+        reSpace_( oper.gradientSpace() ), localre_( reSpace_ )
       {}
       SigmaLocal(const SigmaLocal &other)
-      : df_(other.df_), oper_(other.oper_), localdf_(df_), reSpace_(other.reSpace_), localre_( reSpace_ )
+      : df_(other.df_), oper_(other.oper_), localdf_(df_), uOutside_( df_ ),
+        reSpace_(other.reSpace_), localre_( reSpace_ )
       {}
       ~SigmaLocal()
       {
@@ -168,7 +171,7 @@ namespace Fem
           }
         }
       }
-      private:
+    private:
       template <bool conforming>
       void getLifting( const IntersectionType &intersection, const EntityType &entity)
       {
@@ -178,7 +181,8 @@ namespace Fem
 
         const EntityType &neighbor = intersection.outside();
 
-        typename DF::LocalFunctionType uOutside = df_.localFunction(neighbor);
+        auto uGuard = Dune::Fem::bindGuard( uOutside_, neighbor );
+        const auto& uOutside = uOutside_;
 
         const int enOrder = df_.space().order( entity );
         const int nbOrder = df_.space().order( neighbor );
@@ -207,9 +211,11 @@ namespace Fem
 
         oper_.lifting( left, right, uValuesEn, uValuesNb, localre_ );
       }
+
       const DF&                        df_;
       const Operator&                  oper_;
-      typename DF::LocalFunctionType   localdf_;
+      ConstLocalFunction< DF >         localdf_;
+      ConstLocalFunction< DF >         uOutside_;
       const DiscreteFunctionSpaceType& reSpace_;
       LiftingFunctionType              localre_;
     };
