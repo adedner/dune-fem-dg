@@ -249,7 +249,7 @@ namespace Fem
     {
       // initialize thread pass here since it otherwise fails when parameters
       // are passed from the Python side
-#if 1
+#if 0
       // initialize each thread pass by the thread itself to avoid NUMA effects
       {
         // lambda calling parallel code
@@ -343,8 +343,8 @@ namespace Fem
     double timeStepEstimateImpl() const
     {
       double dtMin = pass( 0 ).timeStepEstimateImpl();
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for( int i = 1; i < maxThreads ; ++i)
+      const int numThreads = Fem::ThreadManager::numThreads();
+      for( int i = 1; i < numThreads ; ++i)
       {
         dtMin = std::min( dtMin, pass( i ).timeStepEstimateImpl() );
       }
@@ -437,8 +437,8 @@ namespace Fem
 
       // set time for all passes, this is used in prepare of pass
       // and therefore has to be done before prepare is called
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i )
+      const int numThreads = Fem::ThreadManager::numThreads();
+      for(int i=0; i<numThreads; ++i )
       {
         // set time to each pass
         pass( i ).setTime( time() );
@@ -450,10 +450,10 @@ namespace Fem
         iterators_.update();
 
         // call prepare before parallel area
-        const int maxThreads = Fem::ThreadManager::maxThreads();
+        const int numThreads = Fem::ThreadManager::numThreads();
         pass( 0 ).prepare( arg, dest, true );
         passComputeTime_[ 0 ] = 0.0 ;
-        for(int i=1; i<maxThreads; ++i )
+        for(int i=1; i<numThreads; ++i )
         {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
           pass( i ).prepare( arg, dest, false );
@@ -496,7 +496,7 @@ namespace Fem
 
         double accCompTime = 0.0;
         double ratioMaster = 1.0;
-        for(int i=0; i<maxThreads; ++i )
+        for(int i=0; i<numThreads; ++i )
         {
           // get number of elements
           this->numberOfElements_ += pass( i ).numberOfElements();
@@ -527,7 +527,7 @@ namespace Fem
       catch (const Dune::Fem::SingleThreadModeError& e )
       {
         // reset all passes
-        for(int i=0; i<maxThreads; ++i )
+        for(int i=0; i<numThreads; ++i )
         {
           pass( i ).finalize( arg, dest, false );
         }

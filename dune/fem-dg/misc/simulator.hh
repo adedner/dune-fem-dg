@@ -234,7 +234,9 @@ namespace Fem
     // get number of desired threads (default is 1)
     const int numThreads = Dune::Fem::Parameter::getValue< int >("fem.parallel.numberofthreads", 1);
 #endif
+    // set maximal number of threads
     Dune :: Fem :: ThreadManager :: setMaxNumberThreads( numThreads );
+    Dune :: Fem :: ThreadManager :: setNumThreads( numThreads );
 
     const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
 
