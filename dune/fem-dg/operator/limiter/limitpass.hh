@@ -26,7 +26,7 @@
 #include <dune/fem/function/localfunction/bindable.hh>
 
 #include <dune/fem/misc/compatibility.hh>
-#include <dune/fem/misc/threads/threadmanager.hh>
+#include <dune/fem/misc/mpimanager.hh>
 
 #include <dune/fem-dg/pass/pass.hh>
 #include <dune/fem-dg/pass/context.hh>

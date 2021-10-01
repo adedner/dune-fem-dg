@@ -11,7 +11,7 @@
 
 #include <dune/fem-dg/pass/pass.hh>
 
-#include <dune/fem/misc/threads/threadpool.hh>
+#include <dune/fem/misc/mpimanager.hh>
 
 namespace Dune
 {
@@ -234,9 +234,9 @@ namespace Fem
       delDofs_( spc ),
       iterators_( spc.gridPart() ),
       singleDiscreteModel_( discreteModel ),
-      discreteModels_( Fem::ThreadManager::maxThreads() ),
-      passes_( Fem::ThreadManager::maxThreads() ),
-      passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
+      discreteModels_( Fem::MPIManager::maxThreads() ),
+      passes_( Fem::MPIManager::maxThreads() ),
+      passComputeTime_( Fem::MPIManager::maxThreads(), 0.0 ),
       firstStage_( false ),
       arg_(0), dest_(0),
       nonBlockingComm_(),
@@ -256,12 +256,12 @@ namespace Fem
         auto threadedRun = [this] () { this->runThread(); };
 
         // see threadpool.hh
-        Fem :: ThreadPool :: runLocked( threadedRun );
+        Fem :: MPIManager :: runLocked( threadedRun );
       }
 #else
       {
         // fall back if the above does not work
-        const int maxThreads = Fem::ThreadManager::maxThreads();
+        const int maxThreads = Fem::MPIManager::maxThreads();
         for(int i=0; i<maxThreads; ++i)
         {
           createInnerPass( i, i == 0 );
@@ -272,7 +272,7 @@ namespace Fem
 #ifndef NDEBUG
       {
         // check that all objects have been created
-        const int maxThreads = Fem::ThreadManager::maxThreads();
+        const int maxThreads = Fem::MPIManager::maxThreads();
         for(int i=0; i<maxThreads; ++i)
         {
           assert( discreteModels_[ i ] );
@@ -291,7 +291,7 @@ namespace Fem
     template <class TroubledCellIndicatorType>
     void setTroubledCellIndicator( TroubledCellIndicatorType indicator )
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)
       {
         passes_[ i ]->setTroubledCellIndicator( indicator );
@@ -303,7 +303,7 @@ namespace Fem
     template <class AdaptationType>
     void setAdaptation( AdaptationType& adHandle, double weight )
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
         discreteModels_[ thread ]->setAdaptation(
@@ -315,7 +315,7 @@ namespace Fem
     //! call appropriate method on all internal passes
     void enable() const
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
         pass( thread ).enable();
@@ -325,7 +325,7 @@ namespace Fem
     //! call appropriate method on all internal passes
     void disable() const
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
         pass( thread ).disable();
@@ -343,7 +343,7 @@ namespace Fem
     double timeStepEstimateImpl() const
     {
       double dtMin = pass( 0 ).timeStepEstimateImpl();
-      const int numThreads = Fem::ThreadManager::numThreads();
+      const int numThreads = Fem::MPIManager::numThreads();
       for( int i = 1; i < numThreads ; ++i)
       {
         dtMin = std::min( dtMin, pass( i ).timeStepEstimateImpl() );
@@ -424,7 +424,7 @@ namespace Fem
     //! switch upwind direction
     void switchUpwind()
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int i=0; i<maxThreads; ++i )
         discreteModels_[ i ]->switchUpwind();
     }
@@ -437,7 +437,7 @@ namespace Fem
 
       // set time for all passes, this is used in prepare of pass
       // and therefore has to be done before prepare is called
-      const int numThreads = Fem::ThreadManager::numThreads();
+      const int numThreads = Fem::MPIManager::numThreads();
       for(int i=0; i<numThreads; ++i )
       {
         // set time to each pass
@@ -450,7 +450,7 @@ namespace Fem
         iterators_.update();
 
         // call prepare before parallel area
-        const int numThreads = Fem::ThreadManager::numThreads();
+        const int numThreads = Fem::MPIManager::numThreads();
         pass( 0 ).prepare( arg, dest, true );
         passComputeTime_[ 0 ] = 0.0 ;
         for(int i=1; i<numThreads; ++i )
@@ -472,7 +472,7 @@ namespace Fem
         ////////////////////////////////////////////////////////////
         {
           // see threadpool.hh
-          Fem :: ThreadPool :: run( threadedRun );
+          Fem :: MPIManager :: run( threadedRun );
         }
         /////////////////////////////////////////////////
         // END PARALLEL REGION
@@ -488,7 +488,7 @@ namespace Fem
           firstStage_ = false ;
 
           // see threadpool.hh
-          Fem :: ThreadPool :: run( threadedRun );
+          Fem :: MPIManager :: run( threadedRun );
         }
         /////////////////////////////////////////////////
         // END PARALLEL REGION
@@ -603,14 +603,14 @@ namespace Fem
     //! parallel section of compute
     void runThread() const
     {
-      const int thread = Fem::ThreadManager::thread() ;
+      const int thread = Fem::MPIManager::thread() ;
       // make sure thread 0 is master thread
-      assert( (thread == 0) == Fem::ThreadManager::isMaster() );
+      assert( (thread == 0) == Fem::MPIManager::isMaster() );
 
       // initialization (called from constructor of this class)
       if( ! passes_[ thread ] )
       {
-        createInnerPass( thread, Fem::ThreadManager::isMaster() );
+        createInnerPass( thread, Fem::MPIManager::isMaster() );
         return ;
       }
 

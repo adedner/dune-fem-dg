@@ -4,7 +4,7 @@
 #include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem/function/common/discretefunction.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
-#include <dune/fem/misc/threads/threadpool.hh>
+#include <dune/fem/misc/mpimanager.hh>
 
 namespace Dune
 {
@@ -107,7 +107,7 @@ namespace Dune
       try
       {
         // see threadpool.hh
-        Fem :: ThreadPool :: run( runThread );
+        Fem :: MPIManager :: run( runThread );
       }
       catch ( const Dune::Fem::SingleThreadModeError& e )
       {
