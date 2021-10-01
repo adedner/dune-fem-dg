@@ -7,9 +7,7 @@
 int main(int argc, char ** argv)
 {
   /* Initialize MPI (always do this even if you are not using MPI) */
-  std::cout << "MPIManager start\n";
   Dune::Fem::MPIManager :: initialize( argc, argv );
-  std::cout << "MPIManager end\n";
   try {
     // read Parameters
     if( !readParameters( argc, argv ) )
