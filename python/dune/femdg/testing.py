@@ -97,7 +97,7 @@ def run(Model, Stepper=None,
         x = SpatialCoordinate(space.cell())
         tc = Constant(0.0,"time")
         try:
-            velo = create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")
+            velo = create.function("ufl",space.gridView, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")
         except AttributeError:
             velo = None
         vtk = grid.sequencedVTK(Model.name, subsampling=subsamp,
