@@ -182,7 +182,7 @@ class RungeKutta:
             u.axpy(dt*self.b[i],self.k[i])
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
-        return self.op.space.grid.comm.min(dt)
+        return self.op.space.gridView.comm.min(dt)
 class Heun(RungeKutta):
     def __init__(self, op, cfl=None):
         A = [[0,0],
@@ -270,7 +270,7 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
         u.axpy(dt*self.musps, self.tmp)
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
-        return self.op.space.grid.comm.min(dt)
+        return self.op.space.gridView.comm.min(dt)
 class ExplSSP2:
     def __init__(self,stages,op,cfl=None):
         self.op     = op
@@ -304,7 +304,7 @@ class ExplSSP2:
         u.axpy(1/self.stages, self.q2)
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
-        return self.op.space.grid.comm.min(dt)
+        return self.op.space.gridView.comm.min(dt)
 def ssp2(stages,explicit=True):
     if explicit:
         return lambda op,cfl=None: ExplSSP2(stages,op,cfl)
@@ -364,7 +364,7 @@ class ExplSSP3:
             i += 1
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
-        return self.op.space.grid.comm.min(dt)
+        return self.op.space.gridView.comm.min(dt)
 class ImplSSP3:
     def __init__(self,stages,op,cfl=None):
         self.stages = stages
@@ -416,7 +416,7 @@ class ImplSSP3:
         u.axpy(dt*self.musps, self.tmp)
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
-        return self.op.space.grid.comm.min(dt)
+        return self.op.space.gridView.comm.min(dt)
 def ssp3(stages,explicit=True):
     if explicit:
         return lambda op,cfl=None: ExplSSP3(stages,op,cfl)
@@ -471,4 +471,4 @@ class ExplSSP4_10:
         u.axpy(dt/10, self.tmp)
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
-        return self.op.space.grid.comm.min(dt)
+        return self.op.space.gridView.comm.min(dt)
