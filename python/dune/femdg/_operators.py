@@ -131,11 +131,11 @@ def femDGModels(Model, space, initialTime=0):
     #from dune.fem.model import integrands as conservationlaw
     virtualize = False
 
-    advModel  = conservationlaw(space.grid, advModel,
+    advModel  = conservationlaw(space.gridView, advModel,
                                 modelPatch=transform(Model,space,t,"Adv"),
                                 virtualize=virtualize)
 
-    diffModel = conservationlaw(space.grid, diffModel,
+    diffModel = conservationlaw(space.gridView, diffModel,
                                 modelPatch=transform(Model,space,t,"Diff"),
                                 virtualize=virtualize)
 
@@ -222,7 +222,7 @@ def femDGOperator(Model, space,
         else:
             # default is minmod which can be either lp-minmod or muscl-minmod
             limiter = "minmod"
-            limiterstr = limiter if space.grid.type.isSimplex else "lp"
+            limiterstr = limiter if space.gridView.type.isSimplex else "lp"
             # force default values for how reconstruction is done
             if parameters is None:
                 from dune.fem import parameter
@@ -250,7 +250,7 @@ def femDGOperator(Model, space,
             raise KeyError(\
               "femDGOperator: MUSCL type stabilization selected but limiter interface (jump,velocity,physical) missing in Model!\n")
 
-    if space.grid.comm.rank == 0:
+    if space.gridView.comm.rank == 0:
         limiterstr = "default(" + limiterstr + ")" if defaultLimiter else limiterstr
         print("femDGOperator: Limiter =",limiterstr)
 
