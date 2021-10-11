@@ -605,12 +605,12 @@ namespace Fem
     {
       const int thread = Fem::MPIManager::thread() ;
       // make sure thread 0 is master thread
-      assert( (thread == 0) == Fem::MPIManager::isMaster() );
+      assert( (thread == 0) == Fem::MPIManager::isMainThread() );
 
       // initialization (called from constructor of this class)
       if( ! passes_[ thread ] )
       {
-        createInnerPass( thread, Fem::MPIManager::isMaster() );
+        createInnerPass( thread, Fem::MPIManager::isMainThread() );
         return ;
       }
 
