@@ -309,6 +309,7 @@ namespace Fem
       // true if last time step should match end time
       const bool stopAtEndTime =  param_.stopAtEndTime();
 
+      dataWriterCaller_.postSolveEnd( this, loop, tp );
       //******************************
       //*  Time Loop                 *
       //******************************

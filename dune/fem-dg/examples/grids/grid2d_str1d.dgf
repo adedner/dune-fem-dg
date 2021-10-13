@@ -1,15 +1,15 @@
 DGF
-Interval       
+Interval
 0 0
 1.0  0.25
-8 2 
-%16 4 
+8 2
+%16 4
 #
 
-%PERIODICFACETRANSFORMATION
-%% set periodic boundaries in x direction
-%1 0, 0 1 + 0 0.25
-%#
+PERIODICFACETRANSFORMATION
+%% set periodic boundaries in y direction
+1 0, 0 1 + 0 0.25
+#
 
 GRIDPARAMETER
 overlap 1

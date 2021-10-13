@@ -3,7 +3,6 @@
 
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/misc/mpimanager.hh>
-#include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
 namespace Dune
@@ -189,7 +188,7 @@ namespace Fem
 
         if( comm_.rank() == 0 && timesteps_ > 0 )
         {
-          const int maxThreads = Fem :: ThreadManager :: maxThreads ();
+          const int maxThreads = Fem :: MPIManager :: maxThreads ();
           const double timesteps = double(timesteps_);
 
           const size_t bufferSize = sumTimes.size();
