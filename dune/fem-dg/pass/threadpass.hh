@@ -11,7 +11,7 @@
 
 #include <dune/fem-dg/pass/pass.hh>
 
-#include "threadhandle.hh"
+#include <dune/fem/misc/mpimanager.hh>
 
 namespace Dune
 {
@@ -234,9 +234,9 @@ namespace Fem
       delDofs_( spc ),
       iterators_( spc.gridPart() ),
       singleDiscreteModel_( discreteModel ),
-      discreteModels_( Fem::ThreadManager::maxThreads() ),
-      passes_( Fem::ThreadManager::maxThreads() ),
-      passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
+      discreteModels_( Fem::MPIManager::maxThreads() ),
+      passes_( Fem::MPIManager::maxThreads() ),
+      passComputeTime_( Fem::MPIManager::maxThreads(), 0.0 ),
       firstStage_( false ),
       arg_(0), dest_(0),
       nonBlockingComm_(),
@@ -247,21 +247,21 @@ namespace Fem
       parameter_( &parameter ),
       sumComputeTime_( parameter.getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
-      // initialize quadratures before entering multithread mode
-      InnerPassType::initializeQuadratures( spc,  volumeQuadOrd, faceQuadOrd );
-
       // initialize thread pass here since it otherwise fails when parameters
       // are passed from the Python side
-#if 1
+#if 0
       // initialize each thread pass by the thread itself to avoid NUMA effects
       {
-        // see threadhandle.hh
-        Fem :: ThreadHandle :: runLocked( *this );
+        // lambda calling parallel code
+        auto threadedRun = [this] () { this->runThread(); };
+
+        // see threadpool.hh
+        Fem :: MPIManager :: runLocked( threadedRun );
       }
 #else
       {
         // fall back if the above does not work
-        const int maxThreads = Fem::ThreadManager::maxThreads();
+        const int maxThreads = Fem::MPIManager::maxThreads();
         for(int i=0; i<maxThreads; ++i)
         {
           createInnerPass( i, i == 0 );
@@ -272,7 +272,7 @@ namespace Fem
 #ifndef NDEBUG
       {
         // check that all objects have been created
-        const int maxThreads = Fem::ThreadManager::maxThreads();
+        const int maxThreads = Fem::MPIManager::maxThreads();
         for(int i=0; i<maxThreads; ++i)
         {
           assert( discreteModels_[ i ] );
@@ -291,7 +291,7 @@ namespace Fem
     template <class TroubledCellIndicatorType>
     void setTroubledCellIndicator( TroubledCellIndicatorType indicator )
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)
       {
         passes_[ i ]->setTroubledCellIndicator( indicator );
@@ -303,7 +303,7 @@ namespace Fem
     template <class AdaptationType>
     void setAdaptation( AdaptationType& adHandle, double weight )
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
         discreteModels_[ thread ]->setAdaptation(
@@ -315,7 +315,7 @@ namespace Fem
     //! call appropriate method on all internal passes
     void enable() const
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
         pass( thread ).enable();
@@ -325,7 +325,7 @@ namespace Fem
     //! call appropriate method on all internal passes
     void disable() const
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
         pass( thread ).disable();
@@ -343,8 +343,8 @@ namespace Fem
     double timeStepEstimateImpl() const
     {
       double dtMin = pass( 0 ).timeStepEstimateImpl();
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for( int i = 1; i < maxThreads ; ++i)
+      const int numThreads = Fem::MPIManager::numThreads();
+      for( int i = 1; i < numThreads ; ++i)
       {
         dtMin = std::min( dtMin, pass( i ).timeStepEstimateImpl() );
       }
@@ -424,7 +424,7 @@ namespace Fem
     //! switch upwind direction
     void switchUpwind()
     {
-      const int maxThreads = Fem::ThreadManager::maxThreads();
+      const int maxThreads = Fem::MPIManager::maxThreads();
       for(int i=0; i<maxThreads; ++i )
         discreteModels_[ i ]->switchUpwind();
     }
@@ -437,45 +437,23 @@ namespace Fem
 
       // set time for all passes, this is used in prepare of pass
       // and therefore has to be done before prepare is called
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i )
+      const int numThreads = Fem::MPIManager::numThreads();
+      for(int i=0; i<numThreads; ++i )
       {
         // set time to each pass
         pass( i ).setTime( time() );
       }
 
-      // for the first call we only run on one thread to avoid
-      // clashes with the singleton storages for quadratures
-      // and base function caches etc.
-      // after one grid traversal everything should be set up
-      if( firstCall_ )
-      {
-        // for the first call we need to receive data already here,
-        // since the flux calculation is done at once
-        if( useNonBlockingCommunication() )
-        {
-          // RECEIVE DATA, send was done on call of operator() (see pass.hh)
-          receiveCommunication( arg );
-        }
-
-        // use the default compute method of the given pass
-        // and break after 3 elements have been computed
-        // This is only for initialization storage caches
-        pass( 0 ).compute( arg, dest, 3 );
-
-        // set tot false since first call has been done
-        firstCall_ = false ;
-      }
-
+      try
       {
         // update thread iterators in case grid changed
         iterators_.update();
 
         // call prepare before parallel area
-        const int maxThreads = Fem::ThreadManager::maxThreads();
+        const int numThreads = Fem::MPIManager::numThreads();
         pass( 0 ).prepare( arg, dest, true );
         passComputeTime_[ 0 ] = 0.0 ;
-        for(int i=1; i<maxThreads; ++i )
+        for(int i=1; i<numThreads; ++i )
         {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
           pass( i ).prepare( arg, dest, false );
@@ -486,12 +464,15 @@ namespace Fem
         arg_  = &arg ;
         dest_ = &dest ;
 
+        // lambda calling parallel code
+        auto threadedRun = [this] () { this->runThread(); };
+
         ////////////////////////////////////////////////////////////
         // BEGIN PARALLEL REGION, first stage, element integrals
         ////////////////////////////////////////////////////////////
         {
-          // see threadhandle.hh
-          Fem :: ThreadHandle :: run( *this );
+          // see threadpool.hh
+          Fem :: MPIManager :: run( threadedRun );
         }
         /////////////////////////////////////////////////
         // END PARALLEL REGION
@@ -506,8 +487,8 @@ namespace Fem
           // mark second stage
           firstStage_ = false ;
 
-          // see threadhandle.hh
-          Fem :: ThreadHandle :: run( *this );
+          // see threadpool.hh
+          Fem :: MPIManager :: run( threadedRun );
         }
         /////////////////////////////////////////////////
         // END PARALLEL REGION
@@ -515,7 +496,7 @@ namespace Fem
 
         double accCompTime = 0.0;
         double ratioMaster = 1.0;
-        for(int i=0; i<maxThreads; ++i )
+        for(int i=0; i<numThreads; ++i )
         {
           // get number of elements
           this->numberOfElements_ += pass( i ).numberOfElements();
@@ -543,6 +524,27 @@ namespace Fem
         computeTime_ += accCompTime ;
 
       } // end if first call
+      catch (const Dune::Fem::SingleThreadModeError& e )
+      {
+        // reset all passes
+        for(int i=0; i<numThreads; ++i )
+        {
+          pass( i ).finalize( arg, dest, false );
+        }
+
+        // for the first call we need to receive data already here,
+        // since the flux calculation is done at once
+        if( useNonBlockingCommunication() )
+        {
+          // RECEIVE DATA, send was done on call of operator() (see pass.hh)
+          receiveCommunication( arg );
+        }
+
+        // Compute pass in single thread mode
+        pass( 0 ).compute( arg, dest );
+        // get number of elements
+        this->numberOfElements_ = pass( 0 ).numberOfElements();
+      }
 
       // if useNonBlockingComm_ is disabled then communicate here if communication is required
       if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() )
@@ -601,14 +603,14 @@ namespace Fem
     //! parallel section of compute
     void runThread() const
     {
-      const int thread = Fem::ThreadManager::thread() ;
+      const int thread = Fem::MPIManager::thread() ;
       // make sure thread 0 is master thread
-      assert( (thread == 0) == Fem::ThreadManager::isMaster() );
+      assert( (thread == 0) == Fem::MPIManager::isMainThread() );
 
       // initialization (called from constructor of this class)
       if( ! passes_[ thread ] )
       {
-        createInnerPass( thread, Fem::ThreadManager::isMaster() );
+        createInnerPass( thread, Fem::MPIManager::isMainThread() );
         return ;
       }
 

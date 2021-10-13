@@ -237,8 +237,8 @@ namespace Fem
     //! count number of overall leaf entities
     void countElements();
 
-    int thread () const { return Dune::Fem::ThreadManager::thread(); }
-    bool singleThreadMode () const { return Dune::Fem::ThreadManager::singleThreadMode(); }
+    int thread () const { return Dune::Fem::MPIManager::thread(); }
+    bool singleThreadMode () const { return Dune::Fem::MPIManager::singleThreadMode(); }
 
     // return volume of computational domain
     double volumeOfDomain () const;

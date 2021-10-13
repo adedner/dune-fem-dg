@@ -107,18 +107,18 @@ namespace Dune
       explicit DGMassInverseMassImplementation ( const Key& key )
       : scalarSpace_( const_cast< GridPartType& > (key.gridPart()) ),
         volumeQuadratureOrder_( 2 * scalarSpace_.order() ),
-        matrices_( Fem :: ThreadManager :: maxThreads() ),
+        matrices_( Fem :: MPIManager :: maxThreads() ),
         localMassMatrix_( scalarSpace_, [this](const int order) { return
             Capabilities::DefaultQuadrature< ScalarDiscreteFunctionSpaceType >::volumeOrder(order); }  ),
         sequence_( -1 )
       {
-        assert( Fem::ThreadManager::singleThreadMode() );
+        assert( Fem::MPIManager::singleThreadMode() );
         setup();
       }
 
       ~DGMassInverseMassImplementation ()
       {
-        const int maxThreads = Fem :: ThreadManager :: maxThreads() ;
+        const int maxThreads = Fem :: MPIManager :: maxThreads() ;
         for( int thread = 0; thread < maxThreads ; ++ thread )
         {
           for( size_t i=0; i<matrices_[ thread ].size(); ++i )
@@ -211,7 +211,7 @@ namespace Dune
       void compute ( const DestinationType& argument, DestinationType &destination ) const
       {
         // make sure this method is not called in multi thread mode
-        assert( Fem :: ThreadManager :: singleThreadMode() );
+        assert( Fem :: MPIManager :: singleThreadMode() );
 
         // set pointer
         prepare( argument, destination, true );
@@ -259,13 +259,13 @@ namespace Dune
 
       void setup() const
       {
-        assert( Fem :: ThreadManager :: singleThreadMode() );
+        assert( Fem :: MPIManager :: singleThreadMode() );
         const int gpSequence = scalarSpace_.gridPart().sequence();
         if( sequence_ != gpSequence )
         {
           const GridPartType &gridPart = scalarSpace_.gridPart();
           const int gpSize = gridPart.indexSet().size( 0 ) ;
-          const int maxThreads = Fem :: ThreadManager :: maxThreads() ;
+          const int maxThreads = Fem :: MPIManager :: maxThreads() ;
           for( int thread = 0; thread < maxThreads ; ++ thread )
           {
             matrices_[ thread ].resize( gpSize, (VectorEntry *) 0 );
@@ -278,7 +278,7 @@ namespace Dune
                  const EntityType& entity,
                  const Geometry& geometry ) const
       {
-        const int thread = Fem :: ThreadManager :: thread();
+        const int thread = Fem :: MPIManager :: thread();
         bool computeMatrix = false ;
         if( matrices_[ thread ][ idx ] == 0 )
         {
@@ -435,8 +435,6 @@ namespace Dune
         arg_( 0 ),
         dest_( 0 )
       {
-        // initialize quadratures, otherwise we run into troubles with the threadi
-        initializeQuadratures( spc );
       }
 
       //! constructor for use with thread pass
@@ -450,8 +448,6 @@ namespace Dune
         arg_( 0 ),
         dest_( 0 )
       {
-        // initialize quadratures, otherwise we run into troubles with the threadi
-        initializeQuadratures( spc, volQuadOrd );
       }
 
       ~DGMassInverseMassPass() { MassInverseMassProviderType :: removeObject( massInverseMass_ ); }
@@ -524,17 +520,6 @@ namespace Dune
       void applyLocalProcessBoundary( const EntityType& entity, const NBChecker& ) const
       {
         DUNE_THROW(InvalidStateException,"DGInverseMassPass does not need a second phase for ThreadPass");
-      }
-
-      //! initialize all quadratures used in this Pass (for thread parallel runs)
-      static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
-                                         const int volQuadOrder  = -1,
-                                         const int faceQuadOrder = -1 )
-      {
-        std::vector< int > volQuadOrds  = {{ 0, 2*space.order() }};
-        if( volQuadOrder > 0 ) volQuadOrds.push_back( volQuadOrder );
-        std::vector< int > faceQuadOrds;
-        BaseType::initializeQuadratures( space, volQuadOrds, faceQuadOrds );
       }
 
     protected:
