@@ -168,6 +168,70 @@ namespace Fem
    * \ingroup EulerProblems
    */
   template <class GridType>
+  class U0IsentropicVortex : public ProblemBase < GridType >
+  {
+  public:
+    typedef ProblemBase < GridType > BaseType ;
+    typedef typename BaseType :: RangeType   RangeType ;
+    typedef typename BaseType :: DomainType  DomainType ;
+
+    using BaseType :: gamma ;
+    using BaseType :: evaluate ;
+
+    std::string myName;
+
+  public:
+    U0IsentropicVortex() :
+      BaseType( 1.4, 1.0 ),
+      myName("Advection")
+    {
+      init();
+    }
+
+    void init()
+    {
+    }
+
+    double endtime() {
+      return 100.;
+    }
+
+    void evaluate(const DomainType& point, const double time, RangeType& res) const
+    {
+      enum { dimR = RangeType :: dimension  };
+      enum { dim = DomainType :: dimension  };
+
+      const double S = 5.0;
+      const double M = 0.5;
+      const double gamma_1 = gamma() - 1.0;
+      // const double R = 1.0; // radius, not used yet
+      const double x = point[ 0 ] - time;
+      const double y = point[ 1 ] - time;
+
+      const double f = (1.0 - x*x - y*y);
+
+      const double rho = std::pow((1. - S*S*gamma_1*M*M*std::exp(f)/(8.*M_PI*M_PI)), (1./gamma_1) );
+      DomainType u( 0 );
+      u[ 0 ] = 1. - S*y*std::exp(0.5*f)/(2.*M_PI);
+      u[ 1 ] = S*x*std::exp(0.5*f)/(2.*M_PI);
+      const double p = std::pow( rho, gamma())/(gamma()*M*M);
+
+      res[0] = rho;
+      for(int i=0; i<dim; ++i) res[1+i] = u[i] * rho;
+      res[dim+1] = p/(gamma_1) + (u*u)*0.5/rho;
+
+      //std::cout << "Initial " << res << std::endl;
+    }
+
+  };
+
+
+  /**
+   * \brief Euler problem.
+   *
+   * \ingroup EulerProblems
+   */
+  template <class GridType>
   class U0FFS : public ProblemBase< GridType > {
   public:
     typedef ProblemBase< GridType > BaseType ;

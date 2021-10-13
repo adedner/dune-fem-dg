@@ -13,6 +13,7 @@ from dune.generator.importclass import load as classLoad
 from dune.common.hashit import hashIt
 from dune.fem.operator import load
 from dune.fem import parameter as parameterReader
+import dune.fem
 
 from dune.ufl import Constant
 from dune.ufl.tensors import ExprTensor
@@ -151,7 +152,7 @@ def femDGOperator(Model, space,
         limiter="default",
         advectionFlux="default",
         diffusionScheme = "cdg2",
-        threading=False,
+        threading="default",
         defaultQuadrature=True,
         codegen=True,
         initialTime=0.0, parameters=None):
@@ -166,7 +167,8 @@ def femDGOperator(Model, space,
                     default is local Lax-Friedrichs
         diffusionScheme: choice of numerical flux for diffusive parts
                 possible choices are cdg2(default),cdg,br2,ip,nipg,bo
-        threading: enable shared memory parallelization
+        threading: enable shared memory parallelization - default is that
+                threading is turned on if `dune.fem.threading.use>1`
         defaultQuadrature: use quadratures that generically fit to the space
         codegen: enable optimized code for evaluation and interpolation
         initialTime: T_0, default is 0.0
@@ -181,6 +183,9 @@ def femDGOperator(Model, space,
     # is augmented with default implementations
     hasScalingInterface = hasattr(Model,"lowerBound") or hasattr(Model,"upperBound") or hasattr(Model,"physical")
     hasLimiterInterface = (hasattr(Model,"jump") and hasattr(Model,"velocity")) or hasattr(Model,"physical")
+
+    if threading == "default":
+        threading = dune.fem.threading.use>1
 
     if type(Model)==list or type(Model)==tuple:
         advModel = Model[1]

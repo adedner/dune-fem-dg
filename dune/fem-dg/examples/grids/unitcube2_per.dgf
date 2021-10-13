@@ -1,14 +1,14 @@
 DGF
 
 Interval
-0 0
-1 1
-16 16   % 1 cell only
-# 
+-10 -10
+ 10  10
+ 20  20   % 1 cell only
+#
 
 PeriodicFaceTransformation
-1 0, 0 1 + 1 0
-1 0, 0 1 + 0 1
+1 0, 0 1 + 20 0
+1 0, 0 1 + 0  20
 #
 
 BoundaryDomain
@@ -19,4 +19,4 @@ GridParameter
 name 1d_Unit_Cube
 #
 
-# unitcube1.dgf 
+# unitcube1.dgf

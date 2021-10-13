@@ -182,9 +182,6 @@ namespace Fem
     {
       // we need the flux here
       assert(problem.hasFlux());
-
-      // initialize volume quadratures, otherwise we run into troubles with the threading
-      initializeQuadratures( spc_, volumeQuadOrd_ );
     }
 
     //! Destructor
@@ -699,21 +696,7 @@ namespace Fem
       //end limiting process
     }
 
-  public:
-    // called from ThreadPass to initialize quadrature singleton storages
-    static void initializeQuadratures( const DiscreteFunctionSpaceType& space,
-                                       const int volQuadOrder  = -1,
-                                       const int faceQuadOrder = -1)
-    {
-      std::vector< int > volQuadOrds = {{ 0, space.order() + 1, space.order() * 2, volQuadOrder }};
-      if( volQuadOrder > 0 ) volQuadOrds.push_back( volQuadOrder );
-      std::vector< int > faceQuadOrds;
-      if( faceQuadOrder > 0 ) faceQuadOrds.push_back( faceQuadOrder );
-      BaseType::initializeQuadratures( space, volQuadOrds, faceQuadOrds );
-    }
-
   protected:
-
     // check physicality on given quadrature
     template <class QuadratureType, class LocalFunctionImp>
     bool checkPhysicalQuad(const QuadratureType& quad,

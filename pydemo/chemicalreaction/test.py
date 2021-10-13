@@ -1,3 +1,7 @@
+import os
+# set number of threads to be used for thread parallel version
+os.environ['OMP_NUM_THREADS'] = '4'
+
 import math
 from ufl import *
 from dune.ufl import DirichletBC

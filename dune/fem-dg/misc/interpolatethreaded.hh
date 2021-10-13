@@ -4,7 +4,7 @@
 #include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem/function/common/discretefunction.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
-#include <dune/fem-dg/pass/threadhandle.hh>
+#include <dune/fem/misc/mpimanager.hh>
 
 namespace Dune
 {
@@ -27,10 +27,10 @@ namespace Dune
         : u_( u ), v_( v ), iterators_( iterators )
       {
         // init caches
-        runThread( true );
+        (*this)( true );
       }
 
-      void runThread( const bool stopAfterFirst = false )
+      void operator() ( const bool stopAfterFirst = false )
       {
         // reserve memory for local dof vector
         std::vector< typename DiscreteFunction::RangeFieldType > ldv;
@@ -104,10 +104,16 @@ namespace Dune
       ////////////////////////////////////////////////////////////
       // BEGIN PARALLEL REGION, first stage, element integrals
       ////////////////////////////////////////////////////////////
+      try
       {
-        // see threadhandle.hh
-        Fem :: ThreadHandle :: run( runThread );
+        // see threadpool.hh
+        Fem :: MPIManager :: run( runThread );
       }
+      catch ( const Dune::Fem::SingleThreadModeError& e )
+      {
+        Dune::Fem::interpolate( u, v );
+      }
+
       /////////////////////////////////////////////////
       // END PARALLEL REGION
       /////////////////////////////////////////////////

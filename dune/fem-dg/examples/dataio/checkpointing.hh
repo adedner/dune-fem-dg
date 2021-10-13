@@ -6,6 +6,9 @@
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
 #include <dune/fem/function/common/instationary.hh>
 #include <dune/fem/function/common/rangegenerators.hh>
+#include <dune/fem/function/localfunction/mutable.hh>
+#include <dune/fem/function/localfunction/const.hh>
+#include <dune/fem/common/bindguard.hh>
 #include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem-dg/algorithm/caller/checkpoint.hh>
 #include <dune/fem-dg/examples/dataio/checkedcheckpointcaller.hh>
@@ -31,8 +34,6 @@ namespace Fem
       typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
       typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
 
-      typedef typename DiscreteFunctionType::LocalFunctionType LocalFuncType;
-
       if( polOrd < 0 ) polOrd = 2*space.order() + 4 ;
 
       RangeType ret (0.0);
@@ -40,10 +41,12 @@ namespace Fem
 
       double sum = 0.0;
 
+      ConstLocalFunction< DiscreteFunctionType > lf( discFunc );
+
       for( const auto& en : elements( space.gridPart(), Dune::Partitions::all ) )
       {
         Dune::Fem::CachingQuadrature<GridPartType,0> quad( en, polOrd );
-        LocalFuncType lf = discFunc.localFunction( en );
+        auto guard = bindGuard( lf, en );
 
         for( const auto qp : quad )
         {
@@ -218,9 +221,15 @@ namespace Fem
     // reset solution on ghost cells
     void resetNonInterior( DiscreteFunctionType& solution )
     {
+      MutableLocalFunction< DiscreteFunctionType > local( solution );
       for( auto&& entity : entities(solution) )
+      {
         if( entity.partitionType() != Dune::InteriorEntity )
-          solution.localFunction( entity ).clear();
+        {
+          auto guard = bindGuard( local, entity );
+          local.clear();
+        }
+      }
     }
 
   protected:

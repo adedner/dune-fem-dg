@@ -17,7 +17,7 @@ namespace Fem
       //const std::string problemNames []
       //    = { "sod" , "smooth1d" , "ffs" , "diffraction" , "shockbubble", "p123" };
       const std::string problemNames []
-          = { "sod" , "smooth1d" , "ffs" , "diffraction" , "shockbubble", "riemann" };
+          = { "sod" , "smooth1d" , "vortex", "ffs" , "diffraction" , "shockbubble", "riemann" };
 
       const int problemNumber = Fem :: Parameter :: getEnum ( "problem" , problemNames );
 
@@ -27,6 +27,8 @@ namespace Fem
       }
       else if( problemNames[ problemNumber ] == "smooth1d" )
         return new U0Smooth1D< GridImp > ();
+      else if( problemNames[ problemNumber ] == "vortex" )
+        return new U0IsentropicVortex< GridImp > ();
       else if( problemNames[ problemNumber ] == "ffs" )
         return new U0FFS< GridImp > ();
       else if( problemNames[ problemNumber ] == "riemann" )
