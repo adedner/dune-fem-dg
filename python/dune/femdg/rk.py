@@ -55,7 +55,8 @@ class HelmholtzButcher:
     def __init__(self,op):
         self.op = op
         self._alpha = None
-        self.res = op.space.interpolate(op.space.dimRange*[0],name="res")
+        self.res = op.space.interpolate(op.space.dimRange*[0],name="HelmholtzButcher::res")
+        self.arg = op.space.interpolate(op.space.dimRange*[0],name="HelmholtzButcher::arg")
         self.counter = 0
         self.inner_counter = 0
     @property
@@ -65,12 +66,15 @@ class HelmholtzButcher:
     def alpha(self,value):
         self._alpha = value
     def f(self, x_coeff):
+        """
+        Implements: L[baru+a*k] - k = 0
+        """
         # interpret x_coeff as discrete function
-        xtmp = self.op.space.function("x_tmp", dofVector=x_coeff)
-        xtmp *= self.alpha
-        xtmp += self.baru
-        self.op(xtmp, self.res)
-        self.res -= xtmp
+        k = self.op.space.function("HelmholtzButcher::f::k", dofVector=x_coeff)
+        self.arg.assign( self.baru )
+        self.arg.axpy( self.alpha, k )
+        self.op(self.arg, self.res)
+        self.res -= k
         return self.res.as_numpy
 
     def solve(self,baru,target):
@@ -141,48 +145,58 @@ class RungeKutta:
             self.k[i] = op.space.interpolate(op.space.dimRange*[0],name="k")
         self.tmp = op.space.interpolate(op.space.dimRange*[0],name="tmp")
         self.explicit = all([abs(A[i][i])<1e-15 for i in range(self.stages)])
+        self.computeStages = self.explicitStages if self.explicit else self.implicitStages
         if not self.explicit:
             self.helmholtz = HelmholtzButcher(self.op)
-    def __call__(self,u,dt=None):
-        if self.explicit:
-            assert abs(self.c[0])<1e-15
+
+    def explictStages(self,u,dt=None):
+        assert self.explicit, "call method was setup wrong"
+
+        assert abs(self.c[0])<1e-15
+        self.op.stepTime(0,0)
+        self.op(u,self.k[0])
+        if dt is None and self.dt is None:
+            dt = self.op.localTimeStepEstimate[0]*self.cfl
+        elif dt is None:
+            dt = self.dt
+        self.dt = 1e10
+        for i in range(1,self.stages):
+            self.tmp.assign(u)
+            for j in range(i):
+                self.tmp.axpy(dt*self.A[i][j],self.k[j])
+            self.op.stepTime(self.c[i],dt)
+            self.op(self.tmp,self.k[i])
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
+
+    def implicitStages(self,u,dt=None):
+        assert not self.explicit, "call method was setup wrong"
+        if dt is None and self.dt is None:
             self.op.stepTime(0,0)
             self.op(u,self.k[0])
-            if dt is None and self.dt is None:
-                dt = self.op.localTimeStepEstimate[0]*self.cfl
-            elif dt is None:
-                dt = self.dt
-            self.dt = 1e10
-            for i in range(1,self.stages):
-                self.tmp.assign(u)
-                for j in range(i):
-                    self.tmp.axpy(dt*self.A[i][j],self.k[j])
-                self.op.stepTime(self.c[i],dt)
-                self.op(self.tmp,self.k[i])
-                self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
-        else:
-            if dt is None and self.dt is None:
-                self.op.stepTime(0,0)
-                self.op(u,self.k[0])
-                dt = self.op.localTimeStepEstimate[0]*self.cfl
-            elif dt is None:
-                dt = self.dt
-            self.dt = 1e10
-            for i in range(0,self.stages):
-                self.tmp.assign(u)
-                for j in range(i):
-                    self.tmp.axpy(dt*self.A[i][j],self.k[j])
-                self.op.stepTime(self.c[i],dt)
-                self.op(self.tmp,self.k[i]) # this seems like a good initial guess for dt small
-                self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
-                self.helmholtz.alpha = dt*self.A[i][i]
-                self.helmholtz.solve(baru=self.tmp,target=self.k[i])
+            dt = self.op.localTimeStepEstimate[0]*self.cfl
+        elif dt is None:
+            dt = self.dt
+        self.dt = 1e10
+        for i in range(0,self.stages):
+            self.tmp.assign(u)
+            for j in range(i):
+                self.tmp.axpy(dt*self.A[i][j],self.k[j])
+            self.op.stepTime(self.c[i],dt)
+            self.op(self.tmp,self.k[i]) # this seems like a good initial guess for dt small
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
+            self.helmholtz.alpha = dt*self.A[i][i]
+            self.helmholtz.solve(baru=self.tmp,target=self.k[i])
+
+    def __call__(self,u,dt=None):
+        # compute stages
+        self.computeStages(u,dt)
 
         for i in range(self.stages):
             u.axpy(dt*self.b[i],self.k[i])
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
         return self.op.space.gridView.comm.min(dt)
+
 class Heun(RungeKutta):
     def __init__(self, op, cfl=None):
         A = [[0,0],
@@ -219,15 +233,19 @@ def euler(explicit=True):
     else:
         return lambda op,cfl=None: ImplEuler(op,cfl)
 
-class Midpoint(RungeKutta):
-    def __init__(self, op, cfl=None):
-        A = [[0.5]]
-        b = [1]
-        c = [0.5]
-        cfl = 0.45 if cfl is None else cfl
-        RungeKutta.__init__(self,op,cfl,A,b,c)
+# Implemented using ImplSSP2 with s=1
+#class Midpoint(RungeKutta):
+#    def __init__(self, op, cfl=None):
+#        A = [[0.5]]
+#        b = [1]
+#        c = [0.5]
+#        cfl = 0.45 if cfl is None else cfl
+#        RungeKutta.__init__(self,op,cfl,A,b,c)
+
+
 class ImplSSP2: # with stages=1 same as above - increasing stages does not improve anything
     def __init__(self,stages,op,cfl=None):
+
         self.stages = stages
         self.op     = op
 
@@ -271,6 +289,7 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
         return self.op.space.gridView.comm.min(dt)
+
 class ExplSSP2:
     def __init__(self,stages,op,cfl=None):
         self.op     = op
@@ -310,6 +329,14 @@ def ssp2(stages,explicit=True):
         return lambda op,cfl=None: ExplSSP2(stages,op,cfl)
     else:
         return lambda op,cfl=None: ImplSSP2(stages,op,cfl)
+
+# MidPoint rule using ImplSSP2 with s=1
+class Midpoint(ImplSSP2):
+    def __init__(self, op, cfl=None):
+        # create ImplSSP2 with stages s=1
+        super().__init__(1, op, cfl=cfl)
+
+
 # optimal low storage methods:
 # http://www.sspsite.org
 # https://arxiv.org/pdf/1605.02429.pdf
@@ -365,6 +392,8 @@ class ExplSSP3:
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
         return self.op.space.gridView.comm.min(dt)
+
+
 class ImplSSP3:
     def __init__(self,stages,op,cfl=None):
         self.stages = stages
