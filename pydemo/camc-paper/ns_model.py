@@ -10,6 +10,8 @@ def model(problem, dim=2, mu=0.001, **kwargs):
     class Model:
         gamma = 1.4
         dimRange = dim+2
+        Pr = 0.72
+        Re = 1.
         # helper function
         def toPrim(U):
             v = as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
@@ -31,30 +33,37 @@ def model(problem, dim=2, mu=0.001, **kwargs):
                                  (U[cmpE]+p)*v ])
             return as_matrix(res)
         def F_v(t,x, U, DU):
-            assert dim == 2
-            Pr = 0.72
-
-            rho, rhou, rhoE = U[0], as_vector([U[1],U[2]]), U[3]
+            rho  = U[0]
+            rhou = as_vector([U[i] for i in range(1,dim+1)])
+            rhoE = U[cmpE]
             grad_rho = DU[0, :]
-            grad_rhou = as_matrix([[DU[j,:] for j in range(1, 3)]])[0]
-            grad_rhoE = DU[3,:]
+            grad_rhou = as_matrix([[DU[j,:] for j in range(1, dim+1)]])[0]
+            grad_rhoE = DU[cmpE,:]
 
-            grad_u = as_matrix([[(grad_rhou[j,:]*rho - rhou[j]*grad_rho)/rho**2 for j in range(2)]])[0]
+            grad_u = as_matrix([[(grad_rhou[j,:]*rho - rhou[j]*grad_rho)/rho**2 for j in range(dim)]])[0]
             grad_E = (grad_rhoE*rho - rhoE*grad_rho)/rho**2
 
             tau = mu*(grad_u + grad_u.T - 2.0/3.0*tr(grad_u)*Identity(2))
-            K_grad_T = mu*Model.gamma/Pr*(grad_E - dot(rhou, grad_u)/rho)
-            return as_matrix([
-                [0.0,                                0.0],
-                [tau[0,0],                           tau[0,1]],
-                [tau[1,0],                           tau[1,1]],
-                [dot(tau[0,:], rhou)/rho + K_grad_T[0], dot(tau[1,:], rhou)/rho + K_grad_T[1]]
+            K_grad_T = mu*Model.gamma/Model.Pr*(grad_E - dot(rhou, grad_u)/rho)
+
+            taum = numpy.vstack([ [*tau[i,:]] for i in range(dim)])
+
+            return as_matrix([  [0.0]*dim,
+                               *[ [*tau[i,:]] for i in range(dim) ],
+                                [ dot(tau[i,:], rhou)/rho + K_grad_T[i] for i in range(dim)]
                              ])
 
         # interface method needed for LLF and time step control
         def maxWaveSpeed(t,x,U,n):
             rho, v, p = Model.toPrim(U)
             return abs(dot(v,n)) + sqrt(Model.gamma*p/rho)
+
+        # interface method for viscosity time step control
+        def maxDiffusion(t,x,U):
+            rho, v, p = Model.toPrim(U)
+            alpha = pow( Model.gamma, 1.5 ) /(Model.Re * Model.Pr)
+            return mu * alpha / ( rho * 0.25 )
+
         def velocity(t,x,U):
             _, v ,_ = Model.toPrim(U)
             return v
