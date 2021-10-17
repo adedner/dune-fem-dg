@@ -149,7 +149,7 @@ class RungeKutta:
         if not self.explicit:
             self.helmholtz = HelmholtzButcher(self.op)
 
-    def explictStages(self,u,dt=None):
+    def explicitStages(self,u,dt=None):
         assert self.explicit, "call method was setup wrong"
 
         assert abs(self.c[0])<1e-15
