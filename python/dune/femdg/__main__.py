@@ -3,17 +3,15 @@ commands='''
 mkdir femdg_tutorial
 cd femdg_tutorial
 
-mkdir tmp
-cd tmp
-git init
-git remote add origin https://gitlab.dune-project.org/dune-fem/dune-fem-dg.git
-git config core.sparsecheckout true
-echo 'pydemo/' > .git/info/sparse-checkout
-echo 'doc/'  >> .git/info/sparse-checkout
-git pull origin master
+TMPNAME=`mktemp -d -p ./`
+
+# clone repo without history
+git clone --depth 1 https://gitlab.dune-project.org/dune-fem/dune-fem-dg.git $TMPNAME
+cd $TMPNAME
+
 cp pydemo/camc-paper/*.py pydemo/camc-paper/*.hh pydemo/camc-paper/*.dgf ..
 cd ..
-rm -rf tmp
+rm -rf $TMPNAME
 '''
 subprocess.check_output(commands, shell=True)
 
