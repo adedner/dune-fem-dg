@@ -1,5 +1,8 @@
 #!/bin/bash
 
+USEVENV=1
+#USEVENV=0
+
 WORKDIR=${PWD}
 
 if [ "$DUNE_CONTROL_PATH" != "" ]; then
@@ -40,15 +43,17 @@ else
   fi
 fi
 
-# create necessary python virtual environment
-VENVDIR=$WORKDIR/venv
-if ! test -d $VENVDIR ; then
-  python3 -m venv $VENVDIR
-  source $VENVDIR/bin/activate
-  pip install --upgrade pip
-  pip install $CMAKEPIP fenics-ufl numpy matplotlib mpi4py
-else
-  source $VENVDIR/bin/activate
+if [ "$USEVENV" == "1" ]; then
+  # create necessary python virtual environment
+  VENVDIR=$WORKDIR/venv
+  if ! test -d $VENVDIR ; then
+    python3 -m venv $VENVDIR
+    source $VENVDIR/bin/activate
+    pip install --upgrade pip
+    pip install $CMAKEPIP fenics-ufl numpy matplotlib mpi4py
+  else
+    source $VENVDIR/bin/activate
+  fi
 fi
 
 #change appropriately, i.e. 2.8 or leave empty which refers to master
@@ -84,10 +89,21 @@ CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DCMAKE_LD_FLAGS=\\\"$PY_LDFLAGS\\\" \\
  -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
  -DDISABLE_DOCUMENTATION=TRUE \\
+ -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE \\
  -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > config.opts
 fi
 
-FOUND_DUNE_ACTIVATE=`grep "DUNE_VENV_SPECIFIC_SETUP" $VENVDIR/bin/activate`
+ACTIVATE=activate.sh
+if [ "$USEVENV" == "1" ]; then
+  ACTIVATE=$VENVDIR/bin/activate
+else
+  DEACTIVATEFUNCTION="deactivate() {
+  echo \"\"
+}
+  "
+fi
+
+FOUND_DUNE_ACTIVATE=`grep "DUNE_VENV_SPECIFIC_SETUP" $ACTIVATE`
 
 if [ "$FOUND_DUNE_ACTIVATE" == "" ]; then
 echo "
@@ -143,6 +159,8 @@ restoreVariable() {
   fi
 }
 
+$DEACTIVATEFUNCTION
+
 save_function deactivate venv_deactivate
 deactivate() {
   restoreVariable DUNE_CONTROL_PATH
@@ -157,10 +175,10 @@ deactivate() {
   unset venv_deactivate
   unset deactivate
 }
-" >> $VENVDIR/bin/activate
-#> activate.sh
+" >> $ACTIVATE
 fi
 
+#DUNEBRANCH="-b feature/cmake-python-overhaul"
 DUNEBRANCH=
 if [ "$DUNEVERSION" != "" ] ; then
   DUNEBRANCH="-b releases/$DUNEVERSION"
@@ -192,12 +210,15 @@ source $VENVDIR/bin/activate
 
 # build all DUNE modules using dune-control
 ./dune-common/bin/dunecontrol --opts=config.opts all
-python ./dune-common/bin/setup-dunepy.py
+
+if test -f ./dune-common/bin/setup-dunepy.py; then
+  python ./dune-common/bin/setup-dunepy.py
+fi
 
 echo "####################################################
 
 Build finished (hopefully successful). Use
 
-source $VENVDIR/bin/activate
+source $ACTIVATE
 
 to activate the virtual environment!"
