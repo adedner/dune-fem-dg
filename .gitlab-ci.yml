@@ -1,6 +1,6 @@
 ---
 variables:
-  GLOBAL_CMAKE_FLAGS: ' -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DCMAKE_CXX_FLAGS="-Wno-deprecated-declarations" -DALLOW_CXXFLAGS_OVERWRITE=ON -DDUNE_GRID_GRIDTYPE_SELECTOR=ON'
+  GLOBAL_CMAKE_FLAGS: ' -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DALLOW_CXXFLAGS_OVERWRITE=ON -DDUNE_GRID_GRIDTYPE_SELECTOR=ON'
   DUNECI_CMAKE_FLAGS: '$GLOBAL_CMAKE_FLAGS'
   DUNE_LOG_LEVEL:     DEBUG
 
@@ -28,9 +28,6 @@ ubuntu-20.04-clang-10-17:
   script:
     - duneci-standard-test
   variables:
-    # Note: there is a singleton error on ubuntu in with clang and the
-    # MPIManger which requires that shared libs are turned ona
-    DUNECI_CMAKE_FLAGS: '-DBUILD_SHARED_LIBS=TRUE $GLOBAL_CMAKE_FLAGS'
     # bug in CI clang-10-17 and clang-10-20 are mixed up
     DUNECI_TOOLCHAIN: clang-10-20
   tags: [duneci]
