@@ -63,7 +63,7 @@ vtk()
 t        = 0
 saveStep = 0.1
 saveTime = saveStep
-while t < 0.1:
+while t < 0.02:
     operator.setTime(t)
     t += stepper(u_h)
     if t > saveTime:
