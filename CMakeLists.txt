@@ -18,7 +18,7 @@ include(DuneMacros)
 # start a dune project with information from dune.module
 dune_project()
 
-include(DuneMPI)
+include(AddMPIFlags)
 
 if( DUNE_ENABLE_PYTHONBINDINGS )
   # add_subdirectory("python")
