@@ -23,7 +23,6 @@ include(AddMPIFlags)
 if( DUNE_ENABLE_PYTHONBINDINGS )
   # add_subdirectory("python")
   set(PYDEMO_DIR pydemo python)
-  dune_python_install_package(PATH python)
 endif()
 
 #add sub directories

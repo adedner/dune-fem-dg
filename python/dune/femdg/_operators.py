@@ -5,8 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 from io import StringIO
 
-from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
-
 from dune.typeregistry import generateTypeName
 from dune.generator import Constructor, Method
 from dune.generator.importclass import load as classLoad
@@ -36,15 +34,15 @@ def createLimiter(domainSpace, rangeSpace=None, bounds = [1e-12,1.], limiter='sc
     if rangeSpace is None:
         rangeSpace = domainSpace
 
-    domainSpaceType = domainSpace._typeName
-    rangeSpaceType = rangeSpace._typeName
+    domainSpaceType = domainSpace.cppTypeName
+    rangeSpaceType = rangeSpace.cppTypeName
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = domainSpace.storage
     _, rangeFunctionIncludes, rangeFunctionType, _, _, _ = rangeSpace.storage
 
     includes = ["dune/fem-dg/operator/limiter/limiter.hh"]
-    includes += domainSpace._includes + domainFunctionIncludes
-    includes += rangeSpace._includes + rangeFunctionIncludes
+    includes += domainSpace.cppIncludes + domainFunctionIncludes
+    includes += rangeSpace.cppIncludes + rangeFunctionIncludes
 
     typeName = 'Dune::Fem::ScalingLimiter< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
     # FV type limiter where FV based reconstructions are done
@@ -67,12 +65,12 @@ def limiter(domainSpace, rangeSpace=None, bounds = [1e-12,1.], limiter='scaling'
 
 def createOrderRedcution(domainSpace):
 
-    domainSpaceType = domainSpace._typeName
+    domainSpaceType = domainSpace.cppTypeName
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = domainSpace.storage
 
     includes = ["dune/fem-dg/operator/common/orderreduction.hh"]
-    includes += domainSpace._includes + domainFunctionIncludes
+    includes += domainSpace.cppIncludes + domainFunctionIncludes
 
     typeName = 'Dune::Fem::OrderReduction< ' + domainFunctionType + ' >'
 
@@ -259,7 +257,7 @@ def femDGOperator(Model, space,
     if diffusionScheme is None or diffusionScheme is False:
         diffusionScheme = "none"
 
-    spaceType = space._typeName
+    spaceType = space.cppTypeName
 
     if virtualize:
         modelType = "DiffusionModel< " +\
@@ -270,8 +268,8 @@ def femDGOperator(Model, space,
         advModelType  = modelType
         diffModelType = modelType
     else:
-        advModelType  = advModel._typeName # modelType
-        diffModelType = diffModel._typeName # modelType
+        advModelType  = advModel.cppTypeName # modelType
+        diffModelType = diffModel.cppTypeName # modelType
 
     _, destinationIncludes, destinationType, _, _, _ = space.storage
 
@@ -303,15 +301,15 @@ def femDGOperator(Model, space,
             advectionFluxIsCallable = True
             # wrong model class used here - EllipticModel with no Traits
             # at the moment this is always the same type (depending on
-            # model._typeName) so could be done by only providing the header
+            # model.cppTypeName) so could be done by only providing the header
             # file in the dg operator construction method
-            clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
+            clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel.cppTypeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
             advectionFlux = advectionFlux(advModel,clsName,includes)
-            includes += advectionFlux._includes
+            includes += advectionFlux.cppIncludes
         elif hasattr(advectionFlux,"_typeName"):
             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
             advectionFluxIsCallable = True
-            includes += advectionFlux._includes
+            includes += advectionFlux.cppIncludes
         else:
             # if dgadvectionflux.method has been selected, then use general flux,
             # otherwise default to LLF flux
@@ -426,9 +424,9 @@ def femDGOperator(Model, space,
     ### Construct DuneType, includes, and extra methods/constructors
     includes += ["dune/fem-dg/python/operator.hh"]
     includes += ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
-    includes += space._includes + destinationIncludes
+    includes += space.cppIncludes + destinationIncludes
     includes += ["dune/fem/schemes/conservationlawmodel.hh", "dune/fempy/parameter.hh"]
-    includes += advModel._includes + diffModel._includes
+    includes += advModel.cppIncludes + diffModel.cppIncludes
 
     additionalType = additionalClass + '< typename ' + spaceType + '::FunctionSpaceType >'
 
@@ -527,7 +525,7 @@ namespace Dune
   }
 }
 '''
-    code = code.replace("XXXADV_MODELXXX",advModel._typeName)
+    code = code.replace("XXXADV_MODELXXX",advModel.cppTypeName)
     code = code.replace("XXXIMPL_MODELXXX",clsName)
     clsName,includesA = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel,
                                          "Dune::Fem::AdvectionFlux::Enum::userdefined")
@@ -537,12 +535,12 @@ namespace Dune
 def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
 
     space = fullOperator.domainSpace
-    spaceType = space._typeName
+    spaceType = space.cppTypeName
 
     # only need space includes since we use basic operator type
     includes = ["dune/fem-dg/solver/rungekuttasolver.hh"] # , "dune/fem-dg/misc/algorithmcreatorselector.hh"]
-    #includes += fullOperator._includes
-    includes += space._includes
+    #includes += fullOperator.cppIncludes
+    includes += space.cppIncludes
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
 
