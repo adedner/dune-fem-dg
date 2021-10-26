@@ -1,6 +1,9 @@
 import os, sys
 from argparse import ArgumentParser
 
+# set number of threads to be used for thread parallel version
+#os.environ['OMP_NUM_THREADS'] = '6'
+
 parser = ArgumentParser()
 parser.add_argument('level', type=int, help="max refinement level (negative means non-adaptive)")
 parser.add_argument('--space', type=str, default="onb", help="onb|legendre|lagrange|equidistant|lobatto|gauss")
@@ -24,7 +27,7 @@ order = args.order
 out   = args.out
 mu    = args.mu
 
-path = "euler_tmp/"
+path = "ns_tmp/"
 os.makedirs(path, exist_ok=True)
 path = path+grid+str(dim)+str(abs(level))+"_"+space+"_"+str(mu).replace(".","")+"_"
 if stepper != "femdg": path = path+stepper
