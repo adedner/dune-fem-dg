@@ -578,3 +578,61 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
                       fullOperator.implicitOperator,
                       imexId,
                       parameters=parameters )
+
+
+# return DGHelmholtzInverseOperator to be used in RungeKutta solvers
+def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
+    """
+
+    Parameters
+    ----------
+    op : Operator
+         Operator describing the spatial operator L, has to be of
+         type molGalerkin or similar.
+
+    u  : DiscreteFunction
+         DiscreteFunction describing type of argument and target of op.
+
+    parameters : dict
+         Parameters handed down to the nonlinear solver.
+
+    Returns
+    -------
+    Operator (DGHelmholtzInverseOperator on C++ side).
+
+    """
+
+    if u is None:
+        u = op.space.function("u_tmp")
+
+    spaceOpType = op.cppTypeName
+    destType    = u.cppTypeName
+
+
+    includes = ["dune/fem-dg/solver/dghelmholtzinverse.hh","dune/fempy/parameter.hh"]
+    includes += op.cppIncludes
+    includes += u.cppIncludes
+
+    typeName = 'Dune::Fem::DGHelmholtzInverseOperator< ' + spaceOpType + ', ' + destType + ' >'
+
+    # constructor for operator
+    constructor = Constructor([spaceOpType + ' &spaceOp, const pybind11::dict& parameters'],
+                              ['return new ' + typeName + '( spaceOp, Dune::FemPy::pyParameter( "fem.solver.", parameters, std::make_shared< std::string >() ) );'],
+                              ['"spaceOp"_a', '"parameters"_a',
+                               'pybind11::keep_alive< 1, 2 >()'])
+
+    # add method setLambda to modify lambda stored internally
+    setLambda = Method('setLambda', '''[]( DuneType &self, const double lambda) { self.setLambda(lambda); }''' )
+
+    # add method solve, combining setLambda and __call__ for efficiency. Also,
+    # here some solver diagnostics can be returned
+    solve = Method('solve', '''[]( DuneType &self, const typename DuneType::DestinationType &rhs, typename DuneType::DestinationType &u, const double lambda)
+                                 { auto info = self.solve(rhs, u, lambda);
+                                   pybind11::dict ret;
+                                   ret["converged"]  = pybind11::cast(info.converged);
+                                   ret["iterations"] = pybind11::cast(info.nonlinearIterations);
+                                   ret["linear_iterations"] = pybind11::cast(info.linearIterations);
+                                   return ret;
+                                 }''' )
+
+    return load(includes, typeName, constructor, setLambda, solve).Operator( op, parameters )
