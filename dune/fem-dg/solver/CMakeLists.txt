@@ -1,1 +1,1 @@
-dune_install( rungekuttasolver.hh uzawa.hh )
+dune_install( rungekuttasolver.hh uzawa.hh dghelmholtzinverse.hh )

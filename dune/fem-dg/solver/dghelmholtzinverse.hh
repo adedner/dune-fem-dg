@@ -1,0 +1,116 @@
+#ifndef DUNE_FEM_DG_SOLVER_DGHELMHOLTZ_INV_HH
+#define DUNE_FEM_DG_SOLVER_DGHELMHOLTZ_INV_HH
+
+#include <iostream>
+#include <utility>
+
+#include <dune/fem/solver/rungekutta/timestepcontrol.hh>
+#include <dune/fem/solver/newtoninverseoperator.hh>
+#include <dune/fem/solver/krylovinverseoperators.hh>
+#include <dune/fem/operator/dghelmholtz.hh>
+
+#include <dune/fem/io/parameter.hh>
+
+namespace Dune
+{
+  namespace Fem
+  {
+    /** \class DGHelmholtzInverseOperator
+     *  \brief Operator implementing the solution of
+     *
+     *  @f[
+     *  L[\bar{u} + \lambda u ] = rhs
+     *  @f]
+     *
+     *  \tparam SpaceOperator operator implementing L.
+     *  \tparam DiscreteFunction type of discrete function representing u.
+     *
+     */
+    template <class SpaceOperator, class DiscreteFunction>
+    class DGHelmholtzInverseOperator
+      : public virtual Operator< DiscreteFunction, DiscreteFunction >
+    {
+    public:
+      typedef SpaceOperator SpaceOperatorType;
+      typedef DiscreteFunction DestinationType;
+      typedef typename DestinationType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+
+    protected:
+      typedef Dune::Fem::KrylovInverseOperator< DestinationType >               LinearInverseOperatorType;
+
+      typedef Dune::Fem::DGHelmholtzOperator< SpaceOperatorType >               HelmholtzOperatorType;
+      typedef Dune::Fem::NewtonInverseOperator< typename HelmholtzOperatorType::JacobianOperatorType,
+                                                LinearInverseOperatorType >     NonlinearInverseOperatorType;
+
+      struct SolverInfo
+      {
+        SolverInfo ( bool converged, int linearIterations, int nonlinearIterations )
+          : converged( converged ), linearIterations( linearIterations ), nonlinearIterations( nonlinearIterations )
+        {}
+
+        bool converged;
+        int linearIterations, nonlinearIterations;
+      };
+
+    public:
+      DGHelmholtzInverseOperator( SpaceOperatorType& op,
+                                  const Dune::Fem::ParameterReader& parameter = Dune::Fem::Parameter::container() )
+        : op_( op ),
+          helmholtzOp_( op ),
+          invOp_( parameter )
+      {}
+
+      /** \brief set lambda */
+      void setLambda( const double lambda )
+      {
+        helmholtzOp_.setLambda( lambda );
+      }
+
+      /** solve
+       *
+       * @f[
+       * L[\bar{u} + \lambda u ] = rhs
+       * @f]
+       *
+       */
+      virtual void operator() ( const DestinationType &rhs, DestinationType &u ) const final override
+      {
+        // lambda needs to be set beforehand
+        invOp_.bind( helmholtzOp_ );
+        invOp_( rhs, u );
+        invOp_.unbind();
+      }
+
+      /** \brief Solve
+       *
+       * @f[
+       * L[\bar{u} + \lambda u ] = rhs
+       * @f]
+       *
+       *  \param[in]     rhs     right hand side of F(w) = rhs
+       *  \param[inout]  u       initial guess and returned solution
+       *  \param[in]     lambda  lambda for Helmholtz operator
+       */
+      SolverInfo solve( const DestinationType& rhs, DestinationType &u, const double lambda ) const
+      {
+        helmholtzOp_.setLambda( lambda );
+
+        // apply inv op
+        (*this)( rhs, u );
+        return SolverInfo( invOp_.converged(), invOp_.linearIterations(), invOp_.iterations() );
+      }
+
+      std::pair< int, int > iterations() const
+      {
+        return std::make_pair( invOp_.iterations(), invOp_.linearIterations() );
+      }
+
+    protected:
+      SpaceOperatorType& op_;
+      mutable HelmholtzOperatorType helmholtzOp_;
+      mutable NonlinearInverseOperatorType invOp_;
+    };
+
+  } // end namespace Fem
+} // end namespace Dune
+#endif
