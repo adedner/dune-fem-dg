@@ -153,7 +153,6 @@ class HelmholtzShuOsher:
 
     def solve(self,rhs,target):
         if self._invOp:
-            # prepare right hand side
             info = self._invOp.solve( rhs, target, self.alpha )
             self.counter = info["iterations"]
             self.inner_counter = info["linear_iterations"]
@@ -170,7 +169,7 @@ class HelmholtzShuOsher:
                         verbose=False,
                         callback=callb, inner_callback=icallb)
             self.counter = counter
-            self.inner_counter = inner_counter # linear iterations not crrect
+            self.inner_counter = inner_counter # linear iterations not correct
 
 class RungeKutta:
     def __init__(self,op,cfl, A, b, c, *args, **kwargs ):
