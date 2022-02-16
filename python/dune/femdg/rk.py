@@ -153,6 +153,12 @@ class HelmholtzShuOsher:
 
     def solve(self,rhs,target):
         if self._invOp:
+            # dummy preconditioner doing nothing
+            #def pre(u,v):
+            #    v.assign( u )
+            #    return
+            #info = self._invOp.preconditionedSolve( pre, rhs, target, self.alpha )
+
             info = self._invOp.solve( rhs, target, self.alpha )
             self.counter = info["iterations"]
             self.inner_counter = info["linear_iterations"]

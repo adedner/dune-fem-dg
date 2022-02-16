@@ -35,8 +35,12 @@ namespace Dune
       typedef DiscreteFunction DestinationType;
       typedef typename DestinationType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
+      typedef std::reference_wrapper< const DestinationType >  ConstReferenceType;
+      typedef std::reference_wrapper< DestinationType >        ReferenceType;
+      typedef std::function< void( ConstReferenceType& , ReferenceType& ) > PreconditionerType;
+
     protected:
-      typedef Dune::Fem::KrylovInverseOperator< DestinationType >               LinearInverseOperatorType;
+      typedef Dune::Fem::GmresInverseOperator< DestinationType >                LinearInverseOperatorType;
 
       typedef Dune::Fem::DGHelmholtzOperator< SpaceOperatorType >               HelmholtzOperatorType;
       typedef Dune::Fem::NewtonInverseOperator< typename HelmholtzOperatorType::JacobianOperatorType,
@@ -50,6 +54,25 @@ namespace Dune
 
         bool converged;
         int linearIterations, nonlinearIterations;
+      };
+
+      // class wrapping a Python function to look like a Fem::Operator
+      class PreconditionerWrapper : public virtual Operator< DestinationType, DestinationType >
+      {
+        const PreconditionerType& pre_; // function given from Python side
+      public:
+        PreconditionerWrapper( const PreconditionerType& pre )
+          : pre_( pre ) {}
+
+        virtual void operator() ( const DestinationType &u, DestinationType &v ) const final override
+        {
+          // convert to reference_wrapper to avoid copying
+          ConstReferenceType uR( u );
+          ReferenceType vR( v );
+
+          // callback to python applying preconditioner
+          pre_( uR, vR );
+        }
       };
 
     public:
@@ -76,6 +99,7 @@ namespace Dune
       virtual void operator() ( const DestinationType &rhs, DestinationType &u ) const final override
       {
         // lambda needs to be set beforehand
+        // bind operator (this will not overwrite an already set preconditioner)
         invOp_.bind( helmholtzOp_ );
         invOp_( rhs, u );
         invOp_.unbind();
@@ -98,6 +122,26 @@ namespace Dune
         // apply inv op
         (*this)( rhs, u );
         return SolverInfo( invOp_.converged(), invOp_.linearIterations(), invOp_.iterations() );
+      }
+
+      /** \brief Preconditioned solve
+       *
+       * @f[
+       * L[\bar{u} + \lambda u ] = rhs
+       * @f]
+       *
+       *  \param[in]     pre     preconditioner passed from Python side
+       *  \param[in]     rhs     right hand side of F(w) = rhs
+       *  \param[inout]  u       initial guess and returned solution
+       *  \param[in]     lambda  lambda for Helmholtz operator
+       */
+      SolverInfo preconditionedSolve( const PreconditionerType& pre,
+                                      const DestinationType& rhs, DestinationType &u, const double lambda ) const
+      {
+        PreconditionerWrapper p( pre );
+        // bind operator and preconditioner
+        invOp_.bind( helmholtzOp_, p );
+        return solve( rhs, u, lambda );
       }
 
       std::pair< int, int > iterations() const

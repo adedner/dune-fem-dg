@@ -634,5 +634,15 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
                                    ret["linear_iterations"] = pybind11::cast(info.linearIterations);
                                    return ret;
                                  }''' )
+    # add method solve, combining setLambda and __call__ for efficiency. Also,
+    # here some solver diagnostics can be returned
+    preCondSolve = Method('preconditionedSolve', '''[]( DuneType &self, const typename DuneType::PreconditionerType& p, const typename DuneType::DestinationType &rhs, typename DuneType::DestinationType &u, const double lambda)
+                                 { auto info = self.preconditionedSolve(p, rhs, u, lambda);
+                                   pybind11::dict ret;
+                                   ret["converged"]  = pybind11::cast(info.converged);
+                                   ret["iterations"] = pybind11::cast(info.nonlinearIterations);
+                                   ret["linear_iterations"] = pybind11::cast(info.linearIterations);
+                                   return ret;
+                                 }''' )
 
-    return load(includes, typeName, constructor, setLambda, solve).Operator( op, parameters )
+    return load(includes, typeName, constructor, setLambda, solve, preCondSolve).Operator( op, parameters )
