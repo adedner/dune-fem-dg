@@ -605,9 +605,12 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
     if u is None:
         u = op.space.function("u_tmp")
 
-    spaceOpType = op.cppTypeName
     destType    = u.cppTypeName
 
+    spaceOpType = op.cppTypeName
+    # for DGOperator from femDGOperator we need to use SpaceOperatorInterface here
+    if 'DGOperator' in spaceOpType:
+        spaceOpType = 'Dune::Fem::SpaceOperatorInterface< ' + destType + '>'
 
     includes = ["dune/fem-dg/solver/dghelmholtzinverse.hh","dune/fempy/parameter.hh"]
     includes += op.cppIncludes

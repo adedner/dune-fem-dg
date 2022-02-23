@@ -137,7 +137,7 @@ class HelmholtzShuOsher:
                 return self.res.as_numpy
             self.f = f
         else:
-            self._invOp = dgHelmholtzInverseOperator( self.op._op, self.res, parameters )
+            self._invOp = dgHelmholtzInverseOperator( self.op, self.res, parameters )
             # not needed anymore
             del self.res
             self.res = None
