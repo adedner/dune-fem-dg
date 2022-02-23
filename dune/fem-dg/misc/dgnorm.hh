@@ -2,7 +2,6 @@
 #define DUNE_FEMDG_DGNORM_HH
 
 #include <dune/fem/misc/l2norm.hh>
-#include <dune/fem/misc/compatibility.hh>
 
 namespace Dune
 {

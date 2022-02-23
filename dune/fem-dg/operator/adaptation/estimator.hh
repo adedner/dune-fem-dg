@@ -3,7 +3,6 @@
 
 //- Dune-fem includes
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
-#include <dune/fem/misc/compatibility.hh>
 
 namespace Dune
 {

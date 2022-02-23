@@ -7,7 +7,6 @@
 #include <dune/fem/function/common/gridfunctionadapter.hh>
 #include <dune/fem/function/localfunction/mutable.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
-#include <dune/fem/misc/compatibility.hh>
 #include <dune/fem/operator/common/temporarylocalmatrix.hh>
 #include <dune/fem/operator/common/localcontribution.hh>
 

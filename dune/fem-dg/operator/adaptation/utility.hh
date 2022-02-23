@@ -4,7 +4,6 @@
 // include restricion, prolongation and adaptation operator classes for discrete functions
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/gridpart/common/capabilities.hh>
-#include <dune/fem/misc/compatibility.hh>
 
 namespace Dune
 {

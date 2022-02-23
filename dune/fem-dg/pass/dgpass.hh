@@ -20,7 +20,6 @@
 #include <dune/fem-dg/pass/pass.hh>
 #include <dune/fem-dg/pass/modelcaller.hh>
 #include <dune/fem-dg/pass/discretemodel.hh>
-#include <dune/fem/misc/compatibility.hh>
 
 #include <dune/fem/io/parameter.hh>
 

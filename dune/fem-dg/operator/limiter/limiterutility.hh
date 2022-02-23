@@ -13,7 +13,6 @@
 
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 
-#include <dune/fem/misc/compatibility.hh>
 #include <dune/fem/misc/checkgeomaffinity.hh>
 
 //*************************************************************

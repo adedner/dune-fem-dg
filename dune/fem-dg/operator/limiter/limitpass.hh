@@ -25,7 +25,6 @@
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/function/localfunction/bindable.hh>
 
-#include <dune/fem/misc/compatibility.hh>
 #include <dune/fem/misc/mpimanager.hh>
 
 #include <dune/fem-dg/pass/pass.hh>

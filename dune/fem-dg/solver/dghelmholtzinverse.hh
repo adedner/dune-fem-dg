@@ -8,6 +8,7 @@
 #include <dune/fem/solver/newtoninverseoperator.hh>
 #include <dune/fem/solver/krylovinverseoperators.hh>
 #include <dune/fem/operator/dghelmholtz.hh>
+#include <dune/fem/operator/common/spaceoperatorif.hh>
 
 #include <dune/fem/io/parameter.hh>
 
