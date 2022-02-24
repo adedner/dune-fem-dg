@@ -607,6 +607,10 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
 
     destType    = u.cppTypeName
 
+    # in case a wrapper was passed
+    if not hasattr(op, "cppTypeName"):
+        op = op._op
+
     spaceOpType = op.cppTypeName
     # for DGOperator from femDGOperator we need to use SpaceOperatorInterface here
     if 'DGOperator' in spaceOpType:
