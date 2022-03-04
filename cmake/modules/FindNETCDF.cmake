@@ -27,11 +27,8 @@ cmake_pop_check_state()
 # behave like a CMake module is supposed to behave
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-  "netcdf"
-  DEFAULT_MSG
-  NETCDF_INCLUDE_DIR
-  NETCDF_LIBRARY
-  NETCDF_HEADER_USABLE
+  "NETCDF"
+  REQUIRED_VARS NETCDF_INCLUDE_DIR NETCDF_LIBRARY
 )
 
 if (NETCDF_FOUND)
