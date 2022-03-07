@@ -1,7 +1,6 @@
 #!/bin/bash
 
-USEVENV=1
-#USEVENV=0
+USEVENV=0
 
 WORKDIR=${PWD}
 
@@ -84,7 +83,7 @@ MAKE_FLAGS=-j4
 CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DDUNE_ENABLE_PYTHONBINDINGS=ON \\
  -DALLOW_CXXFLAGS_OVERWRITE=ON \\
- -DBUILD_SHARED_LIBS=ON \\
+ -DDUNE_PYTHON_USE_VENV=OFF \\
  -DADDITIONAL_PIP_PARAMS="-upgrade" \\
  -DCMAKE_LD_FLAGS=\\\"$PY_LDFLAGS\\\" \\
  -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
@@ -100,7 +99,7 @@ else
   DEACTIVATEFUNCTION="deactivate() {
   echo \"\"
 }
-  "
+"
 fi
 
 FOUND_DUNE_ACTIVATE=`grep "DUNE_VENV_SPECIFIC_SETUP" $ACTIVATE`
@@ -206,14 +205,10 @@ for MOD in $DUNEFEMMODULES ; do
 done
 
 # load environment variables
-source $VENVDIR/bin/activate
+source $ACTIVATE
 
 # build all DUNE modules using dune-control
 ./dune-common/bin/dunecontrol --opts=config.opts all
-
-if test -f ./dune-common/bin/setup-dunepy.py; then
-  python ./dune-common/bin/setup-dunepy.py
-fi
 
 echo "####################################################
 
