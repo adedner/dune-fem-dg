@@ -3,6 +3,7 @@
 USEVENV=0
 
 WORKDIR=${PWD}
+echo "Placing DUNE modules in $WORKDIR"
 
 if [ "$DUNE_CONTROL_PATH" != "" ]; then
   if [ "$WORKDIR" != "$DUNE_CONTROL_PATH" ]; then
@@ -66,15 +67,15 @@ DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
 
 # build flags for all DUNE modules
 # change according to your needs
-if test -f config.opts ; then
+if test -f $WORKDIR/config.opts ; then
   read -p "Found config.opts. Overwrite with default? (y,n) " YN
   if [ "$YN" == "y" ] ;then
     echo "Overwriting config.opts!"
-    rm -f config.opts
+    rm -f $WORKDIR/config.opts
   fi
 fi
 
-if ! test -f config.opts ; then
+if ! test -f $WORKDIR/config.opts ; then
 echo "\
 DUNEPATH=`pwd`
 BUILDDIR=build-cmake
@@ -89,10 +90,10 @@ CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
  -DDISABLE_DOCUMENTATION=TRUE \\
  -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE \\
- -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > config.opts
+ -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > $WORKDIR/config.opts
 fi
 
-ACTIVATE=activate.sh
+ACTIVATE=$WORKDIR/activate.sh
 if [ "$USEVENV" == "1" ]; then
   ACTIVATE=$VENVDIR/bin/activate
 else
