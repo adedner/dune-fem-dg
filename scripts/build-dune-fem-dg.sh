@@ -185,23 +185,23 @@ fi
 
 # get all dune modules necessary
 for MOD in $DUNECOREMODULES ; do
-  git clone $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
+  git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
 done
 
 # get all dune extension modules necessary
 for MOD in $DUNEEXTMODULES ; do
   if [ "$MOD" == "dune-alugrid" ]; then
-    git clone $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
+    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
   elif [ "$MOD" == "dune-spgrid" ]; then
-    git clone $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
+    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
   else
-    git clone $DUNEBRANCH https://gitlab.dune-project.org/staging/$MOD.git
+    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/staging/$MOD.git
   fi
 done
 
 # get all dune extension modules necessary
 for MOD in $DUNEFEMMODULES ; do
-  git clone $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
+  git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
 done
 
 # load environment variables
