@@ -1,9 +1,9 @@
 #!/bin/bash
 
-USEVENV=1
-#USEVENV=0
+USEVENV=0
 
 WORKDIR=${PWD}
+echo "Placing DUNE modules in $WORKDIR"
 
 if [ "$DUNE_CONTROL_PATH" != "" ]; then
   if [ "$WORKDIR" != "$DUNE_CONTROL_PATH" ]; then
@@ -67,15 +67,15 @@ DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
 
 # build flags for all DUNE modules
 # change according to your needs
-if test -f config.opts ; then
+if test -f $WORKDIR/config.opts ; then
   read -p "Found config.opts. Overwrite with default? (y,n) " YN
   if [ "$YN" == "y" ] ;then
     echo "Overwriting config.opts!"
-    rm -f config.opts
+    rm -f $WORKDIR/config.opts
   fi
 fi
 
-if ! test -f config.opts ; then
+if ! test -f $WORKDIR/config.opts ; then
 echo "\
 DUNEPATH=`pwd`
 BUILDDIR=build-cmake
@@ -84,23 +84,23 @@ MAKE_FLAGS=-j4
 CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DDUNE_ENABLE_PYTHONBINDINGS=ON \\
  -DALLOW_CXXFLAGS_OVERWRITE=ON \\
- -DBUILD_SHARED_LIBS=ON \\
+ -DDUNE_PYTHON_USE_VENV=OFF \\
  -DADDITIONAL_PIP_PARAMS="-upgrade" \\
  -DCMAKE_LD_FLAGS=\\\"$PY_LDFLAGS\\\" \\
  -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
  -DDISABLE_DOCUMENTATION=TRUE \\
  -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE \\
- -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > config.opts
+ -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > $WORKDIR/config.opts
 fi
 
-ACTIVATE=activate.sh
+ACTIVATE=$WORKDIR/activate.sh
 if [ "$USEVENV" == "1" ]; then
   ACTIVATE=$VENVDIR/bin/activate
 else
   DEACTIVATEFUNCTION="deactivate() {
   echo \"\"
 }
-  "
+"
 fi
 
 FOUND_DUNE_ACTIVATE=`grep "DUNE_VENV_SPECIFIC_SETUP" $ACTIVATE`
@@ -186,34 +186,30 @@ fi
 
 # get all dune modules necessary
 for MOD in $DUNECOREMODULES ; do
-  git clone $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
+  git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
 done
 
 # get all dune extension modules necessary
 for MOD in $DUNEEXTMODULES ; do
   if [ "$MOD" == "dune-alugrid" ]; then
-    git clone $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
+    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
   elif [ "$MOD" == "dune-spgrid" ]; then
-    git clone $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
+    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
   else
-    git clone $DUNEBRANCH https://gitlab.dune-project.org/staging/$MOD.git
+    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/staging/$MOD.git
   fi
 done
 
 # get all dune extension modules necessary
 for MOD in $DUNEFEMMODULES ; do
-  git clone $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
+  git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
 done
 
 # load environment variables
-source $VENVDIR/bin/activate
+source $ACTIVATE
 
 # build all DUNE modules using dune-control
 ./dune-common/bin/dunecontrol --opts=config.opts all
-
-if test -f ./dune-common/bin/setup-dunepy.py; then
-  python ./dune-common/bin/setup-dunepy.py
-fi
 
 echo "####################################################
 
