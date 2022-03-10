@@ -155,9 +155,14 @@ class HelmholtzShuOsher:
         if self._invOp:
             # dummy preconditioner doing nothing
             #def pre(u,v):
+            #    # print("Pre: ", u.name, v.name )
             #    v.assign( u )
             #    return
-            #info = self._invOp.preconditionedSolve( pre, rhs, target, self.alpha )
+            # dummy updatePreconditioner doing nothing
+            #def updatePre( ubar ):
+            #    print("Update pre: ", ubar.name)
+            #    return
+            #info = self._invOp.preconditionedSolve( pre, updatePre, rhs, target, self.alpha )
 
             info = self._invOp.solve( rhs, target, self.alpha )
             self.counter = info["iterations"]

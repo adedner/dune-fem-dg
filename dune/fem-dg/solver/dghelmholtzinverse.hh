@@ -16,6 +16,77 @@ namespace Dune
 {
   namespace Fem
   {
+    namespace detail
+    {
+      template <class DiscreteFunction>
+      class UpdatePreconditionerWrapper
+      {
+      public:
+        typedef DiscreteFunction DestinationType ;
+        typedef std::reference_wrapper< const DestinationType >  ConstReferenceType;
+        typedef std::function< void( ConstReferenceType& ) > UpdatePreconditionerFunctionType;
+
+        UpdatePreconditionerWrapper( const UpdatePreconditionerFunctionType& upPre )
+          : updatePrecond_( upPre )
+        {}
+
+        void update( const DestinationType& ubar ) const
+        {
+          ConstReferenceType u( ubar );
+          // call Python side update function
+          updatePrecond_( u );
+        }
+
+      protected:
+        const UpdatePreconditionerFunctionType& updatePrecond_;
+
+      };
+    }
+
+    template< class SpaceOperator >
+    class DGHelmholtzOperatorWithUpdate
+    : public DGHelmholtzOperator< SpaceOperator >
+    {
+      typedef DGHelmholtzOperatorWithUpdate< SpaceOperator > ThisType;
+      typedef DGHelmholtzOperator< SpaceOperator >           BaseType;
+
+    public:
+      typedef typename BaseType :: DomainFunctionType    DomainFunctionType;
+      typedef typename BaseType :: JacobianOperatorType  JacobianOperatorType;
+      typedef typename BaseType :: SpaceOperatorType     SpaceOperatorType ;
+
+      typedef detail::UpdatePreconditionerWrapper< DomainFunctionType > UpdatePreconditionerWrapperType;
+
+      using BaseType :: spaceOperator;
+      using BaseType :: lambda;
+
+      explicit DGHelmholtzOperatorWithUpdate ( SpaceOperatorType &spaceOp )
+        : BaseType( spaceOp )
+      {}
+
+      // overload jacobian to call update function
+      void jacobian ( const DomainFunctionType &u, JacobianOperatorType &jOp ) const
+      {
+        // update preconditioner to new linearization point
+        if( updatePreconditioner_ )
+          updatePreconditioner_->update( u );
+
+        spaceOperator().jacobian( u, jOp );
+        jOp.setLambda( lambda() );
+      }
+
+      void bind( const UpdatePreconditionerWrapperType& upPre )
+      {
+        updatePreconditioner_ = &upPre;
+      }
+
+      void unbind() { updatePreconditioner_ = nullptr; }
+
+    protected:
+      const UpdatePreconditionerWrapperType* updatePreconditioner_ = nullptr;
+    };
+
+
     /** \class DGHelmholtzInverseOperator
      *  \brief Operator implementing the solution of
      *
@@ -40,10 +111,13 @@ namespace Dune
       typedef std::reference_wrapper< DestinationType >        ReferenceType;
       typedef std::function< void( ConstReferenceType& , ReferenceType& ) > PreconditionerType;
 
+      typedef detail::UpdatePreconditionerWrapper< DestinationType > UpdatePreconditionerWrapperType;
+      typedef typename UpdatePreconditionerWrapperType :: UpdatePreconditionerFunctionType UpdatePreconditionerType;
+
     protected:
       typedef Dune::Fem::GmresInverseOperator< DestinationType >                LinearInverseOperatorType;
 
-      typedef Dune::Fem::DGHelmholtzOperator< SpaceOperatorType >               HelmholtzOperatorType;
+      typedef Dune::Fem::DGHelmholtzOperatorWithUpdate< SpaceOperatorType >     HelmholtzOperatorType;
       typedef Dune::Fem::NewtonInverseOperator< typename HelmholtzOperatorType::JacobianOperatorType,
                                                 LinearInverseOperatorType >     NonlinearInverseOperatorType;
 
@@ -75,6 +149,7 @@ namespace Dune
           pre_( uR, vR );
         }
       };
+      typedef PreconditionerWrapper PreconditionerWrapperType;
 
     public:
       DGHelmholtzInverseOperator( SpaceOperatorType& op,
@@ -122,6 +197,8 @@ namespace Dune
 
         // apply inv op
         (*this)( rhs, u );
+
+        helmholtzOp_.unbind();
         return SolverInfo( invOp_.converged(), invOp_.linearIterations(), invOp_.iterations() );
       }
 
@@ -132,14 +209,22 @@ namespace Dune
        * @f]
        *
        *  \param[in]     pre     preconditioner passed from Python side
+       *  \param[in]     upPre   update preconditioner function passed from Python side
        *  \param[in]     rhs     right hand side of F(w) = rhs
        *  \param[inout]  u       initial guess and returned solution
        *  \param[in]     lambda  lambda for Helmholtz operator
        */
       SolverInfo preconditionedSolve( const PreconditionerType& pre,
-                                      const DestinationType& rhs, DestinationType &u, const double lambda ) const
+                                      const UpdatePreconditionerType& upPre,
+                                      const DestinationType& rhs,
+                                      DestinationType &u,
+                                      const double lambda ) const
       {
-        PreconditionerWrapper p( pre );
+        PreconditionerWrapperType p( pre );
+        UpdatePreconditionerWrapperType up( upPre );
+
+        helmholtzOp_.bind( up );
+
         // bind operator and preconditioner
         invOp_.bind( helmholtzOp_, p );
         return solve( rhs, u, lambda );
