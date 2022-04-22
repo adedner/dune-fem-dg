@@ -1,6 +1,7 @@
 # toggle verbosity of on process 
 # (-1: off, p: process p is verbose, in general 0 is a good choice)
 fem.verboserank: 0 
+fem.verbositylevel: 1
 
 # OMP THREADS 
 #------------
