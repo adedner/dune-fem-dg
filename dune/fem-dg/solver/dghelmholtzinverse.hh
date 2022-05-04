@@ -165,6 +165,14 @@ namespace Dune
         helmholtzOp_.setLambda( lambda );
       }
 
+      /** \brief set Newton tolerance */
+      void setTolerance( const double tol )
+      {
+        typedef DestinationType RangeFunctionType;
+        auto finished = [ tol ] ( const RangeFunctionType &w, const RangeFunctionType &dw, double res ) { return res < tol; };
+        invOp_.setErrorMeasure( finished );
+      }
+
       /** solve
        *
        * @f[

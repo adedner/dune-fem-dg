@@ -164,7 +164,8 @@ class HelmholtzShuOsher:
             #    return
             #info = self._invOp.preconditionedSolve( pre, updatePre, rhs, target, self.alpha )
 
-            info = self._invOp.solve( rhs, target, self.alpha )
+            # tol = 1e-5
+            info = self._invOp.solve( rhs, target, self.alpha ) #, tol )
             self.counter = info["iterations"]
             self.inner_counter = info["linear_iterations"]
         else:
