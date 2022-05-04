@@ -223,8 +223,7 @@ def femDGOperator(Model, space,
             limiterstr = limiter if space.gridView.type.isSimplex else "lp"
             # force default values for how reconstruction is done
             if parameters is None:
-                from dune.fem import parameter
-                parameter.append({"femdg.limiter.admissiblefunctions":"default"})
+                parameterReader.append({"femdg.limiter.admissiblefunctions":"default"})
             else:
                 parameters["femdg.limiter.admissiblefunctions"] = "default"
 
@@ -232,8 +231,7 @@ def femDGOperator(Model, space,
         limiter = "minmod"
         # force default values for how reconstruction is done
         if parameters is None:
-            from dune.fem import parameter
-            parameter.append({"femdg.limiter.admissiblefunctions":"lp"})
+            parameterReader.append({"femdg.limiter.admissiblefunctions":"lp"})
         else:
             parameters["femdg.limiter.admissiblefunctions"] = "lp"
 
@@ -499,6 +497,7 @@ def femDGOperator(Model, space,
     op._hasDiffFlux = hasDiffFlux
     if limiterIndicator is not None:
         op.setTroubledCellIndicator(limiterIndicator)
+
     return op
 
 def smoothnessIndicator(clsName, includes, u_h, ctorArgs=None):
@@ -633,8 +632,10 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
 
     # add method solve, combining setLambda and __call__ for efficiency. Also,
     # here some solver diagnostics can be returned
-    solve = Method('solve', '''[]( DuneType &self, const typename DuneType::DestinationType &rhs, typename DuneType::DestinationType &u, const double lambda)
-                                 { auto info = self.solve(rhs, u, lambda);
+    solve = Method('_solve', '''[]( DuneType &self, const typename DuneType::DestinationType &rhs, typename DuneType::DestinationType &u, const double lambda, const double tol)
+                                 {
+                                   self.setTolerance( tol );
+                                   auto info = self.solve(rhs, u, lambda);
                                    pybind11::dict ret;
                                    ret["converged"]  = pybind11::cast(info.converged);
                                    ret["iterations"] = pybind11::cast(info.nonlinearIterations);
@@ -643,12 +644,15 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
                                  }''' )
     # add method solve, combining setLambda and __call__ for efficiency. Also,
     # here some solver diagnostics can be returned
-    preCondSolve = Method('preconditionedSolve', '''[]( DuneType &self,
+    preCondSolve = Method('_preconditionedSolve', '''[]( DuneType &self,
                                                         const typename DuneType::PreconditionerType& p,
                                                         const typename DuneType::UpdatePreconditionerType& up,
                                                         const typename DuneType::DestinationType &rhs,
-                                                        typename DuneType::DestinationType &u, const double lambda)
-                                 { auto info = self.preconditionedSolve(p, up, rhs, u, lambda);
+                                                        typename DuneType::DestinationType &u, const double lambda,
+                                                        const double tol )
+                                 {
+                                   self.setTolerance( tol );
+                                   auto info = self.preconditionedSolve(p, up, rhs, u, lambda);
                                    pybind11::dict ret;
                                    ret["converged"]  = pybind11::cast(info.converged);
                                    ret["iterations"] = pybind11::cast(info.nonlinearIterations);
@@ -656,4 +660,14 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
                                    return ret;
                                  }''' )
 
-    return load(includes, typeName, constructor, setLambda, solve, preCondSolve).Operator( op, parameters )
+
+    op = load(includes, typeName, constructor, setLambda, solve, preCondSolve).Operator( op, parameters )
+
+    # add method solve with default parameter for tolerance
+    def solve(rhs, u, lmbda, tol = 1e-8 ):
+        return op._solve(rhs, u, lmbda, tol )
+    op.solve = solve
+    def preconditionedSolve(p, up, rhs, u, lmbda, tol = 1e-8 ):
+        return op._preconditionedSolve(p, up, rhs, u, lmbda, tol )
+    op.preconditionedSolve = preconditionedSolve
+    return op
