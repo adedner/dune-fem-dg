@@ -18,7 +18,7 @@ fi
 # scratch, i.e.
 # MODULES=`./dune-common/bin/dunecontrol print 2>/dev/null`
 MODULES=
-for MOD in MODULES; do
+for MOD in $MODULES; do
   rm -rf $MOD/build-cmake
 done
 
