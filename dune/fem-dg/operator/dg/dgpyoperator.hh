@@ -58,8 +58,8 @@ namespace Fem
     typedef typename DiscreteFunctionSpaceType :: GridPartType    GridPartType;
     typedef typename GridPartType::GridType                       GridType;
 
-    typedef typename GridType :: CollectiveCommunication          CollectiveCommunicationType;
-    typedef TimeProvider< CollectiveCommunicationType >           TimeProviderType;
+    typedef typename GridType :: Communication          CommunicationType;
+    typedef TimeProvider< CommunicationType >           TimeProviderType;
 
     typedef typename AdvectionLimiterFunctionSelector<
       typename FunctionSpaceType::DomainFieldType, limiterFunctionId > :: type

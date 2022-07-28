@@ -144,8 +144,8 @@ namespace Fem
     typedef typename OperatorType :: DestinationType DestinationType ;
     typedef DestinationType  DiscreteFunctionType;
     typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType :: GridType GridType;
-    typedef typename GridType :: CollectiveCommunication            CollectiveCommunicationType;
-    typedef Dune::Fem::TimeProvider< CollectiveCommunicationType >  TimeProviderType;
+    typedef typename GridType :: Communication            CommunicationType;
+    typedef Dune::Fem::TimeProvider< CommunicationType >  TimeProviderType;
 
     typedef DuneODE :: OdeSolverInterface< DestinationType >        OdeSolverInterfaceType;
     typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;

@@ -13,7 +13,7 @@ namespace Fem
   class Diagnostics
     : public Fem::AutoPersistentObject
   {
-    typedef Fem :: MPIManager :: CollectiveCommunication CommunicatorType;
+    typedef Fem :: MPIManager :: Communication CommunicatorType;
     const CommunicatorType& comm_;
     const std::string runFileName_;
     const int writeDiagnostics_; // 0 don't, 1 only speedup file, 2 write all diagnosticss
