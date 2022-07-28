@@ -550,8 +550,12 @@ namespace Fem
       if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() )
       {
         assert( dest_ );
-        // communicate calculated function
-        dest.communicate();
+
+        if( dest_ )
+        {
+          // communicate calculated function
+          dest_->communicate();
+        }
       }
 
       // remove pointers
