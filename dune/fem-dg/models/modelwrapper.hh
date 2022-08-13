@@ -373,6 +373,10 @@ namespace Fem
                     JacobianRangeType& diff ) const
     {
       assert( hasDiffusion );
+      // TODO: This should be done outside when calling setEntity,
+      // however, this seems not to work and will trigger the assertion
+      diffusion().init( local.entity() );
+      assert( &(diffusion().entity()) == &(local.entity()) );
       diffusion().flux( local.quadraturePoint(), u, du, diff);
     }
 
