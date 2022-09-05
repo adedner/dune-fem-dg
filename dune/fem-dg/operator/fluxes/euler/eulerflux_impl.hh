@@ -24,7 +24,7 @@ namespace EulerNumFlux
   //
   ////////////////////////////////////////////////////////
 
-  typedef enum {LLF, HLL, HLLC} EulerFluxType;
+  typedef enum {LLF, HLL, HLL_PT, HLLC} EulerFluxType;
   const EulerFluxType std_flux_type = HLL;
 
   /**
@@ -74,11 +74,14 @@ namespace EulerNumFlux
     FieldType num_flux(const FieldType Uj[dim+2], const FieldType Un[dim+2],
                        const FieldType normal[dim], FieldType gj[dim+2]) const
     {
-      if (flux_type == LLF) return num_flux_LLF(Uj, Un, normal, gj);
+      if constexpr (flux_type == LLF) return num_flux_LLF(Uj, Un, normal, gj);
 
-      if (flux_type == HLL) return num_flux_HLL(Uj, Un, normal, gj);
+      if constexpr (flux_type == HLL) return num_flux_HLL(Uj, Un, normal, gj, std::false_type());
 
-      if (flux_type == HLLC) return num_flux_HLLC(Uj, Un, normal, gj);
+      // potential temperature
+      if constexpr (flux_type == HLL_PT) return num_flux_HLL(Uj, Un, normal, gj, std::true_type());
+
+      if constexpr (flux_type == HLLC) return num_flux_HLLC(Uj, Un, normal, gj);
 
       DUNE_THROW( Dune::NotImplemented, "Numerical flux not implemented" );
     }
@@ -142,28 +145,34 @@ namespace EulerNumFlux
     }
 
 
+    template <bool pottemp>
     FieldType num_flux_HLL(const FieldType Uj[dim+2], const FieldType Un[dim+2],
-                           const FieldType normal[dim], FieldType gj[dim+2]) const
+                           const FieldType normal[dim], FieldType gj[dim+2],
+                           const std::integral_constant<bool, pottemp> ) const
     {
+      static constexpr bool potentialTemperature = pottemp;
+
       const FieldType rhoj = Uj[0];
       FieldType Ej = Uj[dim+1];
       const FieldType rhon = Un[0];
       FieldType En = Un[dim+1];
-#ifdef POTTEMP
-      FieldType pressj, tempj;
-      FieldType pressn, tempn;
-      model_.pressAndTemp( Uj, pressj, tempj );
-      model_.pressAndTemp( Un, pressn, tempn );
 
-      FieldType Ekinj = 0;
-      FieldType Ekinn = 0;
-      for(int i=1; i<dim+1; i++){
-        Ekinj += (0.5/rhoj) * Uj[i] * Uj[i];
-        Ekinn += (0.5/rhon) * Un[i] * Un[i];
+      if constexpr (potentialTemperature)
+      {
+        FieldType pressj, tempj;
+        FieldType pressn, tempn;
+        model_.pressureTemperature( Uj, pressj, tempj );
+        model_.pressureTemperature( Un, pressn, tempn );
+
+        FieldType Ekinj = 0;
+        FieldType Ekinn = 0;
+        for(int i=1; i<dim+1; i++){
+          Ekinj += (0.5/rhoj) * Uj[i] * Uj[i];
+          Ekinn += (0.5/rhon) * Un[i] * Un[i];
+        }
+        Ej = pressj/(_gamma-1.) + Ekinj;
+        En = pressn/(_gamma-1.) + Ekinn;
       }
-      Ej = pressj/(_gamma-1.) + Ekinj;
-      En = pressn/(_gamma-1.) + Ekinn;
-#endif
 
       FieldType rho_uj[dim], rho_un[dim], uj[dim], un[dim];
       FieldType Ekin2j=0.0, Ekin2n=0.0;
@@ -204,11 +213,10 @@ namespace EulerNumFlux
           for(int i=0; i<dim; i++) guj[i] = rho_uj[i]*uj[0];
           guj[0] += pj;
 
-#ifdef POTTEMP
-          gj[dim+1] = Uj[dim+1]*uj[0];
-#else
-          gj[dim+1] = (Ej+pj)*uj[0];
-#endif
+          if constexpr (potentialTemperature)
+            gj[dim+1] = Uj[dim+1]*uj[0];
+          else
+            gj[dim+1] = (Ej+pj)*uj[0];
         }
         else{
           const FieldType tmp1 = sj * sn;
@@ -220,15 +228,18 @@ namespace EulerNumFlux
           }
           guj[0] += tmp2 * (sn*pj - sj*pn);
 
-#ifdef POTTEMP
-          const FieldType Etmpj = Uj[dim+1]*uj[0];
-          const FieldType Etmpn = Un[dim+1]*un[0];
-          gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(Un[dim+1] - Uj[dim+1]));
-#else
-          const FieldType Etmpj = (Ej+pj)*uj[0];
-          const FieldType Etmpn = (En+pn)*un[0];
-          gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(En - Ej));
-#endif
+          if constexpr(potentialTemperature)
+          {
+            const FieldType Etmpj = Uj[dim+1]*uj[0];
+            const FieldType Etmpn = Un[dim+1]*un[0];
+            gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(Un[dim+1] - Uj[dim+1]));
+          }
+          else
+          {
+            const FieldType Etmpj = (Ej+pj)*uj[0];
+            const FieldType Etmpn = (En+pn)*un[0];
+            gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(En - Ej));
+          }
         }
       }
       else{
@@ -238,11 +249,10 @@ namespace EulerNumFlux
           for(int i=0; i<dim; i++) guj[i] = rho_un[i]*un[0];
           guj[0] += pn;
 
-#ifdef POTTEMP
-          gj[dim+1] = Uj[dim+1]*un[0];
-#else
-          gj[dim+1] = (En+pn)*un[0];
-#endif
+          if constexpr(potentialTemperature)
+            gj[dim+1] = Uj[dim+1]*un[0];
+          else
+            gj[dim+1] = (En+pn)*un[0];
         }
         else{
           const FieldType tmp1 = sj * sn;
@@ -254,16 +264,18 @@ namespace EulerNumFlux
           }
           guj[0] += tmp2 * (sn*pj - sj*pn);
 
-#ifdef POTTEMP
-          const FieldType Etmpj = Uj[dim+1]*uj[0];
-          const FieldType Etmpn = Un[dim+1]*un[0];
-          gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(Un[dim+1] - Uj[dim+1]));
-#else
-          const FieldType Etmpj = (Ej+pj)*uj[0];
-          const FieldType Etmpn = (En+pn)*un[0];
-          gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(En - Ej));
-#endif
-
+          if constexpr(potentialTemperature)
+          {
+            const FieldType Etmpj = Uj[dim+1]*uj[0];
+            const FieldType Etmpn = Un[dim+1]*un[0];
+            gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(Un[dim+1] - Uj[dim+1]));
+          }
+          else
+          {
+            const FieldType Etmpj = (Ej+pj)*uj[0];
+            const FieldType Etmpn = (En+pn)*un[0];
+            gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(En - Ej));
+          }
         }
       }
 
@@ -482,7 +494,7 @@ namespace Fem
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
-    EulerFluxImpl (const ModelImp& mod )
+    EulerFluxImpl (const ModelImp& mod, const ParameterType& parameter = ParameterType() )
       : BaseType( mod ),
         numFlux_( mod )
     {}

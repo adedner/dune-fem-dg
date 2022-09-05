@@ -219,6 +219,16 @@ namespace Fem
     }
 
     /**
+     *  \brief compute pressure and temperature for compressible flow
+     */
+    template <class State>
+    void pressureTemperatur( const State& u, double& p, double& T ) const
+    {
+      p = 0.0;
+      T = 0.0;
+    }
+
+    /**
      * \brief returns the mass factor term \f$ R \f$
      *
      * \param[in]  local local evaluation

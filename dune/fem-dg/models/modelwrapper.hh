@@ -226,9 +226,9 @@ namespace Fem
     template <class Entity>
     void setEntity( const Entity& entity ) const
     {
-      if( hasAdvection )
+      if constexpr ( hasAdvection )
         advection().init( entity );
-      if( hasDiffusion )
+      if constexpr ( hasDiffusion )
         diffusion().init( entity );
     }
 
@@ -249,6 +249,28 @@ namespace Fem
       return (min - max).infinity_norm() < 1e-10;
     }
 
+    template <class State> // double[dim+2]
+    void pressureTemperature( const State& u, double& p, double& T ) const
+    {
+      if constexpr ( hasAdvection )
+      {
+        const auto pT = advection().pressureTemperature( u );
+        p = pT[0];
+        T = pT[1];
+        return ;
+      }
+
+      if constexpr ( hasDiffusion )
+      {
+        const auto pT = diffusion().pressureTemperature( u );
+        p = pT[0];
+        T = pT[1];
+        return ;
+      }
+
+      p = 0.0;
+      T = 0.0;
+    }
 
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
@@ -288,7 +310,7 @@ namespace Fem
                             const RangeType& u,
                             RangeType& maxValue) const
     {
-      if( hasDiffusion )
+      if constexpr ( hasDiffusion )
       {
         maxValue = diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), u );
       }

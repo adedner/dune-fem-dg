@@ -188,6 +188,16 @@ def codeFemDg(self, *args, **kwargs):
     predefined.update( {t: arg_t} )
     self.predefineCoefficients(predefined,'x')
 
+    # pressure and temperature for potential temperature formulation
+    pressureTemperature = getattr(Model,"pressureTemperature",None)
+    if pressureTemperature is not None:
+        pressureTemperature = pressureTemperature(u)
+    self.generateMethod(code, pressureTemperature,
+          'Dune::FieldVector<double, 2>', 'pressureTemperature',
+          args=['const State &u'],
+          targs=['class State'], const=True, inline=True,
+          predefined=predefined)
+
     maxWaveSpeed = getattr(Model,"maxWaveSpeed",None)
     # check for deprecated maxLambda
     if maxWaveSpeed is None:

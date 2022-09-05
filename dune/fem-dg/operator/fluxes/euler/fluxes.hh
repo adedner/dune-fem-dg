@@ -60,6 +60,25 @@ namespace Fem
    * via an enum given in AdvectionFlux::Enum.
    */
   template< class Model >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_hll_pt >
+    : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLL_PT > >
+  {
+    typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLL_PT > > BaseType ;
+  public:
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+    static std::string name () { return "HLL_PT (Dennis)"; }
+  };
+
+  /**
+   * \brief class specialization for the HLLC flux.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in AdvectionFlux::Enum.
+   */
+  template< class Model >
   class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_hllc >
     : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC > >
   {
