@@ -100,6 +100,16 @@ namespace Fem
     {
     }
 
+    /**
+     * \brief Copy Constructor
+     *
+     * \param[in] other  object to copy
+     */
+    DGAdvectionFluxPythonUserDefine (const DGAdvectionFluxPythonUserDefine& other )
+      : BaseType( other.model_ )
+    {
+    }
+
   protected:
     std::unique_ptr< const ModelType > modelPtr_;
   };

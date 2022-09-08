@@ -554,6 +554,11 @@ namespace Fem
         problemPtr_( &this->problem_ )
     {}
 
+    // copy constructor
+    AdvectionModelWrapper( const AdvectionModelWrapper& other )
+      : AdvectionModelWrapper( other.advection() )
+    {}
+
   protected:
     std::unique_ptr< const ProblemType > problemPtr_;
   };
