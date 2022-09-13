@@ -123,12 +123,13 @@ namespace Dune
 
       struct SolverInfo
       {
-        SolverInfo ( bool converged, int linearIterations, int nonlinearIterations )
-          : converged( converged ), linearIterations( linearIterations ), nonlinearIterations( nonlinearIterations )
+        SolverInfo ( bool converged, int linearIterations, int nonlinearIterations, double residualNorm )
+          : converged( converged ), linearIterations( linearIterations ), nonlinearIterations( nonlinearIterations ), residualNorm( residualNorm )
         {}
 
         bool converged;
         int linearIterations, nonlinearIterations;
+        double residualNorm;
       };
 
       // class wrapping a Python function to look like a Fem::Operator
@@ -207,7 +208,7 @@ namespace Dune
         (*this)( rhs, u );
 
         helmholtzOp_.unbind();
-        return SolverInfo( invOp_.converged(), invOp_.linearIterations(), invOp_.iterations() );
+        return SolverInfo( invOp_.converged(), invOp_.linearIterations(), invOp_.iterations(), invOp_.residual() );
       }
 
       /** \brief Preconditioned solve

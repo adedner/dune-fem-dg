@@ -640,6 +640,7 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
                                    ret["converged"]  = pybind11::cast(info.converged);
                                    ret["iterations"] = pybind11::cast(info.nonlinearIterations);
                                    ret["linear_iterations"] = pybind11::cast(info.linearIterations);
+                                   ret["residual"] = pybind11::cast(info.residualNorm);
                                    return ret;
                                  }''' )
     # add method solve, combining setLambda and __call__ for efficiency. Also,
@@ -657,6 +658,7 @@ def dgHelmholtzInverseOperator( op, u = None, parameters = {} ):
                                    ret["converged"]  = pybind11::cast(info.converged);
                                    ret["iterations"] = pybind11::cast(info.nonlinearIterations);
                                    ret["linear_iterations"] = pybind11::cast(info.linearIterations);
+                                   ret["residual"] = pybind11::cast(info.residualNorm);
                                    return ret;
                                  }''' )
 
