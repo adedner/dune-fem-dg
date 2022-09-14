@@ -171,6 +171,7 @@ namespace Dune
         typedef DestinationType RangeFunctionType;
         auto finished = [ tol ] ( const RangeFunctionType &w, const RangeFunctionType &dw, double res ) { return res < tol; };
         invOp_.setErrorMeasure( finished );
+        invOp_.eisenstatWalker_.setTolerance( tol );
       }
 
       /** solve
