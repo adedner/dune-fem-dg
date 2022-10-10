@@ -28,14 +28,14 @@ the code is given in the forth paper.
 
 * A. Dedner, R. Klöfkorn.
 Extendible and Efficient Python Framework for Solving Evolution Equations
-with Stabilized Discontinuous Galerkin Method. Commun. Appl. Math. Comput., 2021. DOI 10.1007/s42967-021-00134-5.
+with Stabilized Discontinuous Galerkin Method. Commun. Appl. Math. Comput., 2021. https://dx.doi.org/10.1007/s42967-021-00134-5.
 
 * S. Brdar, A. Dedner, and R. Klöfkorn.
 Compact and stable Discontinuous Galerkin methods for convection-diffusion problems.
-SIAM J. Sci. Comput., 34(1):263-282, 2012. http://dx.doi.org/10.1137/100817528
+SIAM J. Sci. Comput., 34(1):263-282, 2012. https://dx.doi.org/10.1137/100817528
 
 * A. Dedner and R. Klöfkorn. A Generic Stabilization Approach for Higher Order Discontinuous Galerkin Methods for Convection Dominated Problems.
-J. Sci. Comput., 47(3):365-388, 2011. http://dx.doi.org/10.1007/s10915-010-9448-0
+J. Sci. Comput., 47(3):365-388, 2011. https://dx.doi.org/10.1007/s10915-010-9448-0
 
 An overview on performance of the code is given in
 
@@ -82,9 +82,9 @@ A documentation of the Python bindings of DUNE-FEM-DG can be found in
 
 * A. Dedner, R. Klöfkorn.
 Extendible and Efficient Python Framework for Solving Evolution Equations
-with Stabilized Discontinuous Galerkin Method. Commun. Appl. Math. Comput., 2021. DOI 10.1007/s42967-021-00134-5.
+with Stabilized Discontinuous Galerkin Method. Commun. Appl. Math. Comput., 2021. https://dx.doi.org/10.1007/s42967-021-00134-5.
 
 A documentation for C++ code (and 2.4 release) can be found in
 
 * A. Dedner, S. Girke, R. Klöfkorn, T. Malkmus. The DUNE-FEM-DG module.
-Archive of Numerical Software 5(1): 21--61. 2017. http://dx.doi.org/10.11588/ans.2017.1.28602
+Archive of Numerical Software 5(1): 21--61. 2017. https://dx.doi.org/10.11588/ans.2017.1.28602
