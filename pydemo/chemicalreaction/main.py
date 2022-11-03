@@ -4,7 +4,7 @@ from dune.grid import cartesianDomain
 from dune.alugrid import aluCubeGrid as Grid
 import dune.fem
 from dune.fem import parameter
-from dune.femdg.testing import run, Parameters
+from dune.femdg.testing import run
 
 
 def problem():
