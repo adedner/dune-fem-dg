@@ -272,6 +272,22 @@ namespace Fem
       T = 0.0;
     }
 
+    template <class Entity, class Point>
+    RangeType background( const Entity& entity, const Point& x ) const
+    {
+      if constexpr ( hasAdvection )
+      {
+        return advection().background( time(), entity, x );
+      }
+
+      if constexpr ( hasDiffusion )
+      {
+        return diffusion().background( time(), entity, x );
+      }
+
+      return RangeType( 0 );
+    }
+
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
                                const RangeType& u,

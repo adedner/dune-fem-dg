@@ -222,10 +222,19 @@ namespace Fem
      *  \brief compute pressure and temperature for compressible flow
      */
     template <class State>
-    void pressureTemperatur( const State& u, double& p, double& T ) const
+    void pressureTemperature( const State& u, double& p, double& T ) const
     {
       p = 0.0;
       T = 0.0;
+    }
+
+    /**
+     *  \brief compute background atmosphere
+     */
+    template <class Entity, class Point>
+    RangeType background( const Entity& entity, const Point& x ) const
+    {
+      return RangeType( 0 );
     }
 
     /**

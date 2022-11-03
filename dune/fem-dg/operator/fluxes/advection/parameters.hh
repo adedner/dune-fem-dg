@@ -42,6 +42,9 @@ namespace Fem
       euler_hll_pt,
       //! the HLLC flux
       euler_hllc,
+      //! the Harten, Lax and van Leer (HLL) flux with potential temperature formulation
+      //! and background fix
+      euler_hll_bgfix,
       //! general flux: Parameter selection is done via parameter file!
       euler_general,
 

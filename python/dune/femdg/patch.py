@@ -198,6 +198,17 @@ def codeFemDg(self, *args, **kwargs):
           targs=['class State'], const=True, inline=True,
           predefined=predefined)
 
+    # background atmosphere
+    background = getattr(Model,"background",None)
+    if background is not None:
+        background = background(t,x)
+    self.generateMethod(code, background,
+          'RRangeType', 'background',
+          args=['const double &t',
+                'const Entity &entity', 'const Point &x'],
+          targs=['class Entity, class Point'], const=True, inline=True,
+          predefined=None)
+
     maxWaveSpeed = getattr(Model,"maxWaveSpeed",None)
     # check for deprecated maxLambda
     if maxWaveSpeed is None:
