@@ -207,7 +207,7 @@ def codeFemDg(self, *args, **kwargs):
           args=['const double &t',
                 'const Entity &entity', 'const Point &x'],
           targs=['class Entity, class Point'], const=True, inline=True,
-          predefined=None)
+          predefined=predefined)
 
     maxWaveSpeed = getattr(Model,"maxWaveSpeed",None)
     # check for deprecated maxLambda
