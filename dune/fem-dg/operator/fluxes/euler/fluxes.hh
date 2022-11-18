@@ -7,6 +7,8 @@
 
 #include "../advection/fluxbase.hh"
 #include "../advection/fluxes.hh"
+
+#include "bgfixflux.hh"
 #include "eulerflux_impl.hh"
 #include "llfadv.hh"
 
@@ -31,7 +33,7 @@ namespace Fem
     DGAdvectionFlux(  Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
-    static std::string name () { return "LLF (Dennis)"; }
+    static std::string name () { return "LLF (Euler)"; }
   };
 
   /**
@@ -50,7 +52,7 @@ namespace Fem
     DGAdvectionFlux(  Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
-    static std::string name () { return "HLL (Dennis)"; }
+    static std::string name () { return "HLL (Euler)"; }
   };
 
   /**
@@ -69,7 +71,7 @@ namespace Fem
     DGAdvectionFlux(  Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
-    static std::string name () { return "HLL_PT (Dennis)"; }
+    static std::string name () { return "HLL_PT (Euler)"; }
   };
 
   /**
@@ -88,7 +90,27 @@ namespace Fem
     DGAdvectionFlux(  Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
-    static std::string name () { return "HLLC (Dennis)"; }
+    static std::string name () { return "HLLC (Euler)"; }
+  };
+
+  /**
+   * \brief class specialization for the HLLC flux in potential temperature
+   * formulation.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in AdvectionFlux::Enum.
+   */
+  template< class Model >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_hllc_pt >
+    : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC_PT > >
+  {
+    typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC_PT > > BaseType ;
+  public:
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+    static std::string name () { return "HLLC_PT"; }
   };
 
   /**
@@ -177,89 +199,44 @@ namespace Fem
 
 
   /**
-   * \brief class specialization for a general flux chosen by a parameter file.
+   * \brief class specialization for Euler hll_pt and bgfix.
    *
    * The purpose of this class is to allow the selection of an Euler flux
    * via an enum given in AdvectionFlux::Enum.
    */
-  template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::euler_hll_bgfix >
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+  template< class Model >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_hll_bgfix >
+    : public DGAdvectionFluxBGFix< Model, AdvectionFlux::Enum::euler_hll_pt > // pass id of implementation
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >        BaseType;
-    typedef DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::euler_hll_pt >  NumFluxImplType;
-
-    static const int dimRange = ModelImp::dimRange;
-    typedef typename ModelImp::DomainType         DomainType;
-    typedef typename ModelImp::RangeType          RangeType;
-    typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
-    typedef typename ModelImp::FluxRangeType      FluxRangeType;
-    typedef typename ModelImp::FaceDomainType     FaceDomainType;
-
+    typedef DGAdvectionFluxBGFix< Model, AdvectionFlux::Enum::euler_hll_pt > BaseType;
   public:
-    typedef AdvectionFlux::Enum                   IdEnum;
-    typedef typename BaseType::ModelType          ModelType;
-    typedef typename BaseType::ParameterType      ParameterType;
-
-    using BaseType::model;
-
-    /**
-     * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
-     */
     template< class ... Args>
     DGAdvectionFlux(  Args&&... args )
-      : BaseType( std::forward<Args>(args)... ),
-        numFlux_( std::forward<Args>(args)... )
+      : BaseType( std::forward<Args>(args)... )
     {}
-
-    /**
-     * \copydoc DGAdvectionFluxBase::name()
-     */
-    static std::string name () { return "AdvectionFlux - Euler (via parameter file)"; }
-
-    /**
-     * \copydoc DGAdvectionFluxBase::numericalFlux()
-     */
-    template< class LocalEvaluation >
-    inline double
-    numericalFlux( const LocalEvaluation& left,
-                   const LocalEvaluation& right,
-                   const RangeType& uLeft,
-                   const RangeType& uRight,
-                   const JacobianRangeType& jacLeft,
-                   const JacobianRangeType& jacRight,
-                   RangeType& gLeft,
-                   RangeType& gRight) const
-    {
-      // Assumption: background atmosphere is continuous
-      auto bgLeft  = model().background( left.entity(), left.quadraturePoint() );
-      auto bgRight = model().background( right.entity(), right.quadraturePoint() );
-
-      RangeType uLeftTot( uLeft );
-      RangeType uRightTot( uRight );
-
-      uLeftTot  += bgLeft;
-      uRightTot += bgRight;
-
-      RangeType gBgLeft, gBgRight;
-
-      // numerical flux
-      const double ws = numFlux_.numericalFlux(left, right, uLeftTot, uRightTot,
-          jacLeft, jacRight, gLeft, gRight );
-
-      // background flux
-      numFlux_.numericalFlux(left, right, bgLeft, bgRight, jacLeft, jacRight, gBgLeft, gBgRight );
-
-      gLeft  -= gBgLeft;
-      gRight -= gBgRight;
-
-      return ws;
-    }
-
-  protected:
-    NumFluxImplType numFlux_;
+    using BaseType::name;
   };
-}
-}
+
+  /**
+   * \brief class specialization for Euler hllc_pt and bgfix.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in AdvectionFlux::Enum.
+   */
+  template< class Model >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_hllc_bgfix >
+    : public DGAdvectionFluxBGFix< Model, AdvectionFlux::Enum::euler_hllc_pt > // pass id of implementation
+  {
+    typedef DGAdvectionFluxBGFix< Model, AdvectionFlux::Enum::euler_hllc_pt > BaseType;
+  public:
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+    using BaseType::name;
+  };
+
+} // end namespace Fem
+} // end namespace Dune
 
 #endif // file declaration

@@ -42,9 +42,13 @@ namespace Fem
       euler_hll_pt,
       //! the HLLC flux
       euler_hllc,
+      //! the HLLC flux with potential temperature
+      euler_hllc_pt,
       //! the Harten, Lax and van Leer (HLL) flux with potential temperature formulation
       //! and background fix
       euler_hll_bgfix,
+      //! the HLLC with potential temperature and background fix
+      euler_hllc_bgfix,
       //! general flux: Parameter selection is done via parameter file!
       euler_general,
 
@@ -60,12 +64,14 @@ namespace Fem
 
     //! Contains all known enums for advection fluxes which can be chosen via parameter file.
     const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf,
-                                   Enum::euler_llf, Enum::euler_hll, Enum::euler_hll_pt, Enum::euler_hllc,
+                                   Enum::euler_llf, Enum::euler_hll, Enum::euler_hll_pt, Enum::euler_hllc, euler_hllc_pt,
+                                   euler_hll_bgfix, euler_hllc_bgfix,
                                    Enum::mhd_dw, Enum::mhd_hllem
                                    };
     //! Contains all known names of advection fluxes which can be chosen via parameter file.
     const std::string _strings[] = { "NONE", "UPWIND" , "LLF",
-                                     "EULER-LLF", "EULER-HLL" , "EULER-HLL-PT", "EULER-HLLC",
+                                     "EULER-LLF", "EULER-HLL" , "EULER-HLL-PT", "EULER-HLLC", "EULER-HLLC-PT",
+                                     "EULER-HLL-BGFIX",  "EULER-HLLC-BGFIX",
                                      "MHD-DW", "MHD-HLLEM"
                                      };
     //! Number of known advection fluxes which can be chosen via parameter file.

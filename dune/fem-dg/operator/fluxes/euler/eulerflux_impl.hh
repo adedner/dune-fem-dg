@@ -24,7 +24,7 @@ namespace EulerNumFlux
   //
   ////////////////////////////////////////////////////////
 
-  typedef enum {LLF, HLL, HLL_PT, HLLC} EulerFluxType;
+  typedef enum {LLF, HLL, HLL_PT, HLLC, HLLC_PT} EulerFluxType;
   const EulerFluxType std_flux_type = HLL;
 
   /**
@@ -81,7 +81,10 @@ namespace EulerNumFlux
       // potential temperature
       if constexpr (flux_type == HLL_PT) return num_flux_HLL(Uj, Un, normal, gj, std::true_type());
 
-      if constexpr (flux_type == HLLC) return num_flux_HLLC(Uj, Un, normal, gj);
+      if constexpr (flux_type == HLLC) return num_flux_HLLC(Uj, Un, normal, gj,  std::false_type());
+
+      // potential temperature version
+      if constexpr (flux_type == HLLC_PT) return num_flux_HLLC(Uj, Un, normal, gj,  std::true_type());
 
       DUNE_THROW( Dune::NotImplemented, "Numerical flux not implemented" );
     }
@@ -284,13 +287,37 @@ namespace EulerNumFlux
     }
 
 
+    template <bool pottemp>
     FieldType num_flux_HLLC(const FieldType Um[dim+2], const FieldType Up[dim+2],
-                            const FieldType normal[dim], FieldType g[dim+2]) const
+                            const FieldType normal[dim], FieldType g[dim+2],
+                            const std::integral_constant<bool, pottemp> ) const
     {
+      static constexpr bool potentialTemperature = pottemp;
+
       const FieldType rhom = Um[0];
       const FieldType rhop = Up[0];
-      const FieldType Em = Um[dim+1];
-      const FieldType Ep = Up[dim+1];
+      FieldType Em = Um[dim+1];
+      FieldType Ep = Up[dim+1];
+
+      // compute Em and Ep differently
+      if constexpr (potentialTemperature)
+      {
+        // j==m and n==p
+        FieldType pressj, tempj;
+        FieldType pressn, tempn;
+        model_.pressureTemperature( Um, pressj, tempj );
+        model_.pressureTemperature( Up, pressn, tempn );
+
+        FieldType Ekinj = 0;
+        FieldType Ekinn = 0;
+        for(int i=1; i<dim+1; i++)
+        {
+          Ekinj += (0.5/rhom) * Um[i] * Um[i];
+          Ekinn += (0.5/rhop) * Up[i] * Up[i];
+        }
+        Em = pressj/(_gamma-1.) + Ekinj;
+        Ep = pressn/(_gamma-1.) + Ekinn;
+      }
 
       FieldType rho_um[dim], rho_up[dim];
       rotate( normal, Um+1, rho_um );
@@ -336,7 +363,11 @@ namespace EulerNumFlux
           guj[i] = rho_um[i]*um[0];
         guj[0] += pm;
 
-        g[dim+1] = (Em+pm)*um[0];
+        //g[dim+1] = (Em+pm)*um[0];
+        if constexpr (potentialTemperature)
+          g[dim+1] = Um[dim+1]*um[0];
+        else
+          g[dim+1] = (Em+pm)*um[0];
       }
       else if (sp <= 0.0)
       {
@@ -346,7 +377,11 @@ namespace EulerNumFlux
           guj[i] = rho_up[i]*up[0];
         guj[0] += pp;
 
-        g[dim+1] = (Ep+pp)*up[0];
+        //g[dim+1] = (Ep+pp)*up[0];
+        if constexpr (potentialTemperature)
+          g[dim+1] = Up[dim+1]*up[0];
+        else
+          g[dim+1] = (Ep+pp)*up[0];
       }
       else
       {
@@ -361,8 +396,12 @@ namespace EulerNumFlux
             guj[i] = rho_um[i]*um[0] + rhom*um[i]*tmpm - sm*rho_um[i];
           guj[0] += pm + rhom*(u_star-um[0])*tmpm;
 
-          g[dim+1] = (Em+pm)*um[0] + Em*(tmpm-sm)
-            + tmpm*(u_star-um[0])*( rhom*u_star + pm/(sm-um[0]) );
+          if constexpr(potentialTemperature)
+            g[dim+1] = (Um[dim+1]*um[0]) + Um[dim+1]*(tmpm-sm);
+          else
+            g[dim+1] = (Em+pm)*um[0] + Em*(tmpm-sm)
+              + tmpm*(u_star-um[0])*( rhom*u_star + pm/(sm-um[0]) );
+
         }
         else
         {
@@ -372,8 +411,12 @@ namespace EulerNumFlux
             guj[i] = rho_up[i]*up[0] + rhop*up[i]*tmpp - sp*rho_up[i];
           guj[0] += pp + rhop*(u_star-up[0])*tmpp;
 
-          g[dim+1] = (Ep+pp)*up[0] + Ep*(tmpp-sp)
-            + tmpp*(u_star-up[0])*( rhop*u_star + pp/(sp-up[0]) );
+          if constexpr(potentialTemperature)
+            g[dim+1] = (Up[dim+1]*up[0]) + Up[dim+1]*(tmpp-sp);
+          else
+            g[dim+1] = (Ep+pp)*up[0] + Ep*(tmpp-sp)
+              + tmpp*(u_star-up[0])*( rhop*u_star + pp/(sp-up[0]) );
+
         }
       }
 
