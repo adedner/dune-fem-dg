@@ -152,6 +152,7 @@ def femDGOperator(Model, space,
         diffusionScheme = "cdg2",
         threading="default",
         defaultQuadrature=True,
+        quadratureOrders=None,
         codegen=True,
         initialTime=0.0, parameters=None):
     """ create DG operator + ODE solver
@@ -168,6 +169,7 @@ def femDGOperator(Model, space,
         threading: enable shared memory parallelization - default is that
                 threading is turned on if `dune.fem.threading.use>1`
         defaultQuadrature: use quadratures that generically fit to the space
+        quadratureOrders: tuple with (volume,surface) quadrature orders, otherwise default is used (depends on space and quadrature)
         codegen: enable optimized code for evaluation and interpolation
         initialTime: T_0, default is 0.0
         parameters: Additional parameter passed to the DG operator, limiter and ODE solvers
@@ -249,6 +251,15 @@ def femDGOperator(Model, space,
     if space.gridView.comm.rank == 0:
         limiterstr = "default(" + limiterstr + ")" if defaultLimiter else limiterstr
         print("femDGOperator: Limiter =",limiterstr)
+
+    # if quadrature orders were provide store those in parameters
+    if isinstance(quadratureOrders, tuple):
+        if parameters is None:
+            parameterReader.append({"femdg.dgpass.volumequadratureorder": quadratureOrders[0],
+                                    "femdg.dgpass.surfacequadratureorder": quadratureOrders[1] })
+        else:
+            parameters["femdg.dgpass.volumequadratureorder"] = quadratureOrders[0]
+            parameters["femdg.dgpass.surfacequadratureorder"] = quadratureOrders[1]
 
     # TODO: does this make sense - if there is no diffusion then it doesn't
     # matter and with diffusion using 'none' seems a bad idea?

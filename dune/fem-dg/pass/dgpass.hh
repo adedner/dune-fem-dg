@@ -156,7 +156,7 @@ namespace Fem
     LocalCDGPass( DiscreteModelType& discreteModel,
                   PreviousPassType& pass,
                   const DiscreteFunctionSpaceType& spc,
-                  const Dune::Fem::ParameterReader& /* parameter */,
+                  const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
                   const int volumeQuadOrd = -1,
                   const int faceQuadOrd = -1,
                   const bool verbose = Dune::Fem::Parameter::verbose() )
@@ -178,8 +178,8 @@ namespace Fem
         valJacNb_( 20 ),
         dtMin_(std::numeric_limits<double>::max()),
         minLimit_(2.0*std::numeric_limits<double>::min()),
-        volumeQuadOrd_( volumeQuadOrd ),
-        faceQuadOrd_( faceQuadOrd ),
+        volumeQuadOrd_( parameter.getValue< int >("femdg.dgpass.volumequadratureorder", volumeQuadOrd )),
+        faceQuadOrd_( parameter.getValue< int >("femdg.dgpass.surfacequadratureorder", faceQuadOrd )),
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
         localMassMatrix_( InverseMassProviderType :: getObject( MassKeyType( gridPart_ ) ) ),
 #else
@@ -195,6 +195,13 @@ namespace Fem
         {
           DUNE_THROW(InvalidStateException, "No ghost or overlap layer present, which is needed for communication");
         }
+      }
+
+      if( verbose && (volumeQuadOrd_ >= 0 || faceQuadOrd_ >=0) )
+      {
+        const int vo = volumeQuadOrd_ < 0 ? DefaultQuadratureType::volumeOrder(spc_.order()) : volumeQuadOrd_;
+        const int so = faceQuadOrd_ < 0 ? DefaultQuadratureType::surfaceOrder(spc_.order()) : faceQuadOrd_;
+        std::cout << "LocalCDGPass: quadrature orders = (" << vo << "," << so << ")" << std::endl;
       }
 
       valEnVec_.setMemoryFactor( 1.1 );
