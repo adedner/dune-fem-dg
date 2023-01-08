@@ -156,7 +156,7 @@ namespace Fem
     LocalCDGPass( DiscreteModelType& discreteModel,
                   PreviousPassType& pass,
                   const DiscreteFunctionSpaceType& spc,
-                  const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
+                  const Dune::Fem::ParameterReader &parameter,
                   const int volumeQuadOrd = -1,
                   const int faceQuadOrd = -1,
                   const bool verbose = Dune::Fem::Parameter::verbose() )

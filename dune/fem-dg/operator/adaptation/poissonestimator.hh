@@ -104,9 +104,11 @@ namespace Fem
     static const int polOrder = DiscreteFunctionSpaceType::polynomialOrder;
 
 
+    static const int dimension = GridType::dimension;
+    static const int dimRange  = DiscreteFunctionSpaceType::FunctionSpaceType::dimRange;
+
     typedef typename DiscreteFunctionSpaceType::
-      template ToNewDimRange< GridType::dimension * DiscreteFunctionSpaceType::FunctionSpaceType::dimRange >::NewFunctionSpaceType
-                                                                     SigmaFunctionSpaceType;
+      template ToNewDimRange< dimension * dimRange >::NewFunctionSpaceType  SigmaFunctionSpaceType;
 
     //- hybrid spaces use PAdaptiveDGSpace
     template <class Grid, int topoId>

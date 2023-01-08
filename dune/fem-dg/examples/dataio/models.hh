@@ -18,8 +18,8 @@ namespace Fem
     static const int modelParameterSize = 0;
     typedef typename BaseType::RangeFieldType                             RangeFieldType;
     typedef typename BaseType::DomainFieldType                            DomainFieldType;
-    enum { dimRange  = BaseType::dimRange };
-    enum { dimDomain = BaseType::dimDomain };
+    static const int dimRange  = BaseType::dimRange;
+    static const int dimDomain = BaseType::dimDomain;
 
     typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
     typedef Dune::FieldVector< RangeFieldType, dimDomain * dimRange >     GradientType;
