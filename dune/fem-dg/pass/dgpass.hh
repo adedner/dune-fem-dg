@@ -541,7 +541,6 @@ namespace Fem
         // only call geometry once, who know what is done in this function
         const Geometry & geo = entity.geometry();
 
-
         caller().setEntity(entity, volQuad);
 
         // if only flux, evaluate only flux
@@ -681,11 +680,12 @@ namespace Fem
 
               // apply weights
               fluxEn     *= -faceQuadInner.weight( l );
-              diffFluxEn *= -faceQuadInner.weight( l );
+              if constexpr (DiscreteModelCallerType :: evaluateJacobian )
+                diffFluxEn *= -faceQuadInner.weight( l );
 
             }
 
-            if( DiscreteModelCallerType :: evaluateJacobian )
+            if constexpr ( DiscreteModelCallerType :: evaluateJacobian )
             {
               // update local functions at once
               updEn.axpyQuadrature( faceQuadInner, valEnVec_, valJacEn_ );
@@ -805,10 +805,6 @@ namespace Fem
       if( valEnVec_.size() < volQuad_nop )
       {
         valEnVec_.resize( volQuad_nop );
-      }
-
-      if( valJacEn_.size() < volQuad_nop )
-      {
         valJacEn_.resize( volQuad_nop );
       }
 
@@ -906,23 +902,26 @@ namespace Fem
         // calculate num flux for multiplication with the basis
         // wspeedS = fastest wave speed
         wspeedS += caller().numericalFlux(intersection,
-                                         faceQuadInner,
-                                         faceQuadOuter,
-                                         l,
-                                         fluxEn, fluxNb,
-                                         diffFluxEn, diffFluxNb)
+                                          faceQuadInner,
+                                          faceQuadOuter,
+                                          l,
+                                          fluxEn, fluxNb,
+                                          diffFluxEn, diffFluxNb)
                  * faceQuadInner.weight(l);
 
         // apply weights
         fluxEn     *= -faceQuadInner.weight(l);
         fluxNb     *=  faceQuadOuter.weight(l);
 
-        diffFluxEn *= -faceQuadInner.weight(l);
-        diffFluxNb *=  faceQuadOuter.weight(l);
+        if constexpr ( DiscreteModelCallerType :: evaluateJacobian )
+        {
+          diffFluxEn *= -faceQuadInner.weight(l);
+          diffFluxNb *=  faceQuadOuter.weight(l);
+        }
       }
 
       // update local functions at once
-      if( DiscreteModelCallerType :: evaluateJacobian )
+      if constexpr ( DiscreteModelCallerType :: evaluateJacobian )
         updEn.axpyQuadrature( faceQuadInner, valEnVec_, valJacEn_ );
       else
         updEn.axpyQuadrature( faceQuadInner, valEnVec_ );
@@ -938,7 +937,7 @@ namespace Fem
         // function which represents L(u_h)
         // this update is convenient, so that we
         // don't have to visit neighbor directly
-        if( DiscreteModelCallerType :: evaluateJacobian )
+        if constexpr ( DiscreteModelCallerType :: evaluateJacobian )
           updNb.axpyQuadrature( faceQuadOuter, valNbVec_, valJacNb_ );
         else
           updNb.axpyQuadrature( faceQuadOuter, valNbVec_ );
