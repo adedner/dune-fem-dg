@@ -81,7 +81,9 @@ namespace Fem
       //! Lagrange space with GaussLobatto interpolation points
       gausslobatto,
       //! Lagrange space with GaussLegendre interpolation points
-      gausslegendre
+      gausslegendre,
+      //! FiniteVolume space
+      finitevolume
     };
   }
 

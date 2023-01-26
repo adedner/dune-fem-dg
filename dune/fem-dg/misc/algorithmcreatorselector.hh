@@ -46,6 +46,7 @@
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/lagrange.hh>
+#include <dune/fem/space/finitevolume.hh>
 
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 
@@ -524,6 +525,12 @@ namespace Fem
     typedef FixedOrderDGLagrangeSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::GaussLegendrePointSet, Storage > type;
   };
 #endif
+
+  template< class FunctionSpaceImp, class GridPartImp, int polOrder>
+  struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::finitevolume, Galerkin::Enum::dg >
+  {
+    typedef FiniteVolumeSpace< FunctionSpaceImp, GridPartImp, polOrder > type;
+  };
 
   template< class ModelImp, class DiscreteFunctionSpaceImp,
             DiffusionFlux::Enum diffFluxId, Formulation::Enum form >

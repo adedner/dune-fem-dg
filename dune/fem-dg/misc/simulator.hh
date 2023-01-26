@@ -30,7 +30,7 @@
 // otherwise optional values from MIN_POLORD to MAX_POLORD are provided.
 // This will increase compile time and program size and should only be chosen
 // for special purpose
-#if POLORDER
+#if POLORDER >= 0
 #define MIN_POLORD POLORDER
 #define MAX_POLORD POLORDER
 #else
