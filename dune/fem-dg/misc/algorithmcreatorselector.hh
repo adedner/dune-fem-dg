@@ -42,6 +42,7 @@
 //include operators
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include <dune/fem-dg/operator/dg/fluxoperator.hh>
+#include <dune/fem-dg/operator/fv/fvoperator.hh>
 
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
@@ -164,8 +165,8 @@ namespace Fem
   template< class OperatorTraits >
   class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::unlimited >
   {
-    static const int advection = OperatorTraits::ModelType::hasAdvection;
-    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
+    static const bool advection = OperatorTraits::ModelType::hasAdvection;
+    static const bool diffusion = OperatorTraits::ModelType::hasDiffusion;
     typedef DGAdvectionDiffusionOperator< OperatorTraits >                   DgType;
     typedef DGAdvectionOperator< OperatorTraits >                            DgAdvectionType;
     typedef DGDiffusionOperator< OperatorTraits >                            DgDiffusionType;
@@ -181,13 +182,30 @@ namespace Fem
   template< class OperatorTraits >
   class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::limited >
   {
-    static const int advection = OperatorTraits::ModelType::hasAdvection;
-    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
+    static const bool advection = OperatorTraits::ModelType::hasAdvection;
+    static const bool diffusion = OperatorTraits::ModelType::hasDiffusion;
     typedef DGLimitedAdvectionDiffusionOperator< OperatorTraits >            DgType;
     typedef DGLimitedAdvectionOperator< OperatorTraits >                     DgAdvectionType;
     typedef DGDiffusionOperator< OperatorTraits >                            DgDiffusionType;
     typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
                                                                              ImplExplOperatorSelectorType;
+  public:
+    typedef typename ImplExplOperatorSelectorType::FullOperatorType          FullOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ImplicitOperatorType      ImplicitOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ExplicitOperatorType      ExplicitOperatorType;
+  };
+
+  template< class OperatorTraits, AdvectionLimiter::Enum op>
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::fv, op >
+  {
+    static const bool advection = OperatorTraits::ModelType::hasAdvection;
+    static const bool diffusion = false;
+    static_assert( OperatorTraits::ModelType::hasDiffusion == false , "This is not implemented for FV" );
+    typedef FVOperator< OperatorTraits >              DgType;
+    typedef FVOperator< OperatorTraits >              DgAdvectionType;
+    typedef FVOperator< OperatorTraits >              DgDiffusionType;
+    typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
+                                                                          ImplExplOperatorSelectorType;
   public:
     typedef typename ImplExplOperatorSelectorType::FullOperatorType          FullOperatorType;
     typedef typename ImplExplOperatorSelectorType::ImplicitOperatorType      ImplicitOperatorType;
@@ -203,8 +221,8 @@ namespace Fem
   template< class OperatorTraits >
   class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::local, AdvectionLimiter::Enum::unlimited >
   {
-    static const int advection = OperatorTraits::ModelType::hasAdvection;
-    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
+    static const bool advection = OperatorTraits::ModelType::hasAdvection;
+    static const bool diffusion = OperatorTraits::ModelType::hasDiffusion;
     typedef LDGAdvectionDiffusionOperator< OperatorTraits >                  DgType;
     typedef LDGAdvectionDiffusionOperator< OperatorTraits >                  DgAdvectionType;
     typedef LDGAdvectionDiffusionOperator< OperatorTraits >                  DgDiffusionType;
@@ -220,8 +238,8 @@ namespace Fem
   template< class OperatorTraits >
   class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::local, AdvectionLimiter::Enum::limited >
   {
-    static const int advection = OperatorTraits::ModelType::hasAdvection;
-    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
+    static const bool advection = OperatorTraits::ModelType::hasAdvection;
+    static const bool diffusion = OperatorTraits::ModelType::hasDiffusion;
     typedef LDGLimitedAdvectionDiffusionOperator< OperatorTraits >           DgType;
     typedef LDGLimitedAdvectionDiffusionOperator< OperatorTraits >           DgAdvectionType;
     typedef LDGLimitedAdvectionDiffusionOperator< OperatorTraits >           DgDiffusionType;

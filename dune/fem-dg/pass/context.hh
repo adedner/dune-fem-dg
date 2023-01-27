@@ -682,6 +682,8 @@ namespace Fem
     typedef Context< Entity >                   BaseType;
     typedef IntersectionStorage< Intersection > InterBaseType;
   public:
+    using InterBaseType::intersection;
+
     typedef Entity          EntityType;
     typedef Intersection    IntersectionType;
 
@@ -700,6 +702,52 @@ namespace Fem
     {}
   };
 
+  template <class Entity, class Intersection >
+  class PointContext< Entity, Intersection >
+    : public Context< Entity, Intersection >
+  {
+    typedef Context< Entity, Intersection > BaseType;
+  public:
+    typedef typename Intersection::Geometry::LocalCoordinate  LocalCoordinateType;
+    typedef typename Entity::Geometry::LocalCoordinate        CoordinateType;
+
+    /**
+     *  \brief constructor
+     *
+     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
+     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
+     */
+    PointContext( const Entity& entity,
+                  const Intersection& intersection,
+                  const CoordinateType& position,
+                  const LocalCoordinateType& localPos,
+                  const double volume )
+     : BaseType( entity, intersection, volume ),
+       position_( position ),
+       localPos_( localPos )
+    {}
+
+    /**
+     *  \brief returns the global quadrature point in the elements reference element \f$ x_p \f$
+     */
+    const CoordinateType& position() const { return position_; }
+    /**
+     *  \brief returns the global quadrature point in the elements reference element \f$ x_p \f$
+     */
+    const CoordinateType& quadraturePoint() const { return position_; }
+
+    /**
+     *  \brief returns the local point on the intersection \f$ \hat{x}_p \f$
+     */
+    const LocalCoordinateType& localPosition() const { return localPos_; }
+
+
+  protected:
+    const CoordinateType& position_;
+    const LocalCoordinateType& localPos_;
+  };
+
+
 
   /**
    * \brief This class collects several information which are relevant for the approximation of
@@ -712,7 +760,7 @@ namespace Fem
     typedef Context< Entity > BaseType;
   public:
     typedef typename Entity::Geometry::LocalCoordinate  LocalCoordinateType;
-    typedef typename Entity::Geometry::GlobalCoordinate CoordinateType;
+    typedef typename Entity::Geometry::LocalCoordinate  CoordinateType;
 
     /**
      *  \brief constructor
@@ -739,6 +787,7 @@ namespace Fem
      */
     const LocalCoordinateType& localPosition() const { return localPos_; }
 
+    const CoordinateType& quadraturePoint() const { return position_; }
   protected:
     const CoordinateType& position_;
     const LocalCoordinateType& localPos_;
