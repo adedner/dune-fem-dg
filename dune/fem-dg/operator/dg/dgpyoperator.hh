@@ -107,6 +107,7 @@ namespace Fem
     struct FormId<dummy, FiniteVolumeSpace< FunctionSpaceImp, GridPartImp, polOrd, BaseFunctionStorageImp > >
     {
       static const Formulation::Enum formId = Formulation::Enum::fv;
+      //static const Formulation::Enum formId = Additional::formId;
     };
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, FormId<0, DiscreteFunctionSpaceType >::formId, limiterId > OperatorSelectorType ;
