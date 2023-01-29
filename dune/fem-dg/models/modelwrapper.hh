@@ -250,7 +250,7 @@ namespace Fem
     }
 
     template <class State> // double[dim+2]
-    void pressureTemperature( const State& u, double& p, double& T ) const
+    void pressureTemperature( const State& u, RangeFieldType& p, RangeFieldType& T ) const
     {
       if constexpr ( hasAdvection )
       {
