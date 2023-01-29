@@ -245,6 +245,9 @@ namespace detail
                    std::integral_constant< bool, value >
                  ) const
   {
+    // initialize model
+    model_.setEntity( entity );
+
     double dt = prevDt;
 
     auto enIndex = index( entity );
@@ -282,7 +285,7 @@ namespace detail
       {
         uEn.evaluate( center_, uLeft );
       }
-      model_.nonStiffSource( left, uLeft, enUpdate );
+      model_.nonStiffSource( left, uLeft, jacLeft_, enUpdate );
     }
 
     // the following only makes sense if the model has a flux implemented
