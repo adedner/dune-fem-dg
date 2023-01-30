@@ -106,8 +106,8 @@ namespace Fem
                class BaseFunctionStorageImp >
     struct FormId<dummy, FiniteVolumeSpace< FunctionSpaceImp, GridPartImp, polOrd, BaseFunctionStorageImp > >
     {
-      static const Formulation::Enum formId = Formulation::Enum::fv;
-      //static const Formulation::Enum formId = Additional::formId;
+      // only select special FV operator for unlimted FV scheme for now
+      static const Formulation::Enum formId = (limiterId == AdvectionLimiter::Enum::unlimited) ? Formulation::Enum::fv : Additional::formId;
     };
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, FormId<0, DiscreteFunctionSpaceType >::formId, limiterId > OperatorSelectorType ;
