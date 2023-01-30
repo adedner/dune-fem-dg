@@ -7,6 +7,7 @@
 
 #include <dune/grid/common/geometry.hh>
 
+#include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
 
 #include <dune/grid/common/gridenums.hh>
@@ -60,6 +61,8 @@ namespace detail
     static const int dimworld = GridPartType::dimensionworld;
     static const int dimRange = Model::dimRange;
     typedef typename Grid::ctype ctype;
+    static const bool isCartesian = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
+
 
     // only apply the scheme to interior elements
     static const Dune :: PartitionIteratorType ptype = Dune :: InteriorBorder_Partition ;
@@ -257,10 +260,10 @@ namespace detail
     static const bool higherOrder = value ;
 
     // cell volume
-    const double enVolume = geo.volume();
+    const ctype enVolume = geo.volume();
 
     // 1 over cell volume
-    const double enVolume_1 = 1.0/enVolume;
+    const ctype enVolume_1 = 1.0/enVolume;
 
     RangeType uLeft;
     RangeType uRight;
@@ -311,12 +314,11 @@ namespace detail
           if( neighbor.partitionType() != InteriorEntity ||
               enIndex < nbIndex )
           {
-            const double nbVolume = neighbor.geometry().volume();
+            const ctype nbVolume   = ( isCartesian ) ? enVolume   : neighbor.geometry().volume();
+            const ctype nbVolume_1 = ( isCartesian ) ? enVolume_1 : 1.0/nbVolume;
+
             // local context neighbor
             LocalEvalIntersectionType right( neighbor, intersection, faceCenters_[ intersection.indexInOutside() ], localFaceCenter_, nbVolume );
-
-            // calculate (1 / neighbor volume)
-            const double nbVolume_1 = 1.0 / nbVolume;
 
             // evaluate data for higher order
             if constexpr ( higherOrder )

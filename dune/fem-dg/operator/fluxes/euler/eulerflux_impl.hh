@@ -430,16 +430,16 @@ namespace EulerNumFlux
     static void rotate(const FieldType n[dim],
                        const FieldType u[dim], FieldType u_rot[dim])
     {
-      if (dim == 1)
+      if constexpr  (dim == 1)
       {
         u_rot[0] = n[0] * u[0];
       }
-      else if (dim == 2)
+      else if constexpr (dim == 2)
       {
         u_rot[0] = n[0]*u[0] + n[1]*u[1];
         u_rot[1] = -n[1]*u[0] + n[0]*u[1];
       }
-      else if (dim == 3)
+      else if constexpr (dim == 3)
       {
         FieldType d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
 
@@ -461,16 +461,16 @@ namespace EulerNumFlux
     static void rotate_inv(const FieldType n[dim],
                            const FieldType u_rot[dim], FieldType u[dim])
     {
-      if (dim == 1){
+      if constexpr (dim == 1){
         u[0] = n[0] * u_rot[0];
       }
 
-      if (dim == 2){
+      if constexpr (dim == 2){
         u[0] = n[0]*u_rot[0] - n[1]*u_rot[1];
         u[1] = n[1]*u_rot[0] + n[0]*u_rot[1];
       }
 
-      if (dim == 3){
+      if constexpr (dim == 3){
         FieldType d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
 
         if (d > 1.0e-8) {
@@ -488,7 +488,7 @@ namespace EulerNumFlux
         //assert(0); // test it, not tested up to now
       }
 
-      if (dim > 3) assert(0);
+      if constexpr (dim > 3) assert(0);
     }
   };
 
