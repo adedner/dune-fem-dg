@@ -245,7 +245,7 @@ namespace Fem
     const ParameterType& parameter() const { return param_; }
 
   protected:
-    const Model   &model_;
+    Model  model_;
     const ParameterType& param_;
     DomainType upwind_;
     const double cflDiffinv_;
