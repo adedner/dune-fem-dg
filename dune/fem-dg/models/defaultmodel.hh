@@ -668,6 +668,11 @@ namespace Fem
     {
     }
 
+    // counter part to setEntity
+    void reset() const
+    {
+    }
+
     void setTime (double time)
     {
       time_ = time;
