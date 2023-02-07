@@ -206,10 +206,13 @@ namespace Fem
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      gDiffLeft = 0;
-      gDiffRight = 0;
+      if constexpr ( evaluateJacobian )
+      {
+        gDiffLeft = 0;
+        gDiffRight = 0;
+      }
 
-      if( advection )
+      if constexpr ( advection )
       {
         // returns advection wave speed
         return numflux_.numericalFlux(left, right,
@@ -237,9 +240,12 @@ namespace Fem
 
       // make sure user sets specific boundary implementation
       gLeft = std::numeric_limits< double >::quiet_NaN();
-      gDiffLeft = 0;
+      if constexpr ( evaluateJacobian )
+      {
+        gDiffLeft = 0;
+      }
 
-      if (advection)
+      if constexpr (advection)
       {
         if( hasBndValue )
         {
@@ -269,7 +275,7 @@ namespace Fem
     void analyticalFlux( const LocalEvaluation& local,
                          JacobianRangeType& f ) const
     {
-      if( advection )
+      if constexpr ( advection )
         model_.advection( local, local.values()[uVar],local.jacobians()[uVar], f);
       else
         f = 0;

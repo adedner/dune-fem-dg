@@ -1,5 +1,8 @@
 fem.verboserank: 0
 
+# verbosity level 
+fem.verbositylevel: 3
+
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffractio
@@ -22,8 +25,8 @@ femdg.limiter.indicator: jump
 #femdg.nonblockingcomm: false
 
 femdg.stepper.printcount: 1000
-fem.io.outputformat: none
-fem.io.savestep: 10.0
+fem.io.outputformat: vtk-cell
+fem.io.savestep: 0.01
 
 fem.ode.odesolver: EX
 fem.ode.order: 3

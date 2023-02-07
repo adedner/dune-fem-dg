@@ -63,7 +63,8 @@ namespace Fem
     typedef AlgorithmConfigurator< GridSelectorGridType,
                                    Galerkin::Enum::dg,
                                    Adaptivity::Enum::yes,
-                                   DiscreteFunctionSpaces::Enum::orthonormal,
+                                   DiscreteFunctionSpaces::Enum::finitevolume,
+                                   //DiscreteFunctionSpaces::Enum::orthonormal,
                                    //DiscreteFunctionSpaces::Enum::lagrange,
                                    //DiscreteFunctionSpaces::Enum::gausslobatto,
                                    //DiscreteFunctionSpaces::Enum::gausslegendre,
@@ -125,8 +126,7 @@ namespace Fem
         };
 
       private:
-        typedef typename AC::template DefaultOpTraits< ModelType, FunctionSpaceType, polOrd >
-                                                                                            OpTraits;
+        typedef typename AC::template DefaultOpTraits< ModelType, FunctionSpaceType, polOrd >  OpTraits;
         typedef DGAdaptationIndicatorOperator< OpTraits >                                   IndicatorType;
         typedef Estimator< DiscreteFunctionType, typename ModelType::ProblemType >          GradientIndicatorType ;
       public:

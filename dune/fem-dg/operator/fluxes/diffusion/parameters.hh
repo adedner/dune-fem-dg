@@ -20,7 +20,8 @@ namespace Fem
     enum class Enum
     {
       primal,
-      local
+      local,
+      fv
     };
   }
 

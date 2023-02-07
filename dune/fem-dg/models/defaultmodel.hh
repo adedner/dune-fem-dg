@@ -156,6 +156,7 @@ namespace Fem
     typedef FunctionSpaceType                            DFunctionSpaceType;
     typedef FunctionSpaceType                            RFunctionSpaceType;
     typedef typename Traits::DomainType                  DomainType;
+    typedef typename FunctionSpaceType::RangeFieldType   RangeFieldType;
     typedef typename Traits::RangeType                   RangeType;
     typedef typename Traits::GradientType                GradientType;
     typedef typename Traits::FluxRangeType               FluxRangeType;
@@ -222,7 +223,7 @@ namespace Fem
      *  \brief compute pressure and temperature for compressible flow
      */
     template <class State>
-    void pressureTemperature( const State& u, double& p, double& T ) const
+    void pressureTemperature( const State& u, RangeFieldType& p, RangeFieldType& T ) const
     {
       p = 0.0;
       T = 0.0;
@@ -664,6 +665,11 @@ namespace Fem
 
     template <class Entity>
     void setEntity( const Entity& entity ) const
+    {
+    }
+
+    // counter part to setEntity
+    void reset() const
     {
     }
 

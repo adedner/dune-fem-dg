@@ -232,6 +232,14 @@ namespace Fem
         diffusion().init( entity );
     }
 
+    void reset() const
+    {
+      if constexpr ( hasAdvection )
+        advection().unbind();
+      if constexpr ( hasDiffusion )
+        diffusion().unbind();
+    }
+
     inline bool hasStiffSource() const { return AdditionalType::hasStiffSource; }
     inline bool hasNonStiffSource() const { return AdditionalType::hasNonStiffSource; }
     inline bool hasFlux() const { return AdditionalType::hasFlux; }
@@ -250,7 +258,7 @@ namespace Fem
     }
 
     template <class State> // double[dim+2]
-    void pressureTemperature( const State& u, double& p, double& T ) const
+    void pressureTemperature( const State& u, RangeFieldType& p, RangeFieldType& T ) const
     {
       if constexpr ( hasAdvection )
       {
@@ -336,7 +344,10 @@ namespace Fem
     inline double diffusionTimeStep( const LocalEvaluation& local,
                                      const RangeType& u ) const
     {
-      return diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), u );
+      if constexpr ( hasDiffusion )
+        return diffusion().diffusionTimeStep( local.entity(), local.quadraturePoint(), u );
+      else
+        return 1e308;
     }
 
     // is not used

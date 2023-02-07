@@ -9,6 +9,7 @@
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
 #include <dune/fem/space/lagrange.hh>
+#include <dune/fem/space/finitevolume.hh>
 #include <dune/fem/space/common/capabilities.hh>
 #include <dune/fem/quadrature/interpolationquadrature.hh>
 
@@ -24,6 +25,7 @@
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
+#include <dune/fem-dg/operator/fv/fvoperator.hh>
 
 // this is part of dune-fem now
 #include <dune/fempy/quadrature/fempyquadratures.hh>
@@ -43,6 +45,10 @@ namespace Fem
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
   {
   public:
+    typedef DestinationImp   DestinationType;
+    typedef typename DestinationType :: DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
+
+
     static const Solver::Enum solverId             = Additional::solverId;
     static const Formulation::Enum formId          = Additional::formId;
     static const AdvectionLimiter::Enum limiterId  = Additional::limiterId;
@@ -51,8 +57,6 @@ namespace Fem
     static const AdvectionFlux::Enum advFluxId     = Additional::advFluxId;
     // for valid diffusion fluxes see dune/fem-dg/operator/fluxes/diffusion/parameters.hh
     static const DiffusionFlux::Enum diffFluxId    = Additional::diffFluxId;
-    typedef DestinationImp   DestinationType;
-    typedef typename DestinationType :: DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
     static const int polynomialOrder = DiscreteFunctionSpaceType :: polynomialOrder ;
 
@@ -95,7 +99,18 @@ namespace Fem
                                    Dune::FemPy::FempyQuadratureTraits,
                                    threading> > ::type OpTraits;
 
-    typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
+    template <int dummy, class DFS>
+    struct FormId { static const Formulation::Enum formId = Additional::formId; };
+
+    template < int dummy, class FunctionSpaceImp, class GridPartImp, int polOrd,
+               class BaseFunctionStorageImp >
+    struct FormId<dummy, FiniteVolumeSpace< FunctionSpaceImp, GridPartImp, polOrd, BaseFunctionStorageImp > >
+    {
+      // only select special FV operator for unlimted FV scheme for now
+      static const Formulation::Enum formId = (limiterId == AdvectionLimiter::Enum::unlimited) ? Formulation::Enum::fv : Additional::formId;
+    };
+
+    typedef AdvectionDiffusionOperatorSelector< OpTraits, FormId<0, DiscreteFunctionSpaceType >::formId, limiterId > OperatorSelectorType ;
 
     typedef typename OperatorSelectorType :: FullOperatorType      FullOperatorType;
     typedef typename OperatorSelectorType :: ExplicitOperatorType  ExplicitOperatorType;

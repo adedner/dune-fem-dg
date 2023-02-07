@@ -127,6 +127,9 @@ def femDGModels(Model, space, initialTime=0):
 
     from dune.fem.model import conservationlaw
     #from dune.fem.model import integrands as conservationlaw
+    # we need False here, because there are additional methods that
+    # have not been virtualized yet, needs implementation in
+    # dune/fem/scheme/conservationlawmodel.hh
     virtualize = False
 
     advModel  = conservationlaw(space.gridView, advModel,
