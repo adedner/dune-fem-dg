@@ -11,29 +11,29 @@ problem: sod
 # riemanndata: [1., -1., 1.,    1., 1., 1.]
 
 # number of threads used in OMP program
-fem.parallel.numberofthreads: 4
+fem.parallel.numberofthreads: 8
 
 # coarsest level that should be present
 fem.adaptation.coarsestLevel: 0
 # finest level that should be present
 fem.adaptation.finestLevel: 4
-fem.eoc.steps: 4
-fem.timeprovider.factor: 0.35
+fem.eoc.steps: 5
 femdg.limiter.indicator: jump
 
 #femdg.stepper.fixedtimestep: 0.005
 #femdg.nonblockingcomm: false
 
-femdg.stepper.printcount: 1000
+femdg.stepper.printcount: 10
 fem.io.outputformat: vtk-cell
 fem.io.savestep: 0.01
 
 fem.ode.odesolver: EX
 fem.ode.order: 3
-fem.timeprovider.factor: 0.35
+fem.timeprovider.factor: 1.7
 fem.timeprovider.updatestep: 1
 
 fem.io.macroGridFile_2d:
+#fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
 fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
 #fem.io.macroGridFile_2d:  ../../grids/unitcube2_per.dgf
 

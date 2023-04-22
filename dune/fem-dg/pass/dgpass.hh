@@ -197,7 +197,7 @@ namespace Fem
         }
       }
 
-      if( verbose && (volumeQuadOrd_ >= 0 || faceQuadOrd_ >=0) )
+      if( verbose ) //&& (volumeQuadOrd_ >= 0 || faceQuadOrd_ >=0) )
       {
         const int vo = volumeQuadOrd_ < 0 ? DefaultQuadratureType::volumeOrder(spc_.order()) : volumeQuadOrd_;
         const int so = faceQuadOrd_ < 0 ? DefaultQuadratureType::surfaceOrder(spc_.order()) : faceQuadOrd_;
@@ -594,7 +594,7 @@ namespace Fem
         // Surface integral part
         /////////////////////////////
         // get volume of element divided by the DG polynomial factor
-        const double envol = entity.geometry().volume() / ( 2.0 * spc_.order( entity ) + 1.0 ) ;
+        const double envol = entity.geometry().volume() / polOrderFactor( entity );
 
         for (const auto& intersection : intersections(gridPart_, entity) )
         {
@@ -867,7 +867,7 @@ namespace Fem
       const Geometry & nbGeo = nb.geometry();
 
       // get volume of neighbor divided by the DG polynomial factor
-      const double nbVol = nbGeo.volume() / ( 2.0 * spc_.order( nb ) + 1.0 ) ;
+      const double nbVol = nbGeo.volume() / polOrderFactor( nb ) ;
 
       // set neighbor and initialize intersection
       caller().initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
@@ -967,6 +967,16 @@ namespace Fem
     }
 
   protected:
+    //! return appropriate quadrature order
+    double polOrderFactor( const EntityType& entity ) const
+    {
+      // default suggested by Cockburn and Shu
+      //return 2.0 * spc_.order( entity ) + 1.0;
+      // adjusted for Lobatto
+      //double k = spc_.order( entity );
+      return 2.0 * defaultFaceQuadratureOrder( spc_, entity ); //3.0 * k - 1.0;
+    }
+
     //! return appropriate quadrature order
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
