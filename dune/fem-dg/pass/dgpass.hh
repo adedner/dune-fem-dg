@@ -185,7 +185,8 @@ namespace Fem
 #else
         localMassMatrix_( spc_ , [](const int order) { return DefaultQuadratureType::volumeOrder(order); } ),
 #endif
-        reallyCompute_( true )
+        reallyCompute_( true ),
+        cflFactors_( computeCflFactors() )
     {
       // make sure that either a ghost layer or an overlap layer is there for
       // communication of the data, otherwise the scheme will not work
@@ -594,7 +595,7 @@ namespace Fem
         // Surface integral part
         /////////////////////////////
         // get volume of element divided by the DG polynomial factor
-        const double envol = entity.geometry().volume() / polOrderFactor( entity );
+        const double envol = entity.geometry().volume() * cflFactor( entity );
 
         for (const auto& intersection : intersections(gridPart_, entity) )
         {
@@ -867,7 +868,7 @@ namespace Fem
       const Geometry & nbGeo = nb.geometry();
 
       // get volume of neighbor divided by the DG polynomial factor
-      const double nbVol = nbGeo.volume() / polOrderFactor( nb ) ;
+      const double nbVol = nbGeo.volume() * cflFactor( nb ) ;
 
       // set neighbor and initialize intersection
       caller().initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
@@ -968,13 +969,30 @@ namespace Fem
 
   protected:
     //! return appropriate quadrature order
-    double polOrderFactor( const EntityType& entity ) const
+    double cflFactor( const EntityType& entity ) const
     {
-      // default suggested by Cockburn and Shu
-      //return 2.0 * spc_.order( entity ) + 1.0;
-      // adjusted for Lobatto
-      //double k = spc_.order( entity );
-      return 2.0 * defaultFaceQuadratureOrder( spc_, entity ); //3.0 * k - 1.0;
+      if constexpr ( Dune::Fem::Capabilities::hasFixedPolynomialOrder< DiscreteFunctionSpaceType > ::v )
+        return cflFactors_[ spc_.order() ];
+      else
+      {
+        assert( size_t(spc_.order( entity )) < cflFactors_.size() );
+        return cflFactors_[ spc_.order( entity ) ];
+      }
+    }
+
+    std::vector< double > computeCflFactors() const
+    {
+      int maxOrder = spc_.order();
+      std::vector< double > cflFactors(maxOrder+1, 1.0);
+      // default suggested by Cockburn and Shu: 1/(2*k + 1)
+      // with adjustment for Lobatto, leave 1. for k=0
+      for(int k=1; k<=maxOrder; ++k)
+      {
+        // scale cfl up for lower order and down for higher order
+        double factor = std::abs(-0.15*k + 1.74);
+        cflFactors[ k ] = factor/double(DefaultQuadratureType::surfaceOrder(k));
+      }
+      return cflFactors;
     }
 
     //! return appropriate quadrature order
@@ -1035,6 +1053,8 @@ namespace Fem
     const int volumeQuadOrd_, faceQuadOrd_;
     LocalMassMatrixStorageType localMassMatrix_;
     mutable bool reallyCompute_;
+
+    const std::vector< double > cflFactors_;
   };
 
 } // end namespace
