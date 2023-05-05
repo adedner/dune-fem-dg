@@ -412,7 +412,8 @@ namespace Fem
       advection().boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
-      return 0; // TODO: do something better here
+      // return advection speed
+      return advection().maxWaveSpeed( time(), local.entity(), local.quadraturePoint(), normal, uLeft );
     }
 
     template <class LocalEvaluation>
@@ -453,10 +454,10 @@ namespace Fem
 
     template <class LocalEvaluation>
     inline void maxWaveSpeed( const LocalEvaluation& local,
-                          const DomainType& unitNormal,
-                          const RangeType& u,
-                          double& advspeed,
-                          double& totalspeed ) const
+                              const DomainType& unitNormal,
+                              const RangeType& u,
+                              double& advspeed,
+                              double& totalspeed ) const
     {
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
