@@ -182,11 +182,6 @@ def femDGOperator(Model, space,
 
     includes = []
 
-    # obtain information about limiter interface before Model
-    # is augmented with default implementations
-    hasScalingInterface = hasattr(Model,"lowerBound") or hasattr(Model,"upperBound") or hasattr(Model,"physical")
-    hasLimiterInterface = (hasattr(Model,"jump") and hasattr(Model,"velocity")) or hasattr(Model,"physical")
-
     if threading == "default":
         threading = dune.fem.threading.use>1
 
@@ -196,6 +191,11 @@ def femDGOperator(Model, space,
         Model = Model[0]
     else:
         Model, advModel, diffModel = femDGModels(Model,space,initialTime)
+
+    # obtain information about limiter interface before Model
+    # is augmented with default implementations
+    hasScalingInterface = hasattr(Model,"lowerBound") or hasattr(Model,"upperBound") or hasattr(Model,"physical")
+    hasLimiterInterface = (hasattr(Model,"jump") and hasattr(Model,"velocity")) or hasattr(Model,"physical")
 
     hasAdvFlux = hasattr(Model,"F_c")
     hasDiffFlux = hasattr(Model,"F_v")
