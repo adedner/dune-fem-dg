@@ -17,8 +17,10 @@ template <class Model, class DiscreteFunction>
 struct ModalIndicator
 : public Dune::Fem::TroubledCellIndicatorBase<DiscreteFunction>
 {
+  typedef Dune::Fem::TroubledCellIndicatorBase<DiscreteFunction> BaseType;
+  typedef typename BaseType::LocalFunctionType LocalFunctionType;
+
   typedef Model ModelType;
-  typedef typename DiscreteFunction::LocalFunctionType LocalFunctionType;
   typedef typename DiscreteFunction::DiscreteFunctionSpaceType DFS;
   typedef typename DFS::template ToNewDimRange<1>::Type ScalarDFS;
   typedef typename DFS::GridPartType GridPartType;
