@@ -479,7 +479,6 @@ namespace Fem
 
     void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
-      std::abort();
       extTroubledCellIndicator_ = indicator;
     }
 
