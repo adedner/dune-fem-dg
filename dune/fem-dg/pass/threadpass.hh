@@ -679,6 +679,7 @@ namespace Fem
         // create NB checker, noSkip of intersections
         NBChecker< skipNone > nbChecker( iterators_, thread );
 
+        assert( arg_ );
         const Iterator endit = iterators_.end();
         for (Iterator it = iterators_.begin(); it != endit; ++it)
         {
@@ -687,7 +688,6 @@ namespace Fem
           myPass.applyLocal( entity, nbChecker );
         }
 
-        assert( arg_ );
         // dest can also be null pointer
         // when the operator is evaluated only
         // for evaluation of the estimators

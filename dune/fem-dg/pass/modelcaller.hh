@@ -84,8 +84,10 @@ namespace Dune
         time_( 0. ),
         discreteFunctions_( FilterType::apply( argument ) ),
         localFunctionsInside_( Dune::DereferenceTuple< DiscreteFunctionPointerTupleType >::apply( discreteFunctions_ ) ),
-        localFunctionsOutside_( Dune::DereferenceTuple< DiscreteFunctionPointerTupleType >::apply( discreteFunctions_ ) )
-      {}
+        localFunctionsOutside_( Dune::DereferenceTuple< DiscreteFunctionPointerTupleType >::apply( discreteFunctions_ ) ),
+        jacobians_( 1 ) // need at least size 1 for temporary variables
+      {
+      }
 
       // return true, if discrete model has flux
       bool hasFlux () const { return discreteModel().hasFlux(); }
@@ -309,12 +311,15 @@ namespace Dune
 
       CDGDiscreteModelCaller ( ArgumentType &argument, DiscreteModelType &discreteModel )
       : BaseType( argument, discreteModel )
+        , jacobiansInside_( 1 )
+        , jacobiansOutside_( 1 )
 #ifndef NDEBUG
         , quadInnerId_( 0 )
         , quadOuterId_( 0 )
         , quadId_( 0 )
 #endif
-      {}
+      {
+      }
 
       void setEntity ( const EntityType &entity, const VolumeQuadratureType &quadrature )
       {
