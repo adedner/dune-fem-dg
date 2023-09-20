@@ -1,4 +1,4 @@
-import time, math, sys
+import time, numpy, sys
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem.function import integrate
@@ -121,7 +121,7 @@ def run(Model, Stepper=None,
     # tracemalloc.start()
 
     # make sure initial data is meaningful
-    assert not math.isnan( u_h.scalarProductDofs( u_h ) )
+    assert not numpy.isnan( u_h.scalarProductDofs( u_h ) )
 
     t = 0
     while t < Model.endTime:
@@ -131,7 +131,7 @@ def run(Model, Stepper=None,
         tcount += 1
 
         # check that solution is meaningful
-        if math.isnan( u_h.scalarProductDofs( u_h ) ):
+        if numpy.isnan( u_h.scalarProductDofs( u_h ) ):
             vtk()
             print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
@@ -183,7 +183,7 @@ def run(Model, Stepper=None,
     elif Model.name is not None:
         grid.writeVTK(Model.name+'-final', subsampling=subsamp, celldata=[u_h])
         error = integrate( grid, dot(u_h,u_h), order=5 )
-    error = math.sqrt(error)
+    error = numpy.sqrt(error)
     print("*************************************")
     print("**** Completed simulation",Model.name)
     print("**** error:", error)
