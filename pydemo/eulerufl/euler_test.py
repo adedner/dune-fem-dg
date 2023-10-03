@@ -73,10 +73,10 @@ from numpy import pi
 
 from dune.fem.space import dglegendre
 from dune.alugrid import aluCubeGrid
-from dune.fem.function import uflFunction
+from dune.fem.function import gridFunction
 from dune.grid import cartesianDomain
 from dune.fem.scheme import galerkin as solutionScheme
-from dune.fem.function import integrate
+from dune.fem import integrate
 
 import ufl
 
@@ -91,17 +91,22 @@ for ele_n in ele_ns:
 
     x = ufl.SpatialCoordinate(ufl.quadrilateral)
     # Set up Dirichlet BC
-    gD = uflFunction(mesh, name = "gD", order = order,
-                     ufl = ufl.as_vector([ufl.sin(2*(x[0]+x[1])) + 4,
+    gD = gridFunction(ufl.as_vector([ufl.sin(2*(x[0]+x[1])) + 4,
                      0.2*ufl.sin(2*(x[0]+x[1])) + 4,
                      0.2*ufl.sin(2*(x[0]+x[1])) + 4,
-                     (ufl.sin(2*(x[0]+x[1])) + 4)**2]))
+                     (ufl.sin(2*(x[0]+x[1])) + 4)**2]),
+                     gridView=mesh, name = "gD", order = order)
 
-    f = uflFunction(mesh, name = "f", order = order,
-                    ufl = ufl.as_vector([(4.0/5.0)*ufl.cos(2*x[0] + 2*x[1]),
+    f = uflFunction(ufl.as_vector([(4.0/5.0)*ufl.cos(2*x[0] + 2*x[1]),
                     (8.0/125.0)*(25*(ufl.sin(2*x[0] + 2*x[1]))**3 + 302*(ufl.sin(2*x[0] + 2*x[1]))**2 + 1216*ufl.sin(2*x[0] + 2*x[1]) + 1120)*ufl.cos(2*x[0] + 2*x[1])/(ufl.sin(2*x[0] + 2*x[1]) + 4)**2,
                     (8.0/125.0)*(25*(ufl.sin(2*x[0] + 2*x[1]))**3 + 302*(ufl.sin(2*x[0] + 2*x[1]))**2 + 1216*ufl.sin(2*x[0] + 2*x[1]) + 1120)*ufl.cos(2*x[0] + 2*x[1])/(ufl.sin(2*x[0] + 2*x[1]) + 4)**2,
-                    (8.0/625.0)*(175*(ufl.sin(2*x[0] + 2*x[1]))**4 + 4199*(ufl.sin(2*x[0] + 2*x[1]))**3 + 33588*(ufl.sin(2*x[0] + 2*x[1]))**2 + 112720*ufl.sin(2*x[0] + 2*x[1]) + 145600)*ufl.cos(2*x[0] + 2*x[1])/(ufl.sin(2*x[0] + 2*x[1]) + 4)**3]))
+                    (8.0/625.0)*(175*(ufl.sin(2*x[0] + 2*x[1]))**4 +
+                    4199*(ufl.sin(2*x[0] + 2*x[1]))**3 +
+                    33588*(ufl.sin(2*x[0] + 2*x[1]))**2 +
+                    112720*ufl.sin(2*x[0] + 2*x[1]) +
+                    145600)*ufl.cos(2*x[0] + 2*x[1])/(ufl.sin(2*x[0] +
+                    2*x[1]) + 4)**3]),
+                    gridView=mesh, name = "f", order = order)
 
     uh = V.interpolate(gD)
     u = ufl.TrialFunction(V)
@@ -124,7 +129,7 @@ for ele_n in ele_ns:
 
     uh.plot()
 
-    errorl2[run_count] = np.sqrt(integrate( mesh, ufl.dot(gD - uh, gD - uh),    order=V.order*2 ))
+    errorl2[run_count] = np.sqrt(integrate( ufl.dot(gD - uh, gD - uh) ))
     hmax = 0.
     for e in mesh.elements:
         vol = np.sqrt(e.geometry.volume)

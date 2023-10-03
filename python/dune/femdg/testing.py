@@ -1,7 +1,8 @@
 import time, numpy, sys
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
-from dune.fem.function import integrate
+from dune.fem.function import gridFunction
+from dune.fem import integrate
 from dune.ufl import Constant, expression2GF
 from ufl import dot, SpatialCoordinate
 from dune.femdg import femDGOperator, rungeKuttaSolver, createLimiter
@@ -97,7 +98,7 @@ def run(Model, Stepper=None,
         x = SpatialCoordinate(space.cell())
         tc = Constant(0.0,"time")
         try:
-            velo = create.function("ufl",space.gridView, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")
+            velo = gridFunction(Model.velocity(tc,x,u_h), gridView=space.gridView, order=2, name="velocity")
         except AttributeError:
             velo = None
         vtk = grid.sequencedVTK(Model.name, subsampling=subsamp,
@@ -174,15 +175,15 @@ def run(Model, Stepper=None,
                 celldata=[u_h], pointdata={"exact":u})
         # TODO make the gridfunctions from dune-python work nicely with ufl...
         # error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
-        error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
+        error = integrate( dot(u-u_h,u-u_h) )
         try:
-            error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
+            error = integrate( dot(u-u_h,u-u_h) )
         except:
             error = 0
             pass
     elif Model.name is not None:
         grid.writeVTK(Model.name+'-final', subsampling=subsamp, celldata=[u_h])
-        error = integrate( grid, dot(u_h,u_h), order=5 )
+        error = integrate( dot(u_h,u_h) )
     error = numpy.sqrt(error)
     print("*************************************")
     print("**** Completed simulation",Model.name)

@@ -1,7 +1,7 @@
 import time, math
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
-from dune.fem.function import integrate
+from dune.fem import integrate
 from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
 from dune.femdg import femDGOperator, rungeKuttaSolver
@@ -114,7 +114,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     if exact is not None:
         grid.writeVTK(name, subsampling=subsamp,
                 celldata=[u_h], pointdata={"exact":exact(t)})
-        error = integrate( grid, dot(u_h-exact(t),u_h-exact(t)), order=5 )
+        error = integrate( dot(u_h-exact(t),u_h-exact(t)) )
         print("error:", math.sqrt(error),flush=True )
     else:
         grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
