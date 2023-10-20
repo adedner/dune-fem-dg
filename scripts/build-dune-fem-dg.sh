@@ -1,6 +1,11 @@
 #!/bin/bash
 
-USEVENV=0
+#change appropriately, i.e. 2.8 or leave empty which refers to master
+# use latest-stable to get a recent stable version
+DUNEVERSION=latest-stable
+
+# use ON or OFF
+USEVENV=ON
 
 WORKDIR=${PWD}
 echo "Placing DUNE modules in $WORKDIR"
@@ -43,11 +48,11 @@ else
   fi
 fi
 
-if [ "$USEVENV" == "1" ]; then
+if [ "$USEVENV" == "ON" ]; then
   # create necessary python virtual environment
   VENVDIR=$WORKDIR/venv
   if ! test -d $VENVDIR ; then
-    python3 -m venv $VENVDIR
+    python3 -m venv --system-site-packages $VENVDIR
     source $VENVDIR/bin/activate
     pip install --upgrade pip
     pip install $CMAKEPIP fenics-ufl numpy matplotlib mpi4py
@@ -56,13 +61,10 @@ if [ "$USEVENV" == "1" ]; then
   fi
 fi
 
-#change appropriately, i.e. 2.8 or leave empty which refers to master
-DUNEVERSION=
-
 FLAGS="-O3 -DNDEBUG -funroll-loops -finline-functions -Wall -ftree-vectorize -fno-stack-protector -mtune=native"
 
 DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid dune-localfunctions"
-DUNEEXTMODULES="dune-alugrid dune-spgrid"
+DUNEEXTMODULES="dune-alugrid dune-spgrid dune-polygongrid"
 DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
 
 # build flags for all DUNE modules
@@ -83,8 +85,7 @@ USE_CMAKE=yes
 MAKE_FLAGS=-j4
 CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DDUNE_ENABLE_PYTHONBINDINGS=ON \\
- -DALLOW_CXXFLAGS_OVERWRITE=ON \\
- -DDUNE_PYTHON_USE_VENV=OFF \\
+ -DDUNE_PYTHON_USE_VENV=$USEVENV \\
  -DADDITIONAL_PIP_PARAMS="-upgrade" \\
  -DCMAKE_LD_FLAGS=\\\"$PY_LDFLAGS\\\" \\
  -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
@@ -94,7 +95,7 @@ CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
 fi
 
 ACTIVATE=$WORKDIR/activate.sh
-if [ "$USEVENV" == "1" ]; then
+if [ "$USEVENV" == "ON" ]; then
   ACTIVATE=$VENVDIR/bin/activate
 else
   DEACTIVATEFUNCTION="deactivate() {
@@ -142,7 +143,6 @@ setVariable PYTHONPATH \$DUNEPYTHONPATH
 echo \"DUNE_LOG_LEVEL=\$DUNE_LOG_LEVEL\"
 echo \"Change with 'export DUNE_LOG_LEVEL={none,critical,info,debug}' if necessary!\"
 
-# python \$DUNE_CONTROL_PATH/dune-common/bin/setup-dunepy.py
 save_function() {
     local ORIG_FUNC=\$(declare -f \$1)
     local NEWNAME_FUNC=\"\$2\${ORIG_FUNC#\$1}\"
@@ -178,31 +178,46 @@ deactivate() {
 " >> $ACTIVATE
 fi
 
-#DUNEBRANCH="-b feature/cmake-python-overhaul"
 DUNEBRANCH=
-if [ "$DUNEVERSION" != "" ] ; then
+URL=https://gitlab.dune-project.org
+EXT=core
+
+if [ "$DUNEVERSION" == "latest-stable" ] ; then
+  # remove extension, this is not used on Lund server
+  EXT=
+  URL=https://gitlab.maths.lu.se/dune
+elif [ "$DUNEVERSION" != "" ] ; then
+  # assume that some version was selected
   DUNEBRANCH="-b releases/$DUNEVERSION"
 fi
 
 # get all dune modules necessary
 for MOD in $DUNECOREMODULES ; do
-  git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
-done
-
-# get all dune extension modules necessary
-for MOD in $DUNEEXTMODULES ; do
-  if [ "$MOD" == "dune-alugrid" ]; then
-    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
-  elif [ "$MOD" == "dune-spgrid" ]; then
-    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/extensions/$MOD.git
-  else
-    git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/staging/$MOD.git
+  git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
+  if [ "$DUNEVERSION" == "latest-stable" ] && [ $MOD == "dune-common" ]; then
+    cd dune-common
+    # get latest stable tag starting with s20
+    STABLE=`git tag -l | grep "s20*" | sort -gr | head -1`
+    DUNEBRANCH="-b $STABLE"
+    git checkout $STABLE
+    cd ..
   fi
 done
 
+if [ "$EXT" != "" ]; then
+  EXT=extensions
+fi
+# get all dune extension modules necessary
+for MOD in $DUNEEXTMODULES ; do
+  git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
+done
+
+if [ "$EXT" != "" ]; then
+  EXT=dune-fem
+fi
 # get all dune extension modules necessary
 for MOD in $DUNEFEMMODULES ; do
-  git clone --depth 1 $DUNEBRANCH https://gitlab.dune-project.org/dune-fem/$MOD.git
+  git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
 done
 
 # load environment variables
