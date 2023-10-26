@@ -2,6 +2,7 @@ import time, math
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem import integrate
+from dune.fem.function import gridFunction
 from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
 
@@ -48,7 +49,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         x = SpatialCoordinate(space.cell())
         tc = Constant(0.0,"time")
         try:
-            velo = [create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")]
+            velo = gridFunction(Model.velocity(tc,x,u_h),name="velocity")
         except AttributeError:
             velo = None
         vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
