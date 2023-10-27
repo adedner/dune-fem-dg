@@ -1,11 +1,10 @@
+cmake_minimum_required(VERSION 3.13)
+
 # set up project
 project("dune-fem-dg" C CXX)
 
 # this option is mandatory for dune-fem-dg
 option(DUNE_GRID_GRIDTYPE_SELECTOR "Grid selector definition added to config.h" ON)
-
-# general stuff
-cmake_minimum_required(VERSION 3.1)
 
 #find dune-common and set the module path
 find_package(dune-common)
