@@ -1,8 +1,5 @@
 import os
 
-# set number of threads to be used for thread parallel version
-os.environ['OMP_NUM_THREADS'] = '4'
-
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument('problem', type=int,
@@ -19,9 +16,17 @@ except SystemExit:
     sys.exit(0)
 problem = args.problem
 
-from dune.alugrid import aluCubeGrid as aluGrid
+from dune.alugrid import aluCubeGrid as leafGrid
+#from dune.p4estgrid import p4estGrid as leafGrid
+
+
 from dune.grid import reader, cartesianDomain
 from dune.fem.view import adaptiveLeafGridView as view
+
+from dune.fem import threading
+
+# set number of threads to be used for thread parallel version
+threading.use = 4
 
 import dune.fem
 dune.fem.parameter.append({"fem.verboserank":0})
@@ -37,8 +42,8 @@ os.makedirs("advection", exist_ok=True)
 ##################
 threading=True
 
+gridView = view( leafGrid( domain, dimgrid=2 ) )
 if problem == 1:
-    gridView = view( aluGrid( domain, dimgrid=2 ) )
     gridView.hierarchicalGrid.globalRefine(3)
     evolve(gridView, order, Model, "advection/none",
            space="onb", limiter=None,
@@ -47,7 +52,6 @@ if problem == 1:
 ##################
 
 if problem == 2:
-    gridView = view( aluGrid( domain, dimgrid=2 ) )
     gridView.hierarchicalGrid.globalRefine(3)
     evolve(gridView, order, Model, "advection/minmod",
            space="onb", maxLevel=-1, threading=threading, codegen=True, outputs=5)
@@ -59,7 +63,6 @@ if problem == 3:
     Model.physical = lambda t,x,U: (
               conditional( U[0]>-1e-8, 1.0, 0.0 ) *
               conditional( U[0]<1.0+1e-8, 1.0, 0.0 ) )
-    gridView = view( aluGrid( domain, dimgrid=2 ) )
     gridView.hierarchicalGrid.globalRefine(3)
     evolve(gridView, order, Model, "advection/physical",
            space="lobatto", limiter="lp",
@@ -71,7 +74,6 @@ if problem == 4:
     delattr(Model,"velocity")
     Model.lowerBound = [0]
     Model.upperBound = [1]
-    gridView = view( aluGrid( domain, dimgrid=2 ) )
     gridView.hierarchicalGrid.globalRefine(3)
     evolve(gridView, order, Model, "advection/scaling",
            #space="lobatto", limiter="scaling",
@@ -81,7 +83,6 @@ if problem == 4:
 ##################
 
 if problem == 5:
-    gridView = view( aluGrid( domain, dimgrid=2 ) )
     evolve(gridView, order, Model, "advection/adapt_none",
            space="lobatto",
            limiter=None, maxLevel=5, codegen=True)
@@ -89,7 +90,6 @@ if problem == 5:
 ##################
 
 if problem == 6:
-    gridView = view( aluGrid( domain, dimgrid=2 ) )
     evolve(gridView, order, Model, "advection/adapt_limit",
            maxLevel=5, codegen=True)
 
