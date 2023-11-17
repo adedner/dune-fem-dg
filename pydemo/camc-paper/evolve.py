@@ -1,6 +1,9 @@
-import functools
-print = functools.partial(print, flush=True)
-import time, math
+from functools import partial
+from dune.common import comm
+
+print = partial(print, flush=True) if comm.rank == 0 else lambda *args, **kwargs: None
+
+import time, numpy
 
 from dune.generator import path, algorithm
 from dune.typeregistry import generateTypeName
@@ -26,9 +29,6 @@ def getSpace( gridView, order, dimRange, space ):
     else:
         return space( gridView, dimRange=dimRange, order=order, codegen=False)
 
-def parprint(output, *args, **kwargs):
-    if output:
-        print(*args, **kwargs)
 
 
 def evolve(gridView, order, Model, outName,
@@ -38,9 +38,8 @@ def evolve(gridView, order, Model, outName,
            stepper="femdg",
            codegen=True, outputs=100, threading=True,
            **kwargs):
-    isRank0 = gridView.comm.rank == 0
 
-    parprint(isRank0, 'evolve:', order, outName, limiter, space, maxLevel, parameters,
+    print('evolve:', order, outName, limiter, space, maxLevel, parameters,
            codegen, outputs, threading)
 
     space = getSpace(gridView, order, dimRange=Model.dimRange, space=spaces[space])
@@ -51,7 +50,7 @@ def evolve(gridView, order, Model, outName,
             component = kwargs["modalComponent"]
         except KeyError:
             component = "density"
-        parprint(isRank0,"using modal indicator based on",component)
+        print("using modal indicator based on",component)
         models = femDGModels(Model,space)
         clsName,includes = generateTypeName("ModalIndicator",models[1], U_h)
         indicator = smoothnessIndicator(clsName,
@@ -110,13 +109,14 @@ def evolve(gridView, order, Model, outName,
         minMax = algorithm.load('minMax', 'utility.hh', U_h )
     if maxLevel > 0:
         for i in range(maxLevel+1):
+            print(i," pre-adaptation cycle")
             un.assign(U_h)
             dt = stepper(U_h)
 
             residualOperator.model.dt = dt
             residualOperator(U_h,indicator)
             for k in range(len(indicator.dofVector)):
-                if math.isnan(indicator.dofVector[k]):
+                if numpy.isnan(indicator.dofVector[k]):
                     indicator.dofVector[k]=1
                     print(indicator.dofVector[k])
 
@@ -131,7 +131,7 @@ def evolve(gridView, order, Model, outName,
             operator.applyLimiter(U_h)
             gridSize = gridView.comm.sum( operator.gridSizeInterior() )
             minMax( U_h )
-            parprint(isRank0,i,": size=",gridSize,", maxSize = ",maxSize," dt=",dt," tol=",hTol)
+            print(i,": size=",gridSize,", maxSize = ",maxSize," dt=",dt," tol=",hTol)
 
     fvU.interpolate( U_h  )
     try:
@@ -162,7 +162,7 @@ def evolve(gridView, order, Model, outName,
         if t > saveStep:
             gridSize = gridView.comm.sum( operator.gridSizeInterior() )
             minMax( U_h )
-            parprint(isRank0,"# t,dt,size,tol: ",t,dt,gridSize,-1 if maxLevel<=0 else hTol)
+            print("# t,dt,size,tol: ",t,dt,gridSize,-1 if maxLevel<=0 else hTol)
             fvU.interpolate( U_h )
             try:
                 exact.interpolate(Model.exact(gridView,t))
@@ -187,5 +187,5 @@ def evolve(gridView, order, Model, outName,
     except:
         pass
     vtk()
-    parprint(isRank0,"Finished, CPU time in sec: ", runTime, "time steps: ",timeSteps)
+    print("Finished, CPU time in sec: ", runTime, "time steps: ",timeSteps)
     return U_h, t, runTime, timeSteps

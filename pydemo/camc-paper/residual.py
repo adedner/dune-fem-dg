@@ -3,7 +3,7 @@ from dune.ufl import Constant
 from dune.fem.operator import galerkin as operator
 from dune.fem.space import finiteVolume
 def residualIndicator(Model,space,un):
-    indicatorSpace = finiteVolume( space.grid )
+    indicatorSpace = finiteVolume( space.gridView )
     indicator = indicatorSpace.interpolate(0,name="indicator")
     u   = ufl.TrialFunction(space)
     phi = ufl.TestFunction(indicatorSpace)
