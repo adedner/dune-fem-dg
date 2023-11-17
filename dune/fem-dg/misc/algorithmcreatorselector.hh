@@ -547,6 +547,7 @@ namespace Fem
   template< class FunctionSpaceImp, class GridPartImp, int polOrder>
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::finitevolume, Galerkin::Enum::dg >
   {
+    static_assert( polOrder == 0, "FiniteVolume space only works for polOrder=0");
     typedef FiniteVolumeSpace< FunctionSpaceImp, GridPartImp, polOrder > type;
   };
 

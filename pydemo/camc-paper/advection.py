@@ -26,7 +26,7 @@ from dune.fem.view import adaptiveLeafGridView as view
 from dune.fem import threading
 
 # set number of threads to be used for thread parallel version
-# threading.use = 4
+threading.use = 4
 
 import dune.fem
 dune.fem.parameter.append({"fem.verboserank":0})
