@@ -240,6 +240,13 @@ def femDGOperator(Model, space,
         else:
             parameters["femdg.limiter.admissiblefunctions"] = "lp"
 
+    if limiter.lower() in ["minmod", "vanleer", "superbee"]:
+        # force default values for how reconstruction is done
+        if parameters is None:
+            parameterReader.append({"femdg.limiter.admissiblefunctions":"muscl"})
+        else:
+            parameters["femdg.limiter.admissiblefunctions"] = "muscl"
+
     if limiter.lower() == "scaling":
         # check for scaling limiter interface
         if not hasScalingInterface:
