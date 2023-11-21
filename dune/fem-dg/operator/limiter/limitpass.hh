@@ -425,7 +425,7 @@ namespace Fem
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       factors_(),
       numbers_(),
-      adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
+      adaptive_((AdaptationMethodType(gridPart_.grid(), parameter, /* noOutput */ true )).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(discreteModel_.calculateIndicator()),
