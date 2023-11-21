@@ -4,6 +4,7 @@ include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/euler/")
 
 #set( GRIDTYPE YASPGRID )
 set( GRIDTYPE ALUGRID_CUBE )
+#set( GRIDTYPE P4ESTGRID )
 #set( GRIDTYPE SPGRID_COUNT_FLOPS )
 #set( GRIDTYPE SPGRID )
 set( GRIDDIM 2 )
