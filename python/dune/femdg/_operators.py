@@ -457,15 +457,21 @@ def femDGOperator(Model, space,
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
 
-    estimateMark = Method('estimateMark', '''[]( DuneType &self, const typename DuneType::DestinationType &u, const double dt) { self.estimateMark(u, dt); }''' )
+    extraMethods = list()
+    # estimateMark
+    extraMethods.append( Method('estimateMark', '''[]( DuneType &self, const typename DuneType::DestinationType &u, const double dt) { self.estimateMark(u, dt); }''' ) )
 
     includes += ["dune/fem-dg/operator/limiter/indicatorbase.hh"]
-    setIndicator = Method('setTroubledCellIndicator',
+    # setTroubledCellIndicator
+    extraMethods.append( Method('setTroubledCellIndicator',
             args=['DuneType &self, typename DuneType::TroubledCellIndicatorType indicator'],
             body=['self.setTroubledCellIndicator(indicator);'],
-            extra=['pybind11::keep_alive<0,1>()'])
-    gridSizeInterior = Method('gridSizeInterior', '&DuneType::gridSizeInterior')
+            extra=['pybind11::keep_alive<0,1>()']) )
+    # gridSizeInterior
+    extraMethods.append( Method('gridSizeInterior', '&DuneType::gridSizeInterior') )
 
+    # info
+    extraMethods.append( Method('info','&DuneType::counter') )
     order = space.order
     if codegen:
         codegen = [space,range(2,2*order+2),range(2,2*order+2)]
@@ -474,26 +480,26 @@ def femDGOperator(Model, space,
 
     if parameters is not None:
         if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
+            op = load(includes, typeName, *extraMethods,
                      baseClasses=[base],
                      codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
         else:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
+            op = load(includes, typeName,  *extraMethods,
                      baseClasses = [base],
                      codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, parameters=parameters )
     else:
         if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
+            op = load(includes, typeName,  *extraMethods,
                      baseClasses = [base],
                      codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux )
         else:
-            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
+            op = load(includes, typeName,  *extraMethods,
                      baseClasses = [base],
                      codegen=codegen,
                      preamble=writer.writer.getvalue()).\
