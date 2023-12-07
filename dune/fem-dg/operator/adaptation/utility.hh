@@ -161,24 +161,13 @@ namespace Fem
     typedef std::pair< double, double > VolumePairType;
 
     template <class Entity>
-    double findCoarsestVolume( const Entity& entity, const bool hasGridHierarchy, bool& hasFather ) const
+    double findCoarsestVolume( const Entity& entity, const bool hasGridHierarchy ) const
     {
-      // go to father, if possible
+      // go to father, if available
       // otherwise write min and max volume on backup/restore
-      if( hasGridHierarchy && (entity.level() > 0) && hasFather )
+      if( hasGridHierarchy && entity.hasFather() )
       {
-        double vol = 0.0;
-        // grids without hierarchy do not implement father method,
-        // but throw and exception instead
-        try {
-          vol = findCoarsestVolume( entity.father(), hasGridHierarchy, hasFather );
-        }
-        catch (const Dune::NotImplemented& e )
-        {
-          hasFather = false;
-          vol = entity.geometry().volume();
-        }
-        return vol;
+        return findCoarsestVolume( entity.father(), hasGridHierarchy );
       }
       else  // return entity's volume
         return entity.geometry().volume();
@@ -192,7 +181,6 @@ namespace Fem
       typedef typename GridPart :: GridType GridType ;
 
       const bool hasGridHierarchy = Fem :: GridPartCapabilities :: hasGrid< GridPart > :: v;
-      bool hasFather = true; // will be set to false if father () fails
 
       double weight = Dune::DGFGridInfo<GridType>::refineWeight();
       // if weight is not set, use 1/(2^d)
@@ -206,7 +194,7 @@ namespace Fem
 
       for( const auto& en : elements( gridPart ) )
       {
-        const double volume = findCoarsestVolume( en, hasGridHierarchy, hasFather );
+        const double volume = findCoarsestVolume( en, hasGridHierarchy );
         minVolume[ 0 ] = std::min( minVolume[ 0 ], volume );
         maxVolume[ 0 ] = std::max( maxVolume[ 0 ], volume );
       }
