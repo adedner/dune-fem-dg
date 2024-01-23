@@ -16,8 +16,10 @@ except SystemExit:
     sys.exit(0)
 problem = args.problem
 
-#from dune.alugrid import aluCubeGrid as leafGrid
-from dune.p4estgrid import p4estGrid as leafGrid
+try:
+    from dune.p4estgrid import p4estGrid as leafGrid
+except ImportError:
+    from dune.alugrid import aluCubeGrid as leafGrid
 
 from dune.grid import reader, cartesianDomain
 from dune.fem.view import adaptiveLeafGridView as view
