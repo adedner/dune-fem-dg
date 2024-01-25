@@ -5,11 +5,7 @@
 
 #include <memory>
 
-#if DUNE_VERSION_NEWER(DUNE_GEOMETRY, 2, 5)
 #include <dune/geometry/type.hh>
-#else
-#include <dune/geometry/genericgeometry/topologytypes.hh>
-#endif
 
 namespace Dune
 {
@@ -47,11 +43,7 @@ namespace Dune
 
   void axisAlignedReferenceFaces ( int dim, unsigned int *faceIndices )
   {
-#if DUNE_VERSION_NEWER( DUNE_GEOMETRY, 2, 5 )
     const unsigned int numTopo = Impl::numTopologies( dim );
-#else
-    const unsigned int numTopo = GenericGeometry::numTopologies( dim );
-#endif
     std::unique_ptr< unsigned int[] > numFaces( new unsigned int[ numTopo ] );
     axisAlignedReferenceFaces( dim, faceIndices, numFaces.get() );
   }
