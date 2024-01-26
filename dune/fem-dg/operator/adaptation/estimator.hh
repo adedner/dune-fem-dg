@@ -136,12 +136,7 @@ namespace Fem
       {
         if( intersection.neighbor() )
         {
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
           const GridElementType &neighbor = intersection.outside();
-#else
-          typename GridElementType::EntityPointer outside = intersection.outside();
-          const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside );
-#endif
           // only do the following when the neighbor is not a ghost entity
           if( neighbor.partitionType() != Dune::GhostEntity )
           {
