@@ -9,7 +9,7 @@ from dune.generator import path, algorithm
 from dune.typeregistry import generateTypeName
 from dune.fem import markNeighbors, adapt, loadBalance
 from dune.fem.space import dgonb, dglegendre, finiteVolume, dglagrange
-from dune.fem.function import levelFunction
+from dune.fem.function import levelFunction, partitionFunction
 from dune.femdg import femDGModels, femDGOperator, smoothnessIndicator
 from dune.femdg.rk import femdgStepper, ExplSSP3
 from residual import residualIndicator
@@ -91,7 +91,7 @@ def evolve(gridView, order, Model, outName,
     fvspc = finiteVolume( gridView, dimRange=space.dimRange)
     fvU = fvspc.interpolate( U_h, name = "fvU" )
     pointdata = [U_h]
-    celldata  = [fvU]
+    celldata  = [partitionFunction(gridView),fvU]
     if maxLevel > 0:
         celldata += [indicator, levelFunction(gridView)]
     if hasattr(Model,"exact"):
