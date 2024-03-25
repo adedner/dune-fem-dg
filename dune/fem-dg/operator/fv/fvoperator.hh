@@ -193,8 +193,9 @@ namespace detail
                        std::integral_constant<bool, value> higherOrder ) const;
 
     const DiscreteFunctionSpaceType& space_;
-    const ModelType    &model_;
-    const NumFluxType  &numFlux_;
+    // copy model and numFlux for thread safety
+    ModelType    model_;
+    NumFluxType  numFlux_;
     double time_;
     mutable double dtEst_;
 

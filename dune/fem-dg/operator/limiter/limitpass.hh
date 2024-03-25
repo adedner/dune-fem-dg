@@ -366,7 +366,7 @@ namespace Fem
      *  \param  vQ         order of volume quadrature
      *  \param  fQ         order of face quadrature
      */
-    LimitDGPass(DiscreteModelType& problem,
+    LimitDGPass(const DiscreteModelType& problem,
                 PreviousPassType& pass,
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
@@ -386,7 +386,7 @@ namespace Fem
      *  \param  fQ         order of face quadrature
      */
 
-    LimitDGPass(DiscreteModelType& problem,
+    LimitDGPass(const DiscreteModelType& problem,
                 PreviousPassType& pass,
                 const DiscreteFunctionSpaceType& spc,
                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
@@ -1825,7 +1825,7 @@ namespace Fem
 
   private:
     mutable std::unique_ptr< DiscreteModelCallerType > caller_;
-    DiscreteModelType& discreteModel_;
+    mutable DiscreteModelType discreteModel_;
     mutable double currentTime_;
 
     mutable ArgumentType* arg_;
