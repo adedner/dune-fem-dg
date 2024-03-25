@@ -1,7 +1,8 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/advdiff/")
 
 # specify type of grid implementation, dimension and polynomial order
-set( GRIDTYPE ALUGRID_CUBE )
+#set( GRIDTYPE ALUGRID_CUBE )
+set( GRIDTYPE P4ESTGRID )
 #set( GRIDTYPE SPGRID )
 set( GRIDDIM 2 )
 set( POLORDER 4 )

@@ -375,7 +375,7 @@ namespace Fem
 #endif
       {}
 
-      // returns true if niehhbor can be updated
+      // returns true if neighbor can be updated
       bool operator () ( const EntityType& en, const EntityType& nb ) const
       {
 #ifndef NDEBUG

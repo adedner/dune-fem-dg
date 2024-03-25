@@ -35,14 +35,14 @@ gridsol.filename: straka-checkpoint
 # coarsest level that should be present
 fem.adaptation.coarsestLevel: 3
 # finest level that should be present
-fem.adaptation.finestLevel: 3
+fem.adaptation.finestLevel: 5
 
 paramfile: ../../parameter/paramBase
 
 
 # STEPPER
 #--------
-fem.eoc.steps: 1
+fem.eoc.steps: 3
 femdg.stepper.starttime: 0.
 femdg.stepper.endtime: 0.15
 femdg.stepper.maxtimestep: 0.1

@@ -1,6 +1,6 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/euler/")
 
-# specify type of grid implemention, dimension and polynomial order
+# specify type of grid implementation, dimension and polynomial order
 
 #set( GRIDTYPE YASPGRID )
 set( GRIDTYPE ALUGRID_CUBE )
@@ -8,7 +8,7 @@ set( GRIDTYPE ALUGRID_CUBE )
 #set( GRIDTYPE SPGRID_COUNT_FLOPS )
 #set( GRIDTYPE SPGRID )
 set( GRIDDIM 2 )
-set( POLORDER 0 )
+set( POLORDER 2 )
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
@@ -19,7 +19,7 @@ set( MAIN ${CMAKE_CURRENT_SOURCE_DIR}/../main.cc )
 
 dune_add_test_case( NAME euler
                     SOURCES ${MAIN}
-                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
+                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
 add_code_generate_targets( euler )
 

@@ -12,17 +12,32 @@ gridsol.savestep: 0.01
 gridsol.firstwrite: 0.1
 gridsol.filename: heat-checkpoint
 
+# OMP THREADS
+#------------
+# number of threads used in OMP program
+fem.parallel.numberofthreads: 4
+# write diagnostics file (
+# 0 don't, 1 only speedup file, 2 write all runfiles
+# 3 only write 0, others at end, 4 all files at end for scaling)
+# fem.parallel.diagnostics: 1
+# if true non-blocking communication is enabled
+femdg.nonblockingcomm: true
+fem.threads.verbose: true
+# if true thread 0 only communicates data but does not computation
+fem.threads.communicationthread: false
+fem.threads.partitioningmethod: sfc
+
 
 # GENERAL
 #--------
 fem.adaptation.method: none # none | generic | callback
 
 # coarsest level that should be present
-fem.adaptation.coarsestLevel: 3
+fem.adaptation.coarsestLevel: 1
 # finest level that should be present
-fem.adaptation.finestLevel: 6
+fem.adaptation.finestLevel: 5
 
-fem.eoc.steps: 1
+fem.eoc.steps: 4
 femdg.stepper.printcount: 100
 paramfile: ../../parameter/paramBase
 
@@ -58,5 +73,15 @@ femdg.stepper.maxtimestep: 0.5
 # use explicit solver for tests
 fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
 fem.ode.verbose: none
+em.ode.order: 3
+fem.ode.verbose: full # ode output: none, cfl, full
+fem.ode.cflincrease: 1.25
+fem.ode.miniterations: 95
+fem.ode.maxiterations: 105
+fem.ode.cflStart: 1.
+#fem.ode.cflMax: 5
+fem.timeprovider.factor: 0.4
+fem.timeprovider.updatestep: 1
+
 
 paramfile: ../../parameter/paramSolver
