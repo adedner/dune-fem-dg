@@ -88,6 +88,7 @@ def createOrderRedcution(domainSpace):
 ## fem-dg models
 #####################################################
 from dune.femdg.patch import transform
+from concurrent.futures import ThreadPoolExecutor
 def femDGModels(Model, space, initialTime=0):
 
     u = TrialFunction(space)
@@ -132,13 +133,17 @@ def femDGModels(Model, space, initialTime=0):
     # dune/fem/scheme/conservationlawmodel.hh
     virtualize = False
 
-    advModel  = conservationlaw(space.gridView, advModel,
-                                modelPatch=transform(Model,space,t,"Adv"),
-                                virtualize=virtualize)
+    # use multi-processing to build models
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        advModel = executor.submit( conservationlaw, space.gridView, advModel,
+                                        modelPatch=transform(Model,space,t,"Adv"),
+                                        virtualize=virtualize )
+        diffModel = executor.submit( conservationlaw, space.gridView, diffModel,
+                                        modelPatch=transform(Model,space,t,"Diff"),
+                                        virtualize=virtualize )
 
-    diffModel = conservationlaw(space.gridView, diffModel,
-                                modelPatch=transform(Model,space,t,"Diff"),
-                                virtualize=virtualize)
+    advModel  = advModel.result()
+    diffModel = diffModel.result()
 
     Model._ufl = {"u":u,"v":v,"n":n,"x":x,"t":t}
 
