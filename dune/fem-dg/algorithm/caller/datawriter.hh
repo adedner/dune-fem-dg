@@ -212,7 +212,8 @@ namespace Fem
       {
         finalizeStart( alg, loop, tp );
         std::cerr << "Solution is not valid. Aborting." << std::endl;
-        std::abort();
+        assert(false);
+        DUNE_THROW(Dune::InvalidStateException,"Solution is invalid!");
       }
     }
 
