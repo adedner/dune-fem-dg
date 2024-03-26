@@ -28,6 +28,8 @@ from ufl import SpatialCoordinate,TestFunction,TrialFunction,Coefficient,\
 from ufl.algorithms.analysis import extract_arguments_and_coefficients as coeff
 from ufl.differentiation import Grad
 
+from dune.femdg.patch import transform
+from concurrent.futures import ThreadPoolExecutor
 
 # limiter can be ScalingLimiter or FV based limiter with FV type reconstructions for troubled cells
 def createLimiter(domainSpace, rangeSpace=None, bounds = [1e-12,1.], limiter='scaling'):
@@ -87,8 +89,6 @@ def createOrderRedcution(domainSpace):
 #####################################################
 ## fem-dg models
 #####################################################
-from dune.femdg.patch import transform
-from concurrent.futures import ThreadPoolExecutor
 def femDGModels(Model, space, initialTime=0):
 
     u = TrialFunction(space)
