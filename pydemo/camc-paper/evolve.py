@@ -4,6 +4,7 @@ from dune.common import comm
 print = partial(print, flush=True) if comm.rank == 0 else lambda *args, **kwargs: None
 
 import time, numpy
+from concurrent.futures import ThreadPoolExecutor
 
 from dune.generator import path, algorithm
 from dune.typeregistry import generateTypeName
@@ -23,13 +24,16 @@ spaces = {
           'gauss': lambda *args,**kwargs: dglagrange(*args,**kwargs,pointType="gauss")
         }
 
-def getSpace( gridView, order, dimRange, space ):
-    if order==0:
-        return finiteVolume( gridView, dimRange=dimRange )
-    else:
-        return space( gridView, dimRange=dimRange, order=order, codegen=False)
+# return tuple of spaces
+def getSpaces( gridView, order, dimRange, space ):
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        if order==0:
+            spc = executor.submit( finiteVolume, gridView, dimRange=dimRange )
+        else:
+            spc = executor.submit( space, gridView, order=order, dimRange=dimRange, codegen=False)
+        sfv = executor.submit( finiteVolume, gridView, dimRange=dimRange)
 
-
+    return (spc.result(), sfv.result())
 
 def evolve(gridView, order, Model, outName,
            limiter="default", space='onb',
@@ -42,7 +46,8 @@ def evolve(gridView, order, Model, outName,
     print('evolve:', order, outName, limiter, space, maxLevel, parameters,
            codegen, outputs, threading)
 
-    space = getSpace(gridView, order, dimRange=Model.dimRange, space=spaces[space])
+    space, fvspc = getSpaces(gridView, order, dimRange=Model.dimRange, space=spaces[space])
+
     U_h   = space.interpolate(Model.U0, name="solution")
 
     if limiter == "modal":
@@ -88,7 +93,6 @@ def evolve(gridView, order, Model, outName,
         un = U_h.copy()
         indicator, residualOperator = residualIndicator(Model, space, un)
 
-    fvspc = finiteVolume( gridView, dimRange=space.dimRange)
     fvU = fvspc.interpolate( U_h, name = "fvU" )
     pointdata = [U_h]
     celldata  = [partitionFunction(gridView),fvU]
