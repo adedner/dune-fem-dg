@@ -2,12 +2,9 @@
 from functools import reduce
 
 from ufl import grad, TrialFunction, SpatialCoordinate, FacetNormal,\
-                Coefficient, replace, diff, as_vector,\
-                conditional
-from ufl.core.expr import Expr
+                Coefficient, conditional
 from dune.source.cplusplus import Variable, UnformattedExpression,\
                                   AccessModifier, Declaration, Method
-from ufl.algorithms import expand_compounds, expand_derivatives, expand_indices, expand_derivatives
 
 def uflExpr(Model,space,t):
     u = TrialFunction(space)

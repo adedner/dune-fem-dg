@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, hashlib
 import logging
 logger = logging.getLogger(__name__)
 from io import StringIO
@@ -14,19 +13,12 @@ from dune.fem import parameter as parameterReader
 import dune.fem
 
 from dune.ufl import Constant
-from dune.ufl.tensors import ExprTensor
-from dune.ufl.codegen import generateCode, generateMethodBody, generateMethod
 
-from dune.source.cplusplus import assign, construct, TypeAlias, Declaration, Variable,\
-        UnformattedBlock, UnformattedExpression, Struct, return_,\
-        SwitchStatement
+from dune.source.cplusplus import TypeAlias, Declaration, Variable, Struct
 from dune.source.cplusplus import Method as clsMethod
 from dune.source.cplusplus import SourceWriter, ListWriter, StringWriter
 
-from ufl import SpatialCoordinate,TestFunction,TrialFunction,Coefficient,\
-        as_vector, as_matrix,dx,ds,grad,inner,zero,FacetNormal,dot
-from ufl.algorithms.analysis import extract_arguments_and_coefficients as coeff
-from ufl.differentiation import Grad
+from ufl import SpatialCoordinate,TestFunction,TrialFunction,as_vector,dx,grad,inner,FacetNormal
 
 from dune.femdg.patch import transform
 from concurrent.futures import ThreadPoolExecutor

@@ -1,5 +1,5 @@
 from math import sqrt
-from dune.femdg import femDGOperator, rungeKuttaSolver, dgHelmholtzInverseOperator
+from dune.femdg import rungeKuttaSolver, dgHelmholtzInverseOperator
 
 class FemDGStepper:
     def __init__(self,op,parameters):

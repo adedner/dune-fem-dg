@@ -1,14 +1,12 @@
 import time, numpy, sys
-from dune.grid import structuredGrid, cartesianDomain, OutputType
+from dune.grid import cartesianDomain
 import dune.create as create
 from dune.fem.function import gridFunction
 from dune.fem import integrate
 from dune.ufl import Constant, expression2GF
 from ufl import dot, SpatialCoordinate
-from dune.femdg import femDGOperator, rungeKuttaSolver, createLimiter
+from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
-
-from collections import namedtuple
 
 def run(Model, Stepper=None,
         polOrder=1, limiter="default", startLevel=0,
