@@ -92,7 +92,7 @@ if problem == 5:
 
 if problem == 6:
     evolve(gridView, order, Model, "advection/adapt_limit",
-           maxLevel=5, codegen=True)
+           maxLevel=5, codegen=True, threading=threading)
 
 ##################
 
