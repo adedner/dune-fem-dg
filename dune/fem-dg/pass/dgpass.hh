@@ -391,6 +391,9 @@ namespace Fem
       doFinalize( dest, doCommunicate );
     }
 
+    //! from Dune::Fem::Operator
+    virtual void finalize () {}
+
     //! Some timestep size management.
     virtual void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
