@@ -156,6 +156,11 @@ namespace Fem
       indicator_ = indicator;
     }
 
+    void removeIndicator()
+    {
+      indicator_ = nullptr;
+    }
+
     void setEntity(const EntityType& en)
     {
       BaseType::setEntity( en );

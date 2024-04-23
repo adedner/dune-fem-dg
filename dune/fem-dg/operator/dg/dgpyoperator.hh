@@ -116,6 +116,9 @@ namespace Fem
     typedef typename OperatorSelectorType :: ExplicitOperatorType  ExplicitOperatorType;
     typedef typename OperatorSelectorType :: ImplicitOperatorType  ImplicitOperatorType;
 
+    typedef typename ExplicitOperatorType :: LimiterIndicatorType  LimiterIndicatorType;
+    typedef typename LimiterIndicatorType :: DiscreteFunctionSpaceType LimiterSpaceType;
+
     typedef DGAdaptationIndicatorOperator< OpTraits >                       IndicatorType;
     typedef Estimator< DestinationType, typename ModelType::ProblemType >   GradientIndicatorType ;
     typedef AdaptIndicator< IndicatorType, GradientIndicatorType >          AdaptIndicatorType;
@@ -132,6 +135,8 @@ namespace Fem
                 const DiffusionModel &diffusionModel,
                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : space_( space ),
+        indiSpace_(),
+        indicator_(),
         extra_(),
         problem_(),
         model_( advectionModel, diffusionModel, problem_ ),
@@ -150,6 +155,8 @@ namespace Fem
                 const AdvectionFluxType& advFlux,
                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : space_( space ),
+        indiSpace_(),
+        indicator_(),
         extra_(),
         problem_(),
         model_( advectionModel, diffusionModel, problem_ ),
@@ -206,12 +213,39 @@ namespace Fem
       }
     }
 
+    std::reference_wrapper< const LimiterIndicatorType > indicator() const
+    {
+      const LimiterIndicatorType* indi = nullptr;
+      // if limiter is enabled extract limiter indicator, otherwise create dummy
+      if( hasLimiter() )
+      {
+        if( fullOperator_.counter() >= explOperator_.counter() )
+        {
+          fullOperator_.enableIndicator();
+          indi = fullOperator_.indicator();
+        }
+        else
+        {
+          explOperator_.enableIndicator();
+          indi = explOperator_.indicator();
+        }
+      }
+
+      if( ! indi )
+      {
+        indiSpace_.reset( new LimiterSpaceType( space_.gridPart() ) );
+        indicator_.reset( new LimiterIndicatorType( "DummyLimiterIndicator", *indiSpace_ ) );
+        indicator_->clear(); // set all entries to zero
+        indi = indicator_.operator ->();
+      }
+      return std::reference_wrapper< const LimiterIndicatorType > (*indi);
+    }
+
     void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
       fullOperator_.setTroubledCellIndicator(indicator);
       explOperator_.setTroubledCellIndicator(indicator);
     }
-
 
     /** \copydoc SpaceOperatorInterface::setTime */
     void setTime( const double time )
@@ -253,6 +287,9 @@ namespace Fem
     }
 
     const DiscreteFunctionSpaceType&      space_;
+
+    mutable std::shared_ptr< LimiterSpaceType >     indiSpace_;
+    mutable std::shared_ptr< LimiterIndicatorType > indicator_;
 
     std::tuple<>                          extra_;
     ProblemType                           problem_;

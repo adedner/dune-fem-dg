@@ -482,6 +482,16 @@ namespace Fem
       extTroubledCellIndicator_ = indicator;
     }
 
+    void setIndicator(typename DiscreteModelType::IndicatorType* indicator)
+    {
+      discreteModel_.setIndicator( indicator );
+    }
+
+    void removeIndicator()
+    {
+      discreteModel_.removeIndicator();
+    }
+
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
@@ -779,6 +789,9 @@ namespace Fem
       }
     }
 
+    //! from Dune::Fem::Operator
+    virtual void finalize () {}
+
     //! Some management (interface version)
     void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
@@ -1008,7 +1021,7 @@ namespace Fem
         }
 
         // call problem adaptation for setting refinement marker
-        // discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
+        discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
       }
 
       ///////////////////////////////////////////////////

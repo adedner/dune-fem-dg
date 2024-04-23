@@ -340,7 +340,6 @@ namespace Fem
             InnerPass2Type > :: type                                              Pass2Type;
 
     typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;
-    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
 
     template< class Limiter, int pO >
     struct LimiterCall
@@ -379,8 +378,6 @@ namespace Fem
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , limitedU_( "Limited-U", limiterSpace_ )
-      , fvSpc_()
-      , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
       , discreteModel1_( model_, advFlux_, diffFlux_ )
       , limiter_( space_, limiterSpace_, model_, parameter )
@@ -467,15 +464,11 @@ namespace Fem
       return std::max( pass2_.numberOfElements(), limiter_.numberOfElements() );
     }
 
-    /*
-    const Pass1Type& limitPass() const
-    {
-      return pass1_;
-    }
-    */
-
     // return pointer to indicator function
-    LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
+    const LimiterIndicatorType* indicator() const { return &limiter_.indicator(); }
+
+    void enableIndicator() { limiter_.enableIndicator(); }
+    void disableIndicator() { limiter_.disableIndicator(); }
 
     //! this pass has an implemented limit() operator
     bool hasLimiter () const { return polOrd > 0; }
@@ -529,9 +522,6 @@ namespace Fem
     SpaceType                       space_;
     LimiterSpaceType                limiterSpace_;
     mutable LimiterDestinationType  limitedU_;
-
-    std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
-    std::unique_ptr< LimiterIndicatorType      >  indicator_;
 
     //mutable int operatorCalled_;
 

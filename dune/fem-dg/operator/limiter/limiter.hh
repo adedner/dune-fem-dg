@@ -147,7 +147,8 @@ namespace Fem
       , startPass_()
       , limitPass_( discreteModel_ , startPass_, rangeSpace_, parameter )
     {
-      discreteModel_.setIndicator( &indicator_ );
+      // by default disable indicator
+      disableIndicator();
 
       // enable limit pass
       limitPass_.enable();
@@ -166,6 +167,18 @@ namespace Fem
     void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
       limitPass_.setTroubledCellIndicator(indicator);
+    }
+
+    void enableIndicator()
+    {
+      discreteModel_.setIndicator( &indicator_ );
+      limitPass_.setIndicator( &indicator_ );
+    }
+
+    void disableIndicator()
+    {
+      discreteModel_.removeIndicator();
+      limitPass_.removeIndicator();
     }
 
     bool activated( const EntityType& entity ) const

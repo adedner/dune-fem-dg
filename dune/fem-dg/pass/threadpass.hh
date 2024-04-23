@@ -298,6 +298,27 @@ namespace Fem
       }
     }
 
+    //! set indicator pointer
+    template <class IndicatorType>
+    void setIndicator( IndicatorType* indicator )
+    {
+      const int maxThreads = Fem::MPIManager::maxThreads();
+      for(int i=0; i<maxThreads; ++i)
+      {
+        passes_[ i ]->setIndicator( indicator );
+      }
+    }
+
+    //! remove indicator pointer
+    void removeIndicator()
+    {
+      const int maxThreads = Fem::MPIManager::maxThreads();
+      for(int i=0; i<maxThreads; ++i)
+      {
+        passes_[ i ]->removeIndicator();
+      }
+    }
+
     virtual ~ThreadPass () {}
 
     template <class AdaptationType>

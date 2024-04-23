@@ -110,7 +110,7 @@ namespace Fem
 
     typedef typename AdvTraits::DestinationType           AdvDFunctionType;
     // for convenience (not used here)
-    typedef AdvDFunctionType                              IndicatorType;
+    typedef typename Traits:: LimiterIndicatorType        LimiterIndicatorType;
     typedef typename AdvTraits::GridPartType              GridPartType;
 
     // select non-blocking communication handle
@@ -161,7 +161,9 @@ namespace Fem
       , counter_(0)
     {}
 
-    IndicatorType* indicator() { return 0; }
+    const LimiterIndicatorType* indicator() const { return nullptr; }
+    void enableIndicator() {}
+    void disableIndicator() {}
 
     void setAdaptation( AdaptationType& adHandle, double weight = 1 )
     {
@@ -187,7 +189,7 @@ namespace Fem
     void evaluateOnly( const DestinationType& arg ) const {
       // only apply operator without storing result, for evalaution
       // of the aposteriori error estimator mainly
-      DestinationType* emptyPtr = 0 ;
+      DestinationType* emptyPtr = nullptr ;
 	    pass1_( arg, *emptyPtr );
     }
 

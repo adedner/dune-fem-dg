@@ -134,7 +134,6 @@ namespace detail
       evaluate( u, w, iterators, addLocalEvaluate );
     }
 
-
     /** \brief obtain the grid view for this scheme
      *
      *  \returns the grid view
@@ -433,7 +432,7 @@ public:
 
   // for convenience (not used here)
   typedef typename Traits::GridPartType                 GridPartType;
-  typedef typename Traits::LimiterIndicatorType           IndicatorType;
+  typedef typename Traits::LimiterIndicatorType         LimiterIndicatorType;
   typedef typename Traits::AdaptationHandlerType        AdaptationType;
 
   typedef typename Traits::DestinationType DestinationType;
@@ -478,12 +477,16 @@ public:
     }
   }
 
-  IndicatorType* indicator() { return 0; }
-
   void setAdaptation( AdaptationType& adHandle, double weight = 1 )
   {
     // TODO: implement
   }
+
+  // no indicator available for FV schemes
+  const LimiterIndicatorType* indicator () const { return nullptr; }
+
+  void enableIndicator() {}
+  void disableIndicator() {}
 
   void setTime(const double time)
   {

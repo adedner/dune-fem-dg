@@ -467,6 +467,9 @@ def femDGOperator(Model, space,
     # gridSizeInterior
     extraMethods.append( Method('gridSizeInterior', '&DuneType::gridSizeInterior') )
 
+    # limiter indicator
+    extraMethods.append( Method('_indicator', '&DuneType::indicator') )
+
     # info
     extraMethods.append( Method('info','&DuneType::counter') )
     order = space.order
@@ -511,6 +514,18 @@ def femDGOperator(Model, space,
         self.time = time
         self._setTime(self.time)
     op.setTime = setTime.__get__(op)
+
+    op._indicatorInit = False
+    def indicator():
+        if not op._indicatorInit:
+            from dune.fem.space import finiteVolume
+            # make sure indicator finite volume space exists
+            fvspc = finiteVolume( space.gridView, dimRange=3 )
+            op._indicatorInit = True
+        # return indicator function
+        return op._indicator()
+    op.indicator = indicator
+
     # def addToTime(self,dt):
     #     self.setTime(self,self.time+dt)
     # op.addToTime = addToTime.__get__(op)
