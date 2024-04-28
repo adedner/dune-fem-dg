@@ -453,6 +453,12 @@ namespace Dune
       /** \brief set pass status to inactive */
       void disable() const { passIsActive_ = false ; }
 
+      /** for LimitPass this sets some diagnostic variables for visualization */
+      template <class IndicatorType>
+      void setIndicator(IndicatorType* indicator) {}
+      /** remove the indicator set before (default empty) */
+      void removeIndicator() {}
+
     protected:
       //! Actions to be carried out before a global grid walkthrough.
       //! To be overridden in a derived class.

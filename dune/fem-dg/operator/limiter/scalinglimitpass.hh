@@ -506,6 +506,9 @@ namespace Fem
       std::fill( visited_.begin(), visited_.end(), false );
     }
 
+    //! from Dune::Fem::Operator
+    virtual void finalize () {}
+
     //! Some management (interface version)
     void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
