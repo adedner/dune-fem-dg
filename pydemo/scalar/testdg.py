@@ -26,8 +26,9 @@ parameters = {"fem.ode.odesolver": "EX",   # EX, IM, IMEX
               "dgdiffusionflux.liftfactor": 1}
 
 parameters['fem.ode.odesolver'] = 'EX'
-problem.endTime = 0.05
-uh,errorEx = run(problem(),
+Model = problem()
+Model.endTime = 0.1
+uh,errorEx = run(Model,
         startLevel=0, polOrder=2, limiter='scaling',
         primitive=None, saveStep=0.01, threading=True, grid="alucube", subsamp=0, space="dgonb",
         dt=None,

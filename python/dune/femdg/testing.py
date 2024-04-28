@@ -165,7 +165,7 @@ def run(Model, Stepper=None,
         # that slight changes to 't' require building new local functions -
         # should be fixed in dune-fem
         try:
-            u = expression2GF(grid,exact(tc),order=5)
+            u = gridFunction(exact(tc), grid, name="exact", order=5)
         except:
             u = exact(grid,t)
         tc.value = t
