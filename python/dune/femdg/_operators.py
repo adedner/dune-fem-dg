@@ -21,7 +21,7 @@ from dune.source.cplusplus import SourceWriter, ListWriter, StringWriter
 from ufl import SpatialCoordinate,TestFunction,TrialFunction,as_vector,dx,grad,inner,FacetNormal
 
 from dune.femdg.patch import transform
-from concurrent.futures import ThreadPoolExecutor
+from dune.fem.utility import FemThreadPoolExecutor
 
 # limiter can be ScalingLimiter or FV based limiter with FV type reconstructions for troubled cells
 def createLimiter(domainSpace, rangeSpace=None, bounds = [1e-12,1.], limiter='scaling'):
@@ -126,7 +126,7 @@ def femDGModels(Model, space, initialTime=0):
     virtualize = False
 
     # use multi-processing to build models
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with FemThreadPoolExecutor(max_workers=2) as executor:
         advModel = executor.submit( conservationlaw, space.gridView, advModel,
                                         modelPatch=transform(Model,space,t,"Adv"),
                                         virtualize=virtualize )
