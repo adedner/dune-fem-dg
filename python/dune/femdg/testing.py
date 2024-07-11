@@ -93,7 +93,7 @@ def run(Model, Stepper=None,
     # preparation for output
     vtk = lambda : None
     if saveStep is not None and Model.name is not None:
-        x = SpatialCoordinate(space.cell())
+        x = SpatialCoordinate(space)
         tc = Constant(0.0,"time")
         try:
             velo = gridFunction(Model.velocity(tc,x,u_h), gridView=space.gridView, order=2, name="velocity")

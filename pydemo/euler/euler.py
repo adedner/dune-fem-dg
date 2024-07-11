@@ -122,7 +122,7 @@ def constant(dim=2,gamma=1.4):
 def sod(dim=2,gamma=1.4):
     x0 = 0.5
     space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(space)
     Model = CompressibleEulerReflection(dim,gamma)
     Vl, Vr = [1.,0.,0.,1.], [0.125,0,0,0.1]
     Model.initial=riemanProblem( Model, x[0], x0, Vl, Vr)
@@ -144,7 +144,7 @@ def sod(dim=2,gamma=1.4):
     return Model
 def radialSod1(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(space)
     Model = CompressibleEulerDirichlet(dim,gamma)
     Model.initial=riemanProblem(Model, sqrt(dot(x,x)), 0.3, [1,0,0,1], [0.125,0,0,0.1])
     Model.domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]]
@@ -153,7 +153,7 @@ def radialSod1(dim=2,gamma=1.4):
     return Model
 def radialSod1Large(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(space)
     Model = CompressibleEulerDirichlet(dim,gamma)
     Model.initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3, [1,0,0,1], [0.125,0,0,0.1])
     Model.domain=[[-1.5, -1.5], [1.5, 1.5], [60, 60]]
@@ -162,7 +162,7 @@ def radialSod1Large(dim=2,gamma=1.4):
     return Model
 def radialSod2(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(space)
     Model = CompressibleEulerNeuman(dim,gamma)
     Model.initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3, [0.125,0,0,0.1], [1,0,0,1])
     Model.domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]]
@@ -171,7 +171,7 @@ def radialSod2(dim=2,gamma=1.4):
     return Model
 def radialSod3(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(space)
     Model = CompressibleEulerSlip(dim,gamma)
     Model.initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3, [1,0,0,1], [0.125,0,0,0.1])
     Model.domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]]
@@ -180,7 +180,7 @@ def radialSod3(dim=2,gamma=1.4):
     return Model
 def leVeque(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(space)
     initial = conditional(abs(x[0]-0.15)<0.05,1.2,1)
     Model = CompressibleEulerDirichlet(dim,gamma)
     Model.initial=Model.toCons(as_vector( [initial,0,0,initial] ))
@@ -195,7 +195,7 @@ def vortex(dim=2,gamma=1.4):
     M = 0.4     # Machnumber
 
     space = Space(dim,dim+2)
-    x     = SpatialCoordinate(space.cell())
+    x     = SpatialCoordinate(space)
     f     = (1. - x[0]*x[0] - x[1]*x[1])/(2.*R*R)
     rho   = pow(1. - S*S*M*M*(gamma - 1.)*exp(2.*f)/(8.*pi*pi), 1./(gamma - 1.))
     u     =      S*x[1]*exp(f)/(2.*pi*R)

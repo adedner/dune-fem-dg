@@ -85,8 +85,8 @@ def femDGModels(Model, space, initialTime=0):
 
     u = TrialFunction(space)
     v = TestFunction(space)
-    n = FacetNormal(space.cell())
-    x = SpatialCoordinate(space.cell())
+    n = FacetNormal(space)
+    x = SpatialCoordinate(space)
     t = Constant(initialTime,"time")
 
     hasAdvFlux = hasattr(Model,"F_c")
