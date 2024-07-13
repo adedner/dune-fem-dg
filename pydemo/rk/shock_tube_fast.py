@@ -45,7 +45,7 @@ def useGalerkinOp():
     spaceName = "finitevolume"
     space = create.space(spaceName, grid, dimRange=dimR)
 
-    n = FacetNormal(space.cell())
+    n = FacetNormal(space)
 
     u_h   = space.interpolate(initial, name='u_h')
     u_h_n = u_h.copy(name="previous")

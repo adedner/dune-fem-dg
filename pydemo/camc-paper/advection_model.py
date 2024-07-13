@@ -1,10 +1,9 @@
 from ufl import *
-from dune.ufl import Space
+from dune.ufl import cell
 
 # Basic model for hyperbolic conservation law
 def model(dim):
-    space = Space(dim,1)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
 
     eps = None
 

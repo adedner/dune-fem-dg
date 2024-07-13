@@ -1,5 +1,5 @@
 from ufl import *
-from dune.ufl import Space
+from dune.ufl import cell
 
 def CompressibleEuler(dim, gamma):
     class Model:
@@ -72,16 +72,14 @@ def constant(dim,gamma):
            [-1, 0], [1, 0.1], [50, 5], 0.1,\
            "constant", None
 def sod(dim=2,gamma=1.4):
-    space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
     Model = CompressibleEulerDirichlet(dim,gamma)
     return Model,\
            riemanProblem( Model, x[0], 0.5, [1,0,0,1], [0.125,0,0,0.1]),\
            [0, 0], [1, 0.25], [64, 16], 0.15,\
            "sod", None
 def radialSod1(dim=2,gamma=1.4):
-    space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
     Model = CompressibleEulerDirichlet(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
@@ -89,8 +87,7 @@ def radialSod1(dim=2,gamma=1.4):
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
            "radialSod1", None
 def radialSod1Large(dim=2,gamma=1.4):
-    space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
     Model = CompressibleEulerDirichlet(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
@@ -98,8 +95,7 @@ def radialSod1Large(dim=2,gamma=1.4):
            [-1.5, -1.5], [1.5, 1.5], [60, 60], 0.5,\
            "radialSod1Large", None
 def radialSod2(dim=2,gamma=1.4):
-    space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
     Model = CompressibleEulerNeuman(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
@@ -107,8 +103,7 @@ def radialSod2(dim=2,gamma=1.4):
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
            "radialSod2", None
 def radialSod3(dim=2,gamma=1.4):
-    space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
     Model = CompressibleEulerSlip(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
@@ -117,8 +112,7 @@ def radialSod3(dim=2,gamma=1.4):
            "radialSod3", None
 
 def leVeque(dim=2,gamma=1.4):
-    space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
     initial = conditional(abs(x[0]-0.15)<0.05,1.2,1)
     Model = CompressibleEulerDirichlet(dim,gamma)
     return Model,\
@@ -131,8 +125,7 @@ def vortex(dim=2,gamma=1.4):
     R = 1.5     # radius of vortex
     M = 0.4     # Machnumber
 
-    space = Space(dim,dim+2)
-    x     = SpatialCoordinate(space.cell())
+    x = SpatialCoordinate(cell(dim))
     f     = (1. - x[0]*x[0] - x[1]*x[1])/(2.*R*R)
     rho   = pow(1. - S*S*M*M*(gamma - 1.)*exp(2.*f)/(8.*pi*pi), 1./(gamma - 1.))
     u     =      S*x[1]*exp(f)/(2.*pi*R)

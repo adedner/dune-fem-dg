@@ -79,7 +79,7 @@ class Burgers1D:
         return U-V
 
 space = Space(2,1)
-x = SpatialCoordinate(space.cell())
+x = SpatialCoordinate(space)
 
 def riemanProblem(x,x0,UL,UR):
     return conditional(x<x0,as_vector(UL),as_vector(UR))

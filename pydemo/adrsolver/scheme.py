@@ -46,7 +46,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     # preparation for output
     if saveStep is not None:
-        x = SpatialCoordinate(space.cell())
+        x = SpatialCoordinate(space)
         tc = Constant(0.0,"time")
         try:
             velo = gridFunction(Model.velocity(tc,x,u_h),name="velocity")
