@@ -8,8 +8,8 @@ from dune.source.cplusplus import Variable, UnformattedExpression,\
 
 def uflExpr(Model,space,t):
     u = TrialFunction(space)
-    n = FacetNormal(space.cell())
-    x = SpatialCoordinate(space.cell())
+    n = FacetNormal(space)
+    x = SpatialCoordinate(space)
 
     physicalBound = None
     lowerBound = getattr(Model,"lowerBound",None)
@@ -133,9 +133,8 @@ def codeFemDg(self, *args, **kwargs):
     t = self._t
 
     u = TrialFunction(space)
-    # v = TestFunction(space)
-    n = FacetNormal(space.cell())
-    x = SpatialCoordinate(space.cell())
+    n = FacetNormal(space)
+    x = SpatialCoordinate(space)
 
     physicalBound = None
     lowerBound = getattr(Model,"lowerBound",None)
