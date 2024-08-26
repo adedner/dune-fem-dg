@@ -55,10 +55,10 @@ class HelmholtzButcher:
     def __init__(self, op, parameters = {}, useScipy = False ):
         self.op = op
         self._alpha = None
-        self.arg = op.space.interpolate(op.space.dimRange*[0],name="HelmholtzButcher::arg")
+        self.arg = op.space.function(name="HelmholtzButcher::arg")
         self._invOp = None
         if useScipy:
-            self.res = op.space.interpolate(op.space.dimRange*[0],name="HelmholtzButcher::res")
+            self.res = op.space.function(name="HelmholtzButcher::res")
             def f(x_coeff):
                 """
                 Implements: L[baru+a*k] - k = 0
@@ -122,7 +122,7 @@ class HelmholtzShuOsher:
         self.op = op
         self._alpha = None
         self._nonlinsolve = None
-        self.res = op.space.interpolate(op.space.dimRange*[0],name="HelmholtzShuOsher::res")
+        self.res = op.space.function(name="HelmholtzShuOsher::res")
         self._invOp = None
         if useScipy:
             def f(x_coeff):
@@ -194,8 +194,8 @@ class RungeKutta:
         self.dt = None
         self.k = self.stages*[None]
         for i in range(self.stages):
-            self.k[i] = op.space.interpolate(op.space.dimRange*[0],name="k")
-        self.tmp = op.space.interpolate(op.space.dimRange*[0],name="tmp")
+            self.k[i] = op.space.function(name="k")
+        self.tmp = op.space.function(name="tmp")
         self.explicit = all([abs(A[i][i])<1e-15 for i in range(self.stages)])
         self.computeStages = self.explicitStages if self.explicit else self.implicitStages
         if not self.explicit:
@@ -315,7 +315,7 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
         self.musps  = 1/(2*stages)
         self.lamsps = 1
 
-        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.q2     = op.space.function(name="q2")
         self.tmp    = self.q2.copy()
         self.cfl    = 0.45 if cfl is None else cfl
         self.dt     = None
@@ -355,7 +355,7 @@ class ExplSSP2:
     def __init__(self,stages,op,cfl=None, *args, **kwargs):
         self.op     = op
         self.stages = stages
-        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.q2     = op.space.function(name="q2")
         self.tmp    = self.q2.copy()
         self.cfl    = 0.45 * (stages-1)
         self.dt     = None
@@ -418,7 +418,7 @@ class ExplSSP3:
         self.stages = self.n*self.n
         assert self.stages == stages, "doesn't work if sqrt(s) is not integer"
         self.r      = self.stages-self.n
-        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.q2     = op.space.function(name="q2")
         self.tmp    = self.q2.copy()
         self.cfl    = 0.45 * stages*(1-1/self.n) if cfl is None else cfl
         self.dt     = None
@@ -473,7 +473,7 @@ class ImplSSP3:
         self.musps  = (stages+1)/q
         self.lamsps = (stages+1)/q*(stages-1+sqrt(stages*stages-1))
 
-        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.q2     = op.space.function(name="q2")
         self.tmp    = self.q2.copy()
         self.cfl    = 0.45 * (stages-1+sqrt(stages*stages-1)) if cfl is None else cfl
         self.dt     = None
@@ -531,7 +531,7 @@ class ExplSSP4_10:
     def __init__(self, op,cfl=None, *args, **kwargs):
         self.op     = op
         self.stages = 10
-        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.q2     = op.space.function(name="q2")
         self.tmp    = self.q2.copy()
         self.cfl    = 0.45 * self.stages*0.6 if cfl is None else cfl
         self.dt     = None
