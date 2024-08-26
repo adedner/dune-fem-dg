@@ -409,17 +409,19 @@ class Midpoint(ImplSSP2):
 # http://www.sspsite.org
 # https://arxiv.org/pdf/1605.02429.pdf
 # https://openaccess.leidenuniv.nl/bitstream/handle/1887/3295/02.pdf?sequence=7
-# https://epubs.siam.org/doi/10.1137/07070485X
+# ExplSSP3(4) described in: https://epubs.siam.org/doi/10.1137/07070485X
+# Other implicit methods are described in:
 # implicit: https://www.sciencedirect.com/science/article/abs/pii/S0168927408000688
-class ExplSSP3:
+#
+class ExplSSP3: # 3rd order n^2 stage method (typically n=2 or s=4)
     def __init__(self,stages,op,cfl=None, *args, **kwargs):
         self.op     = op
         self.n      = int(sqrt(stages))
         self.stages = self.n*self.n
         assert self.stages == stages, "doesn't work if sqrt(s) is not integer"
         self.r      = self.stages-self.n
-        self.q2     = op.space.function(name="q2")
-        self.tmp    = self.q2.copy()
+        self.q2     = op.space.function(name="ExplSSP3::q2")
+        self.tmp    = op.space.function(name="ExplSSP3::tmp")
         self.cfl    = 0.45 * stages*(1-1/self.n) if cfl is None else cfl
         self.dt     = None
     def c(self,i):
