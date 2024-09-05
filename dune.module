@@ -1,8 +1,8 @@
 Module: dune-fem-dg
-Version: 2.11-git
+Version: 2.10
 Maintainer: dune-fem@lists.dune-project.org
 Whitespace-Hook: Yes
-Depends: dune-fem (>= 2.11)
+Depends: dune-fem (>= 2.10)
 Suggests: dune-optim dune-polygongrid
 
 Python-Requires:
