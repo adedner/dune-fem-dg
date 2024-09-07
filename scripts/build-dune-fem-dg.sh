@@ -3,6 +3,7 @@
 #change appropriately, i.e. 2.8 or leave empty which refers to master
 # use latest-stable to get a recent stable version
 DUNEVERSION=latest-stable
+UFLVERSION=2022.2.0
 
 # use ON or OFF
 USEVENV=ON
@@ -26,7 +27,6 @@ if test -f /usr/share/dune/cmake/modules/DuneMacros.cmake || test -f /usr/bin/du
   echo ""
   exit 1
 fi
-
 
 # create necessary python virtual environment
 # this script assumes the name venv.
@@ -55,7 +55,7 @@ if [ "$USEVENV" == "ON" ]; then
     python3 -m venv --system-site-packages $VENVDIR
     source $VENVDIR/bin/activate
     pip install --upgrade pip
-    pip install $CMAKEPIP fenics-ufl numpy matplotlib mpi4py
+    pip install $CMAKEPIP fenics-ufl==$UFLVERSION numpy matplotlib mpi4py
   else
     source $VENVDIR/bin/activate
   fi
@@ -178,6 +178,16 @@ deactivate() {
 " >> $ACTIVATE
 fi
 
+
+# load environment variables
+source $ACTIVATE
+
+#################################################################
+##
+## Obtain DUNE modules from servers
+##
+#################################################################
+
 DUNEBRANCH=
 URL=https://gitlab.dune-project.org
 EXT=core
@@ -187,26 +197,27 @@ if [ "$DUNEVERSION" == "latest-stable" ] ; then
   EXT=
   URL=https://gitlab.maths.lu.se/dune
 elif [ "$DUNEVERSION" != "" ] ; then
-  # assume that some version was selected
+  # assume that some version was selected (make sure that version is correct)
   DUNEBRANCH="-b releases/$DUNEVERSION"
+fi
+
+if [ "$DUNEVERSION" == "latest-stable" ]; then
+  REPO=$URL/dune-common.git
+  # get latest stable tag starting with s20, e.g. s2024.08
+  TAG=`git ls-remote --refs --tags $REPO | grep "s20" | cut --delimiter='/' --fields=3 | tr '-' '~'  | sort --version-sort  | tail --lines=1`
+  DUNEBRANCH="-b $TAG"
+  echo "Selecting stable tag $TAG"
 fi
 
 # get all dune modules necessary
 for MOD in $DUNECOREMODULES ; do
   git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
-  if [ "$DUNEVERSION" == "latest-stable" ] && [ $MOD == "dune-common" ]; then
-    cd dune-common
-    # get latest stable tag starting with s20
-    STABLE=`git tag -l | grep "s20*" | sort -gr | head -1`
-    DUNEBRANCH="-b $STABLE"
-    git checkout $STABLE
-    cd ..
-  fi
 done
 
 if [ "$EXT" != "" ]; then
   EXT=extensions
 fi
+
 # get all dune extension modules necessary
 for MOD in $DUNEEXTMODULES ; do
   git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
@@ -219,9 +230,6 @@ fi
 for MOD in $DUNEFEMMODULES ; do
   git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
 done
-
-# load environment variables
-source $ACTIVATE
 
 # build all DUNE modules using dune-control
 ./dune-common/bin/dunecontrol --opts=config.opts all
