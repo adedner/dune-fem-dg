@@ -94,6 +94,10 @@ namespace Fem
     typedef LimiterDiscreteModel   LimiterDiscreteModelType;
     typedef typename LimiterDiscreteModelType  :: ModelType      ModelType;
 
+    // this is a std::vector< std::vector< double >>
+    typedef typename ModelType :: BoundsVectorType      BoundsVectorType;
+    typedef typename ModelType :: ComponentsVectorType  ComponentsVectorType;
+
     // same type as DiscreteFunction
     typedef typename LimiterDiscreteModelType :: DestinationType DestinationType ;
 
@@ -123,13 +127,15 @@ namespace Fem
 
   public:
     Limiter( const DomainSpaceType& domainSpace,
-             const double lowerBound, const double upperBound )
-      : Limiter( domainSpace, domainSpace, lowerBound, upperBound ) {}
+             const ComponentsVectorType& comp,
+             const BoundsVectorType& bounds )
+      : Limiter( domainSpace, domainSpace, comp, bounds ) {}
 
     Limiter( const DomainSpaceType& domainSpace,
              const RangeSpaceType&  rangeSpace,
-             const double lowerBound, const double upperBound )
-      : Limiter( domainSpace, rangeSpace, *(new ModelType( lowerBound, upperBound )) )
+             const ComponentsVectorType& comp,
+             const BoundsVectorType& bounds )
+      : Limiter( domainSpace, rangeSpace, *(new ModelType( comp, bounds )) )
     {
       modelPtr_.reset( &model_ );
     }

@@ -76,7 +76,11 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
-    typedef Dune::FieldVector< int, dimRange-1 > LimitedRangeType;
+    typedef typename BaseType::BoundsVectorType      BoundsVectorType ;
+    typedef typename BaseType::ComponentsVectorType  ComponentsVectorType;
+    // don't use field vector here, since we want this to be dynamically adjustable.
+    typedef ComponentsVectorType                 LimitedRangeType;
+    //typedef Dune::FieldVector< int, dimRange-1 > LimitedRangeType;
 
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true;
@@ -85,23 +89,31 @@ namespace Fem
     using BaseType::time;
     using BaseType::time_;
 
-    // saturation component in RangeType vector, saturation in the last component
-    static const int sat = dimRange - 1;
-
   protected:
     RangeType lower_;
     RangeType upper_;
     LimitedRangeType limitedRange_;
 
    public:
-    LimiterDefaultModel( const double lower, const double upper,
-                         LimitedRangeType mod = LimitedRangeType( sat ) )
-      : lower_( lower ),
+    LimiterDefaultModel( const ComponentsVectorType& comp, const BoundsVectorType& bounds )
+      : lower_( std::numeric_limits< double >::min() ),
         upper_( std::numeric_limits< double >::max() ),
-        limitedRange_( mod )
+        limitedRange_( comp )
     {
-      lower_[ sat ] = lower;
-      upper_[ sat ] = upper;
+      assert( int(bounds.size()) == RangeType::dimension );
+      /*
+      std::cout << "LDM: ";
+      for( const auto& d : limitedRange_ )
+        std::cout << d << " ";
+      std::cout << std::endl;
+      */
+
+      for( const auto& d : limitedRange_ )
+      {
+        lower_[ d ] = bounds[ d ][ 0 ];
+        upper_[ d ] = bounds[ d ][ 1 ];
+      }
+      //std::cout << "LDM " << "  lower = " << lower_ << "  upper = " << upper_ << std::endl;
 
       //for( int d=0; d<dimRange; ++d )
       //  modified_[ d ] = d;
@@ -121,14 +133,6 @@ namespace Fem
 
     // return set with components to be modified by limiter
     const LimitedRangeType& limitedRange() const { return limitedRange_; }
-
-    /*
-    // return true if solution is constant, i.e. min == max
-    bool isConstant( const RangeType& minVal, const RangeType& maxVal ) const
-    {
-      return false ;//(std::abs( maxVal[ sat ] - minVal[ sat ] ) / (upper_[ sat ] - lower_[ sat ]))  < 1e-10;
-    }
-    */
 
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
@@ -286,8 +290,12 @@ namespace Fem
                          const DomainType& xGlobal,
                          const RangeType& u) const
     {
-      //return (u[ 0 ] >= lower_[ 0 ]) && (u[ sat ] >= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
-      return (u[ sat ]>= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
+      for( const auto& d : limitedRange_ )
+      {
+        if ( (u[ d ] < lower_[ d ]) || (u[ d ] > upper_[ d ]))
+          return false;
+      }
+      return true;
     }
 
     // adjust average value if necessary
@@ -297,15 +305,18 @@ namespace Fem
                              const DomainType& xLocal,
                              RangeType& u ) const
     {
-
-      if( u[ sat ] < lower_[ sat])
+      bool notAdjusted = true;
+      for( const auto& d : limitedRange_ )
       {
-        u[ sat ] = lower_[ sat ] + 1e-14 ;
-        return false ;
+        if( u[ d ] < lower_[ d ])
+        {
+          u[ d ] = lower_[ d ] + 1e-14 ;
+          notAdjusted = false ;
+        }
       }
 
       // nothing to be done here for this test case
-      return true;
+      return notAdjusted;
     }
 
     // calculate jump between left and right value
@@ -318,6 +329,7 @@ namespace Fem
     {
       assert( calculateIndicator() );
       jump = 0;
+      // TODO: use limitedRange_ here
       //jump[ sat ] = (uLeft[ sat ] - uRight[ sat ])/(0.5*(uLeft[ sat ] + uRight[ sat ]));
     }
 
