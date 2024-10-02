@@ -182,6 +182,14 @@ namespace Fem
     {
       // we need the flux here
       assert(problem.hasFlux());
+
+      if( Dune::Fem::Parameter::verbose() )
+      {
+        RangeType min, max;
+        discreteModel_.model().obtainBounds( min, max );
+        std::cout << "ScalingLimitDGPass: comp " << discreteModel_.model().limitedRange()
+                  << "  min = " << min << " max " << max << std::endl;
+      }
     }
 
     //! Destructor
@@ -518,14 +526,12 @@ namespace Fem
     //! Some management (thread parallel version)
     void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
     {
-      /*
-      if( limitedElements_ > 0 )
+      if( limitedElements_ > 0 && Dune::Fem::Parameter::verbose() )
       {
 
         std::cout << "ScalingLimitPass: Elements limited = " << limitedElements_
                   << std::endl;
       }
-      */
 
       if( doCommunicate )
       {

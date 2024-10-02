@@ -163,12 +163,17 @@ namespace Fem
     typedef typename Traits::FaceDomainType              FaceDomainType;
     typedef typename Traits::JacobianRangeType           JacobianRangeType;
 
+    // default typedef for scaling limiter
+    typedef std::vector< std::vector< double > >  BoundsVectorType;
+    typedef std::vector< int >                    ComponentsVectorType;
+
     // default is 0,...,dimRange-1
     typedef Dune::FieldVector< int, dimRange > LimitedRangeType;
 
     explicit DefaultModel( double time = 0 )
       : time_( time )
     {
+      // by default all components should be treated
       for( int d=0; d<dimRange; ++d )
         defaultLimitedRange_[ d ] = d;
     }

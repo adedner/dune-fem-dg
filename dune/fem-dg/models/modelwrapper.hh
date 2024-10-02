@@ -173,6 +173,7 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
+    // limitedDimRange can be set by AdvectionModel
     static const int limitedDimRange = AdditionalType :: limitedDimRange ;
     typedef Dune::FieldVector< int, limitedDimRange > LimitedRangeType;
 
