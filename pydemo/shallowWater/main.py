@@ -1,3 +1,7 @@
+from dune.fem import threading
+
+threading.use = 8
+
 from dune.fem import parameter
 from dune.femdg.testing import run
 

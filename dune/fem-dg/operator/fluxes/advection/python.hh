@@ -83,9 +83,10 @@ namespace Fem
      */
     DGAdvectionFluxPythonUserDefine (const ModelImp& modelImp,
                                      const ParameterType& parameter )
-      : BaseType( *(new ModelType(modelImp)), parameter )
+      //: BaseType( *(new ModelType(modelImp)), parameter )
+      : BaseType( modelImp, parameter )
     {
-      modelPtr_.reset( &this->model_ );
+      //modelPtr_.reset( &this->model_ );
     }
 
     /**
@@ -111,7 +112,7 @@ namespace Fem
     }
 
   protected:
-    std::unique_ptr< const ModelType > modelPtr_;
+    //std::unique_ptr< const ModelType > modelPtr_;
   };
 
 } // end namespace Fem

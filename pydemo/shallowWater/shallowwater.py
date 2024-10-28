@@ -40,11 +40,11 @@ def ShallowWater(topo,g):
         # boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
         boundary = {range(1,5): lambda t,x,u: u}
         topography   = topo
-        def NumericalF_c(model,clsName,includes):
-            print("NumericalFlux_c")
-            from dune.generator.importclass import load
-            from dune.generator import path
-            return load(clsName,[path(__file__)+"llf.hh"]+includes,model)
+        #def NumericalF_c(model,clsName,includes):
+        #    print("NumericalFlux_c")
+        #    from dune.generator.importclass import load
+        #    from dune.generator import path
+        #    return load(clsName,[path(__file__)+"llfwb.hh"]+includes,model)
 
     return Model
 
