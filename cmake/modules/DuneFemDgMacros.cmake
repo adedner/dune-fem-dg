@@ -100,38 +100,6 @@ endfunction()
 set(FEMDG_FAST_TESTBUILD ON CACHE BOOL
     "only build the most important tests when calling 'make test'" )
 
-
-macro(add_header_listing)
-    # header
-    file( GLOB_RECURSE header "${CMAKE_CURRENT_SOURCE_DIR}/*.hh" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.ui")
-    set( COMMON_HEADER ${header} ${DUNE_HEADERS} )
-
-    # add header of dependent modules for header listing
-    foreach(_mod ${ALL_DEPENDENCIES})
-        file(GLOB_RECURSE HEADER_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../${_mod}/*.hh" "${CMAKE_CURRENT_SOURCE_DIR}/../${_mod}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/../${_mod}/*.ui")
-        list(APPEND COMMON_HEADER ${HEADER_LIST})
-    endforeach(_mod DEPENDENCIES)
-    #set_source_files_properties(${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1)
-    #add_custom_target(common_header SOURCES ${COMMON_HEADER})
-
-    #needed at least one official target for finding header files in source code
-    file(WRITE ${CMAKE_BINARY_DIR}/.qtcreator/main.cc "//this is a dummy file for including files into the project file structure of qtcreator\nint main(){}" )
-    add_executable( qtcreator ${CMAKE_BINARY_DIR}/.qtcreator/main.cc ${COMMON_HEADER} )
-    set_target_properties( qtcreator PROPERTIES LINKER_LANGUAGE CXX)
-endmacro(add_header_listing)
-
-macro(make_dependent_modules_sys_included)
-    #disable most warnings from dependent modules
-    foreach(_mod ${ALL_DEPENDENCIES})
-        if(${_mod}_INCLUDE_DIRS)
-            foreach( _idir ${${_mod}_INCLUDE_DIRS} )
-                add_definitions("-isystem ${_idir}")
-            endforeach( _idir )
-        endif(${_mod}_INCLUDE_DIRS)
-    endforeach(_mod DEPENDENCIES)
-endmacro(make_dependent_modules_sys_included)
-
-
 include(Codegen)
 include(TargetDistclean)
 

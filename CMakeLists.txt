@@ -31,8 +31,5 @@ dune_add_subdirs( dune lib doc cmake/modules ${PYDEMO_DIR})
 #set( _dirnew dune/fem-dg/examples/advdiff_test )
 #set_property(DIRECTORY ${_dirnew} PROPERTY TEST_INCLUDE_FILE ${CMAKE_BINARY_DIR}/${_dirnew}/BuildTests.cmake)
 
-make_dependent_modules_sys_included()
-add_header_listing()
-
 # finalize the dune project, e.g., generate config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
