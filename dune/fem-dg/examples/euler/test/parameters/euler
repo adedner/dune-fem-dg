@@ -16,8 +16,8 @@ fem.parallel.numberofthreads: 4
 # coarsest level that should be present
 fem.adaptation.coarsestLevel: 0
 # finest level that should be present
-fem.adaptation.finestLevel: 4
-fem.eoc.steps: 4
+fem.adaptation.finestLevel: 5
+fem.eoc.steps: 5
 fem.timeprovider.factor: 0.35
 femdg.limiter.indicator: jump
 
@@ -25,8 +25,8 @@ femdg.limiter.indicator: jump
 #femdg.nonblockingcomm: false
 
 femdg.stepper.printcount: 1000
-fem.io.outputformat: vtk-cell
-fem.io.savestep: 0.01
+fem.io.outputformat: none
+fem.io.savestep: 0.2
 
 fem.ode.odesolver: EX
 fem.ode.order: 3

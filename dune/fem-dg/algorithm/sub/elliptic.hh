@@ -123,6 +123,7 @@ namespace Fem
       typedef typename DF::DiscreteFunctionSpaceType                     UDFS;
       typedef typename UDFS::GridPartType                                GridPartType;
       typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
+      typedef typename EntityType::Geometry                              Geometry;
       typedef typename GridPartType::IntersectionIteratorType            IntersectionIteratorType;
       typedef typename GridPartType::IntersectionType                    IntersectionType;
 
@@ -171,6 +172,10 @@ namespace Fem
           }
         }
       }
+
+      const EntityType& entity() const { return localdf_.entity(); }
+      const Geometry& geometry() const { return localdf_.geometry(); }
+
     private:
       template <bool conforming>
       void getLifting( const IntersectionType &intersection, const EntityType &entity)

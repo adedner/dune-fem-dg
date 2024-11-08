@@ -542,7 +542,7 @@ namespace Fem
         VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
 
         // only call geometry once, who know what is done in this function
-        const Geometry & geo = entity.geometry();
+        const Geometry & geo = updEn.geometry();
 
         caller().setEntity(entity, volQuad);
 
@@ -597,7 +597,7 @@ namespace Fem
         // Surface integral part
         /////////////////////////////
         // get volume of element divided by the DG polynomial factor
-        const double envol = entity.geometry().volume() / ( 2.0 * spc_.order( entity ) + 1.0 ) ;
+        const double envol = updEn.geometry().volume() / ( 2.0 * spc_.order( entity ) + 1.0 ) ;
 
         for (const auto& intersection : intersections(gridPart_, entity) )
         {
@@ -866,12 +866,6 @@ namespace Fem
       const QuadratureImp &faceQuadInner = interQuad.inside();
       const QuadratureImp &faceQuadOuter = interQuad.outside();
 
-      // get geometry of neighbor
-      const Geometry & nbGeo = nb.geometry();
-
-      // get volume of neighbor divided by the DG polynomial factor
-      const double nbVol = nbGeo.volume() / ( 2.0 * spc_.order( nb ) + 1.0 ) ;
-
       // set neighbor and initialize intersection
       caller().initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
 
@@ -929,12 +923,18 @@ namespace Fem
       else
         updEn.axpyQuadrature( faceQuadInner, valEnVec_ );
 
+      // get volume of neighbor divided by the DG polynomial factor
+      const double nbVolDenom = ( 2.0 * spc_.order( nb ) + 1.0 ) ;
+
       // if we can also update the neighbor
       // this can be different in thread parallel programs
       if( canUpdateNeighbor )
       {
         // init local function
         initLocalFunction( nb, updNb );
+
+        // get geometry of neighbor (updNb not initialized yet)
+        const Geometry & nbGeo = nb.geometry();
 
         // add update of the neighbor to the new discrete
         // function which represents L(u_h)
@@ -947,8 +947,14 @@ namespace Fem
 
         // do the update to global values
         updateFunction( nb, updNb );
+
+        // updNb's geometry is computed anyway
+        return updNb.geometry().volume() / nbVolDenom;
       }
-      return nbVol;
+      else
+      {
+        return nb.geometry().volume() / nbVolDenom;
+      }
     }
 
   private:

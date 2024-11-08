@@ -1413,7 +1413,7 @@ namespace Fem
                      RangeType& val) const
     {
       bool notphysical = false;
-      const Geometry& geo = en.geometry();
+      const Geometry& geo = lf.geometry();
 
       if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v && geo.affine() )
       {
