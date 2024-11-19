@@ -286,7 +286,6 @@ namespace Fem
       }
       else
       {
-        std::cout << "ScalingLimitPass::compute deactive " << std::endl;
         // get reference to U and pass on to dest
         const ArgumentFunctionType &U = *(std::get< argumentPosition >( arg ));
         dest.assign( U );
