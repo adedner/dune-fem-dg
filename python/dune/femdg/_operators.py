@@ -58,7 +58,7 @@ def createLimiter(domainSpace, rangeSpace=None,
             newBounds = [None]*domainSpace.dimRange
             newBounds[-1] = bounds
             bounds = newBounds
-    else:
+    elif not isinstance(bounds, (list,tuple)):
         raise Exception("createLimiter: bounds needs to be an instance of either list or tuple.")
 
     # obtain limited component numbers and corresponding bounds
