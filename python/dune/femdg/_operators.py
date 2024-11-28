@@ -12,15 +12,16 @@ from dune.fem.operator import load
 from dune.fem import parameter as parameterReader
 import dune.fem
 
-from dune.ufl import Constant
+from dune.ufl import Constant, DirichletBC
 
 from dune.source.cplusplus import TypeAlias, Declaration, Variable, Struct
 from dune.source.cplusplus import Method as clsMethod
 from dune.source.cplusplus import SourceWriter, ListWriter, StringWriter
 
-from ufl import SpatialCoordinate,TestFunction,TrialFunction,as_vector,dx,grad,inner,FacetNormal
+from ufl import SpatialCoordinate,TestFunction,TrialFunction,as_vector,dx,ds, grad,inner,FacetNormal
 
-from dune.femdg.patch import transform
+from dune.femdg.patch import transform, uflExpr
+
 from dune.fem.utility import FemThreadPoolExecutor
 
 # limiter can be ScalingLimiter or FV based limiter with FV type reconstructions for troubled cells
@@ -112,8 +113,7 @@ def createOrderRedcution(domainSpace):
 #####################################################
 ## fem-dg models
 #####################################################
-def femDGModels(Model, space, initialTime=0):
-
+def femDGModels(Model, space, initialTime=0, returnUFL=False):
     u = TrialFunction(space)
     v = TestFunction(space)
     n = FacetNormal(space)
@@ -127,7 +127,7 @@ def femDGModels(Model, space, initialTime=0):
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
     hasNonStiffSource = hasattr(Model,"S_e")
     if hasNonStiffSource:
-        advModel += inner(as_vector(Model.S_e(t,x,u,grad(u))),v)*dx   # (-div F_v + S_e) * v
+        advModel += inner(as_vector(Model.S_e(t,x,u,grad(u))),v)*dx   # (-div F_c + S_e) * v
     else:
         hasNonStiffSource = hasattr(Model,"S_ns")
         if hasNonStiffSource:
@@ -136,18 +136,42 @@ def femDGModels(Model, space, initialTime=0):
 
     hasDiffFlux = hasattr(Model,"F_v")
     if hasDiffFlux:
-        diffModel = inner(Model.F_v(t,x,u,grad(u)),grad(v))*dx
+        diffModel = inner(Model.F_v(t,x,u,grad(u)),grad(v))*dx  # -div F_v v
     else:
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
 
     hasStiffSource = hasattr(Model,"S_i")
     if hasStiffSource:
-        diffModel += inner(as_vector(Model.S_i(t,x,u,grad(u))),v)*dx
+        diffModel += inner(as_vector(Model.S_i(t,x,u,grad(u))),v)*dx # (-div F_v + S_i) v
     else:
         hasStiffSource = hasattr(Model,"S_s")
         if hasStiffSource:
             diffModel += inner(as_vector(Model.S_impl(t,x,u,grad(u))),v)*dx
             print("Model.S_s is deprecated. Use S_i instead!")
+
+    if returnUFL:
+        # need to extract boundary information from Model
+        maxWaveSpeed, velocity, diffusionTimeStep, physical, jump,\
+           boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue,\
+           physicalBound = uflExpr(Model,space,t)
+        dirichletBCs = [ DirichletBC(space,item[1],item[0])
+                for item in boundaryValue.items() ]
+        boundaryDFlux = -sum( [ inner(item[1],v) * ds(item[0])
+                for item in boundaryDFlux.items() ] ) # keep all forms on left hand side
+        boundaryAFlux = -sum( [ inner(item[1],v) * ds(item[0])
+                for item in boundaryAFlux.items() ] ) # keep all forms on left hand side
+        return (advModel, diffModel,
+           {"maxWaveSpeed":maxWaveSpeed,
+            "velocity":velocity,
+            "diffusionTimeStep":diffusionTimeStep,
+            "physical":physical,
+            "dirichletBCs":dirichletBCs,
+            "boundaryAFlux":boundaryAFlux,
+            "boundaryDFlux":boundaryDFlux,
+            "boundaryValue":boundaryValue,
+            "hasBoundaryValue":hasBoundaryValue,
+            "physicalBound":physicalBound
+           })
 
     from dune.fem.model import conservationlaw
     #from dune.fem.model import integrands as conservationlaw
@@ -171,6 +195,29 @@ def femDGModels(Model, space, initialTime=0):
     Model._ufl = {"u":u,"v":v,"n":n,"x":x,"t":t}
 
     return [Model,advModel,diffModel]
+
+def femDGUFL(Model, space, initialTime=0,*, returnFull=False):
+    class M(Model):
+        if hasattr(Model,"S_e"):
+            def S_e(t,x,U,DU):
+                return -Model.S_e(t,x,U,DU)
+        if hasattr(Model,"S_i"):
+            def S_i(t,x,U,DU):
+                return -Model.S_i(t,x,U,DU)
+        if hasattr(Model,"F_c"):
+            def F_c(t,x,U):
+                return -Model.F_c(t,x,U)
+    advModel,diffModel,otherExpr = femDGModels(M, space, initialTime, returnUFL=True)
+    otherExpr["boundaryAFlux"] = -otherExpr["boundaryAFlux"]
+    form = advModel+diffModel + otherExpr["boundaryAFlux"] + otherExpr["boundaryDFlux"]
+
+    if not returnFull:
+        return [ form == 0, *otherExpr["dirichletBCs"] ]
+    else:
+        otherExpr["advModel"] = advModel
+        otherExpr["diffModel"] = diffModel
+        otherExpr["form"] = form
+        return otherExpr
 
 #####################################################
 ## fem-dg Operator
