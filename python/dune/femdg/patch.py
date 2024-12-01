@@ -1,6 +1,6 @@
 
 from functools import reduce
-
+import ufl
 from ufl import grad, TrialFunction, SpatialCoordinate, FacetNormal,\
                 Coefficient, conditional
 from dune.source.cplusplus import Variable, UnformattedExpression,\
@@ -99,10 +99,15 @@ def uflExpr(Model,space,t):
                 else:
                     assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk fluxes given"
             except TypeError:
-                try:
-                    method = f(t,x,u)
-                except TypeError:
-                    method = f(t,x,u,n,n)
+                if isinstance(f, ufl.core.expr.Expr):
+                    # allow to pass in a ufl expression instead of a function for the boundary conditions
+                    # This works for non time dependent b.c
+                    method = f
+                else:
+                    try:
+                        method = f(t,x,u)
+                    except TypeError:
+                        method = f(t,x,u,n,n)
                 boundaryValue.update( [ (kk,method) for kk in ids] )
                 # add dummy values for hasBoundaryValue method
                 bndReturn = True
@@ -328,10 +333,15 @@ def codeFemDg(self, *args, **kwargs):
                 else:
                     assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk flux given"
             except TypeError:
-                try:
-                    method = f(t,x,u)
-                except TypeError:
-                    method = f(t,x,u,n,n)
+                if isinstance(f, ufl.core.expr.Expr):
+                    # allow to pass in a ufl expression instead of a function for the boundary conditions
+                    # This works for non time dependent b.c
+                    method = f
+                else: # must be suitable functions instead
+                    try:
+                        method = f(t,x,u)
+                    except TypeError:
+                        method = f(t,x,u,n,n)
                 boundaryValue.update( [ (kk,method) for kk in ids] )
                 # add dummy values for hasBoundaryValue method
                 bndReturn = True
