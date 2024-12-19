@@ -44,8 +44,8 @@ def createLimiter(domainSpace, rangeSpace=None,
     domainSpaceType = domainSpace.cppTypeName
     rangeSpaceType = rangeSpace.cppTypeName
 
-    _, domainFunctionIncludes, domainFunctionType, _, _, _ = domainSpace.storage
-    _, rangeFunctionIncludes, rangeFunctionType, _, _, _ = rangeSpace.storage
+    domainFunctionType = domainSpace.storage.type
+    rangeFunctionType  = rangeSpace.storage.type
 
     # check for old parameters
     if len(bounds) == 2:
@@ -67,8 +67,8 @@ def createLimiter(domainSpace, rangeSpace=None,
     newBounds = [(-1e308, 1e308) if comp is None else comp for comp in bounds]
 
     includes = ["dune/fem-dg/operator/limiter/limiter.hh"]
-    includes += domainSpace.cppIncludes + domainFunctionIncludes
-    includes += rangeSpace.cppIncludes + rangeFunctionIncludes
+    includes += domainSpace.cppIncludes + domainSpace.storage.includes
+    includes += rangeSpace.cppIncludes + rangeSpace.storage.includes
 
     typeName = 'Dune::Fem::ScalingLimiter< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
     # FV type limiter where FV based reconstructions are done
@@ -93,10 +93,10 @@ def createOrderRedcution(domainSpace):
 
     domainSpaceType = domainSpace.cppTypeName
 
-    _, domainFunctionIncludes, domainFunctionType, _, _, _ = domainSpace.storage
+    domainFunctionType = domainSpace.storage.type
 
     includes = ["dune/fem-dg/operator/common/orderreduction.hh"]
-    includes += domainSpace.cppIncludes + domainFunctionIncludes
+    includes += domainSpace.cppIncludes + domainSpace.storage.includes
 
     typeName = 'Dune::Fem::OrderReduction< ' + domainFunctionType + ' >'
 
@@ -365,7 +365,7 @@ def femDGOperator(Model, space,
         advModelType  = advModel.cppTypeName # modelType
         diffModelType = diffModel.cppTypeName # modelType
 
-    _, destinationIncludes, destinationType, *_ = space.storage
+    destinationType = space.storage.type
 
     ###'###############################################
     ### extra methods for limiter and time step control
@@ -518,7 +518,7 @@ def femDGOperator(Model, space,
     ### Construct DuneType, includes, and extra methods/constructors
     includes += ["dune/fem-dg/python/operator.hh"]
     includes += ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
-    includes += space.cppIncludes + destinationIncludes
+    includes += space.cppIncludes + space.storage.includes
     includes += ["dune/fem/schemes/conservationlawmodel.hh", "dune/fempy/parameter.hh"]
     includes += advModel.cppIncludes + diffModel.cppIncludes
 
@@ -529,7 +529,7 @@ def femDGOperator(Model, space,
             advModelType + ', ' + diffModelType + ', ' + additionalType +\
             " >"
 
-    _, domainFunctionIncludes, domainFunctionType, *_ = space.storage
+    domainFunctionType = space.storage.type
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
 
     extraMethods = list()
@@ -658,7 +658,7 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     #includes += fullOperator.cppIncludes
     includes += space.cppIncludes
 
-    _, domainFunctionIncludes, domainFunctionType, *_ = space.storage
+    domainFunctionType = space.storage.type
 
     baseOperatorType = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
     fullOperatorType = baseOperatorType
