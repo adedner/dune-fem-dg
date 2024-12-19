@@ -365,7 +365,7 @@ def femDGOperator(Model, space,
         advModelType  = advModel.cppTypeName # modelType
         diffModelType = diffModel.cppTypeName # modelType
 
-    _, destinationIncludes, destinationType, _, _, _ = space.storage
+    _, destinationIncludes, destinationType, *_ = space.storage
 
     ###'###############################################
     ### extra methods for limiter and time step control
@@ -529,7 +529,7 @@ def femDGOperator(Model, space,
             advModelType + ', ' + diffModelType + ', ' + additionalType +\
             " >"
 
-    _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
+    _, domainFunctionIncludes, domainFunctionType, *_ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
 
     extraMethods = list()
@@ -658,7 +658,7 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     #includes += fullOperator.cppIncludes
     includes += space.cppIncludes
 
-    _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
+    _, domainFunctionIncludes, domainFunctionType, *_ = space.storage
 
     baseOperatorType = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
     fullOperatorType = baseOperatorType
