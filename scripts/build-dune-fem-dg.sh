@@ -2,7 +2,7 @@
 
 #change appropriately, i.e. 2.8 or leave empty which refers to master
 # use latest-stable to get a recent stable version
-DUNEVERSION=latest-stable
+DUNEVERSION=
 UFLVERSION=2022.2.0
 
 # use ON or OFF
@@ -211,7 +211,7 @@ fi
 
 # get all dune modules necessary
 for MOD in $DUNECOREMODULES ; do
-  git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
+  git clone $DUNEBRANCH $URL/$EXT/$MOD.git
 done
 
 if [ "$EXT" != "" ]; then
@@ -220,7 +220,7 @@ fi
 
 # get all dune extension modules necessary
 for MOD in $DUNEEXTMODULES ; do
-  git clone --depth 1 $DUNEBRANCH $URL/$EXT/$MOD.git
+  git clone $DUNEBRANCH $URL/$EXT/$MOD.git
 done
 
 if [ "$EXT" != "" ]; then
