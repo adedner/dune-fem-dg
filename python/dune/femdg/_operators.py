@@ -542,8 +542,6 @@ def femDGOperator(Model, space,
             args=['DuneType &self, typename DuneType::TroubledCellIndicatorType indicator'],
             body=['self.setTroubledCellIndicator(indicator);'],
             extra=['pybind11::keep_alive<0,1>()']) )
-    # gridSizeInterior
-    extraMethods.append( Method('gridSizeInterior', '&DuneType::gridSizeInterior') )
 
     # limiter indicator
     extraMethods.append( Method('_indicator', '&DuneType::indicator') )
