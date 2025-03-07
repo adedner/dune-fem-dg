@@ -105,7 +105,7 @@ def evolve(gridView, order, Model, outName,
 
     operator.applyLimiter(U_h)
 
-    maxSize  = gridView.comm.sum( operator.gridSizeInterior() )
+    maxSize  = gridView.comm.sum( operator.gridSizeInterior )
     maxSize *= 2**(gridView.dimension*maxLevel)
 
     minMax = lambda U_h: None
@@ -133,7 +133,7 @@ def evolve(gridView, order, Model, outName,
 
             U_h.interpolate(Model.U0)
             operator.applyLimiter(U_h)
-            gridSize = gridView.comm.sum( operator.gridSizeInterior() )
+            gridSize = gridView.comm.sum( operator.gridSizeInterior )
             minMax( U_h )
             print(i,": size=",gridSize,", maxSize = ",maxSize," dt=",dt," tol=",hTol)
 
@@ -164,7 +164,7 @@ def evolve(gridView, order, Model, outName,
         t += dt
 
         if t > saveStep:
-            gridSize = gridView.comm.sum( operator.gridSizeInterior() )
+            gridSize = gridView.comm.sum( operator.gridSizeInterior )
             minMax( U_h )
             print("# t,dt,size,tol: ",t,dt,gridSize,-1 if maxLevel<=0 else hTol)
             fvU.interpolate( U_h )
