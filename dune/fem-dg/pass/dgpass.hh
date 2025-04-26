@@ -933,9 +933,6 @@ namespace Fem
         // init local function
         initLocalFunction( nb, updNb );
 
-        // get geometry of neighbor (updNb not initialized yet)
-        const Geometry & nbGeo = nb.geometry();
-
         // add update of the neighbor to the new discrete
         // function which represents L(u_h)
         // this update is convenient, so that we
