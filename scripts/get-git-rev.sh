@@ -13,6 +13,9 @@ if [ "$DUNE_CONTROL_PATH" != "" ]; then
   done
 fi
 
+echo "*****************************************************************"
+echo ""
+
 #DUNECOREMODULES="dune-common dune-istl dune-geometry dune-grid dune-localfunctions"
 #DUNEEXTMODULES="dune-alugrid dune-spgrid dune-polygongrid"
 #DUNEFEMMODULES="dune-fem dune-fempy dune-fem-dg"
