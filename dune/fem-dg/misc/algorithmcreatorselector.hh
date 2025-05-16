@@ -199,8 +199,12 @@ namespace Fem
   class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::fv, op >
   {
     static const bool advection = OperatorTraits::ModelType::hasAdvection;
-    static const bool diffusion = false;
-    static_assert( OperatorTraits::ModelType::hasDiffusion == false , "This is not implemented for FV" );
+    //static const bool diffusion = OperatorTraits::ModelType::hasDiffusion;
+    static const bool diffusion = false; // OperatorTraits::ModelType::hasDiffusion;
+    //static_assert( OperatorTraits::ModelType::hasDiffusion == false , "This is not implemented for FV" );
+    //typedef DGAdvectionDiffusionOperator< OperatorTraits >   DgType;
+    //typedef DGAdvectionOperator< OperatorTraits >            DgAdvectionType;
+    //typedef DGDiffusionOperator< OperatorTraits >            DgDiffusionType;
     typedef FVOperator< OperatorTraits >              DgType;
     typedef FVOperator< OperatorTraits >              DgAdvectionType;
     typedef FVOperator< OperatorTraits >              DgDiffusionType;

@@ -350,6 +350,8 @@ def femDGOperator(Model, space,
     # matter and with diffusion using 'none' seems a bad idea?
     if diffusionScheme is None or diffusionScheme is False:
         diffusionScheme = "none"
+    #else: # Does not seem to work in all cases, needs investigation
+    #    parameters["dgdiffusionflux.theoryparameters"] = 1.
 
     spaceType = space.cppTypeName
 
@@ -683,9 +685,10 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' )
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
+    stages = Method('stages', '&DuneType::stages')
 
     return load(includes, typeName,
-                constructor, solve, setTimeStepSize, deltaT,
+                constructor, solve, setTimeStepSize, deltaT, stages,
                 codegen=fullOperator.codegen).\
             Operator( fullOperator.fullOperator,
                       fullOperator.explicitOperator,

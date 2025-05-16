@@ -19,6 +19,10 @@ class FemDGStepper:
     def deltaT(self,dt):
         self.rkScheme.setTimeStepSize(dt)
 
+    @property
+    def stages(self):
+        return self.rkScheme.stages()
+
 def femdgStepper(*,order=None,rkType=None,operator=None,cfl=0.45,parameters=True):
     if parameters is True: parameters = {}
     elif parameters is False: parameters = None
