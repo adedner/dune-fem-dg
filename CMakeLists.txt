@@ -14,8 +14,28 @@ list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH}
 #include the dune macros
 include(DuneMacros)
 
+# deactivate global include-directories
+dune_policy(SET DP_DEFAULT_INCLUDE_DIRS NEW)
+
+# deactivate global calls to add_dune_all_flags in tests
+dune_policy(SET DP_TEST_ADD_ALL_FLAGS NEW)
+
+# do not make suggested dependencies required automatically
+dune_policy(SET DP_SUGGESTED_MODULE_DEPENDENCIES_REQUIRED_DOWNSTREAM NEW)
+
 # start a dune project with information from dune.module
 dune_project()
+
+# add all package flags to all executables in all subdirs
+dune_enable_all_packages()
+
+# create library target and export it as Dune::LocalFunctions
+dune_add_library(dunefemdg INTERFACE
+  EXPORT_NAME FemDG
+  LINK_LIBRARIES ${DUNE_LIBS})
+
+# set include directories to target
+dune_default_include_directories(dunefemdg INTERFACE)
 
 include(AddMPIFlags)
 
