@@ -14,7 +14,20 @@ def run(Model, Stepper=None,
         dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
         codegen=True,
         parameters=None,
-        modifyModel=None):
+        modifyModel=None,
+        pointData=None, cellData=None, cellVector=None,
+        callback=None):
+
+    if primitive is not None:
+        if pointData is not None:
+            raise AttributeError("use either 'primitive' or 'pointData' when calling 'run'")
+        pointData = primitive
+    if pointData is None and hasattr(Model,"pointData"):
+        pointData = Model.pointData
+    if cellData is None and hasattr(Model,"cellData"):
+        cellData = Model.cellData
+    if cellVector is None and hasattr(Model,"cellVector"):
+        cellVector = Model.cellVector
 
     # if no parameters is passed set default Runge-Kutta order to be p+1
     rkOrder = None
@@ -90,25 +103,28 @@ def run(Model, Stepper=None,
     u_h = space.interpolate(Model.initial, name='u_h')
     operator.applyLimiter( u_h )
 
+    x = SpatialCoordinate(space)
+    tc = Constant(0.0,"time")
+    try:
+        velo = gridFunction(Model.velocity(tc,x,u_h), gridView=space.gridView, order=2, name="velocity")
+    except AttributeError:
+        velo = None
+    try:
+        velo.setConstant("time",[t])
+    except:
+        pass
+    celldata   = cellData(Model,u_h) if cellData else [u_h]
+    pointdata  = pointData(Model,u_h) if pointData else [u_h]
+    cellvector = cellVector(Model,u_h,velo) if cellVector else [velo]
+
     # preparation for output
     vtk = lambda : None
     if saveStep is not None and Model.name is not None:
-        x = SpatialCoordinate(space)
-        tc = Constant(0.0,"time")
-        try:
-            velo = gridFunction(Model.velocity(tc,x,u_h), gridView=space.gridView, order=2, name="velocity")
-        except AttributeError:
-            velo = None
         vtk = grid.sequencedVTK(Model.name, subsampling=subsamp,
-               celldata=[u_h],
-               pointdata=primitive(Model,u_h) if primitive else [u_h],
-               cellvector=[velo]
+               pointdata=pointdata,
+               cellvector=cellvector,
+               celldata=celldata,
             )
-        try:
-            velo.setConstant("time",[t])
-        except:
-            pass
-    vtk()
 
     # measure CPU time
     start = time.time()
@@ -123,6 +139,13 @@ def run(Model, Stepper=None,
     assert not numpy.isnan( u_h.scalarProductDofs( u_h ) )
 
     t = 0
+
+    if callback is not None:
+        # use saveTime=-1 here to have t>saveTime to force a write in the callback
+        # the following vtk call will also always write
+        callback(vtk.number,t,dt,-1,pointdata,celldata,cellvector)
+    vtk()
+
     while t < Model.endTime:
         operator.setTime(t)
         dt = stepper(u_h)
@@ -135,6 +158,8 @@ def run(Model, Stepper=None,
             print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
             sys.exit(1)
+        if callback is not None:
+            callback(vtk.number,t,dt,saveTime,pointdata,celldata,cellvector)
         if t > saveTime:
             print('[',tcount,']','dt = ', dt, 'time = ',t,
                     'dtEst = ',operator.localTimeStepEstimate,
