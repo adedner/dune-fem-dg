@@ -15,6 +15,11 @@ namespace Fem
    *
    *  \note: A detailed description can be found in:
    *
+   *  Yue Cheng, Fengyan Li, Jianxian Qiu, Liwei Xu.
+   *  Positivity-preserving DG and central DG methods for ideal MHD equations
+   *  doi: http://dx.doi.org/10.1016/j.jcp.2012.12.019
+   *
+   *  The idea originated from:
    *  X. Zhang and C.-W. Shu,
    *  Maximum-principle-satisfying and positivity-preserving high order schemes
    *  for conservation laws: Survey and new developments.
