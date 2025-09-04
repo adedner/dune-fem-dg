@@ -196,29 +196,6 @@ def femDGModels(Model, space, initialTime=0, returnUFL=False):
 
     return [Model,advModel,diffModel]
 
-def femDGUFL(Model, space, initialTime=0,*, returnFull=False):
-    class M(Model):
-        if hasattr(Model,"S_e"):
-            def S_e(t,x,U,DU):
-                return -Model.S_e(t,x,U,DU)
-        if hasattr(Model,"S_i"):
-            def S_i(t,x,U,DU):
-                return -Model.S_i(t,x,U,DU)
-        if hasattr(Model,"F_c"):
-            def F_c(t,x,U):
-                return -Model.F_c(t,x,U)
-    advModel,diffModel,otherExpr = femDGModels(M, space, initialTime, returnUFL=True)
-    otherExpr["boundaryAFlux"] = -otherExpr["boundaryAFlux"]
-    form = advModel+diffModel + otherExpr["boundaryAFlux"] + otherExpr["boundaryDFlux"]
-
-    if not returnFull:
-        return [ form == 0, *otherExpr["dirichletBCs"] ]
-    else:
-        otherExpr["advModel"] = advModel
-        otherExpr["diffModel"] = diffModel
-        otherExpr["form"] = form
-        return otherExpr
-
 #####################################################
 ## fem-dg Operator
 #####################################################

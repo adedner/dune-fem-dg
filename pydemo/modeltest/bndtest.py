@@ -9,7 +9,7 @@ from dune.fem.function import gridFunction
 from dune.fem.plotting import plotPointData as plot
 from dune.fem.space import lagrange, dgonb
 from dune.fem.scheme import galerkin
-from dune.femdg import femDGUFL
+from dune.femdg import model2ufl, BndValue, BndFlux_v, BndFlux_c
 from dune.femdg.rk import femdgStepper
 
 from dune.fem import threading
@@ -18,14 +18,14 @@ threading.use = max(4,threading.max) # use at most 4 threads
 gridView = structuredGrid([0,0],[1.2*np.pi,2.2*np.pi],[30,60])
 coord = SpatialCoordinate(Space(2))
 
-def test(model,Psi, show=False, tol=0):
+def test(model,Psi, show, tol=0):
     if Psi is None:
         space = lagrange(gridView, order=2, dimRange=1)
     else:
         space = Psi.space
     u = space.interpolate(0,name="streamFunction")
     # dune.generator.setNoDependencyCheck()
-    scheme = galerkin( femDGUFL(model(Psi), space) )
+    scheme = galerkin( model2ufl(model(Psi), space) )
     # dune.generator.setDependencyCheck()
     scheme.solve(target=u)
     if Psi is not None:
@@ -77,10 +77,10 @@ class BaseModel:
 def dirichletTest(Psi):
     if Psi is None: # use the exact solution as Dirichlet boundary conditions
         class Model(BaseModel):
-            boundary = {range(1,5): BaseModel.exact(coord)}
+            boundary = {range(1,5): BndValue(BaseModel.exact(coord))}
     else: # use discrete solution as Dirichlet boundary conditions
         class Model(BaseModel):
-            boundary = {range(1,5): Psi}
+            boundary = {range(1,5): BndValue(Psi)}
     return Model
 
 def neumannTest(Psi,exact):
@@ -99,10 +99,14 @@ def neumannTest(Psi,exact):
             else:
                 return dot(Model.F_v(t,x,Psi,grad(Psi)),n)
                 # return as_vector([ dot(grad(Psi[0]),n) ])
+        bndFlux_c = BndFlux_c(bndFlux_c)
+        bndFlux_v = BndFlux_v(bndFlux_v)
         if exact:
-            boundary = {(1,2): BaseModel.exact(coord), (3,4): (bndFlux_c,bndFlux_v)}
+            boundary = {(1,2): BndValue(BaseModel.exact(coord)),
+                        (3,4): (bndFlux_c,bndFlux_v)}
         else:
-            boundary = {(1,2): Psi, (3,4): (bndFlux_c,bndFlux_v)}
+            boundary = {(1,2): BndValue(Psi),
+                        (3,4): (bndFlux_v,bndFlux_c)}
     return Model
 
 # 1) Dirichlet boundary conditions with exact solution
