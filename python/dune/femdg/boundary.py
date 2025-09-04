@@ -2,6 +2,7 @@ import inspect
 
 import ufl
 from ufl.core.expr import Expr
+from dune.fem.deprecated import deprecated
 
 class BoundaryCondition:
     """ base class for boundary conditions in Model.boundary
@@ -108,8 +109,8 @@ def classify_boundary(boundary_dict, hasAdvFlux, hasDiffFlux):
 
         #########################################################
         if needOld: # this will be removed
-            # TODO: raise deprecation warning
-            print("USING OLD BOUNDARY SETUP")
+            deprecated("""Use new tag classes in Model's boundary dictionary:
+    dune.femdg.BndValue|BndFlux_c|BndFlux_v""") # ,stacklevel=-1) # stacklevel=10 might work
             if isinstance(f,tuple) or isinstance(f,list):
                 boundary_flux_cs.update( [ (kk,BndFlux_c(f[0])) for kk in ids] )
                 boundary_flux_vs.update( [ (kk,BndFlux_v(f[1])) for kk in ids] )
