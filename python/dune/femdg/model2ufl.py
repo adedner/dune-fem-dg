@@ -16,32 +16,6 @@ except:
     duneUfl = None
 from .boundary import splitBoundary
 
-def boundaries_ufl(Model, space, t):
-    boundary_flux_cs, boundary_flux_vs, boundary_values = splitBoundary(Model)
-
-    u = TrialFunction(space)
-    n = FacetNormal(space.cell())
-    x = SpatialCoordinate(space.cell())
-
-    boundary_flux_cs = {
-        (k(x) if callable(k) else k): f(t, x, u, n) for k, f in boundary_flux_cs.items()
-    }
-    boundary_flux_vs = {
-        (k(x) if callable(k) else k): f(t, x, u, grad(u), n)
-        for k, f in boundary_flux_vs.items()
-    }
-    boundary_values = {
-        (k(x) if callable(k) else k): f(t, x, u) for k, f in boundary_values.items()
-    }
-    hasBoundaryValue = {k: True for k in boundary_values.keys()}
-
-    return (
-        boundary_flux_cs,
-        boundary_flux_vs,
-        boundary_values,
-        hasBoundaryValue,
-    )
-
 # a simple class used in case dune.ufl.DirichletBC could not be used, i.e.,
 # some other discretization package is used
 class DefaultDirichletBC:
@@ -62,6 +36,7 @@ def model_ufl(Model, space, t, DirichletBC, Constant):
     u = TrialFunction(space)
     v = TestFunction(space)
     x = SpatialCoordinate(space.cell())
+    n = FacetNormal(space.cell())
 
     f_c_model = None
     if hasattr(Model, "F_c"):
@@ -93,7 +68,7 @@ def model_ufl(Model, space, t, DirichletBC, Constant):
         boundary_flux_vs,
         boundary_values,
         hasBoundaryValue,
-    ) = boundaries_ufl(Model, space, t)
+    ) = splitBoundary(Model, t, x, u, n)
 
     dirichletBCs = [
         DirichletBC(space, item[1], item[0]) for item in boundary_values.items()

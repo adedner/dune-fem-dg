@@ -1,7 +1,6 @@
 import inspect
 
-from ufl import replace, zero
-from ufl.algorithms.ad import expand_derivatives
+import ufl
 from ufl.core.expr import Expr
 
 class BoundaryCondition:
@@ -20,18 +19,24 @@ class BndValue(BoundaryCondition):
     - one argument (x)
     - two arguments (t,x)
     - three arguments (t,x,u)
+    - four arguments (t,x,u,n)
     """
     def __init__(self, value):
         if isinstance(value, Expr):
-            super().__init__(lambda t, x, u: value)
+            super().__init__(lambda t,x,u,n: value)
         else:
             num_args = len(inspect.signature(value).parameters)
             if num_args == 1:
-                super().__init__(lambda t, x, u: value(x))
+                super().__init__(lambda t,x,u,n: value(x))
             elif num_args == 2:
-                super().__init__(lambda t, x, u: value(t, x))
+                super().__init__(lambda t,x,u,n: value(t, x))
             elif num_args == 3:
-                super().__init__(value)
+                super().__init__(lambda t,x,u,n: value(t, x, u))
+            elif num_args == 4:
+                super().__init__(lambda t,x,u,n: value(t, x, u, n))
+            elif num_args == 5: # this version is used in old setup
+                # and should already produce a deprecation warning
+                super().__init__(lambda t,x,u,n: value(t, x, u, n, n))
             else:
                 raise ValueError(f"Boundary has {num_args} arguments.")
 
@@ -50,7 +55,7 @@ class BndFlux_c(BoundaryCondition):
     pass
 
 
-def classify_boundary(boundary_dict):
+def classify_boundary(boundary_dict, hasAdvFlux, hasDiffFlux):
     """ utility method that splits a boundary dictionary into three parts
     for Dirichlet,convective and diffusive fluxes
     """
@@ -60,6 +65,7 @@ def classify_boundary(boundary_dict):
 
     for k, f in boundary_dict.items():
 
+        # collect all ids
         if isinstance(k, (Expr, str)):
             ids = [k]
         elif callable(k):
@@ -72,6 +78,7 @@ def classify_boundary(boundary_dict):
             except TypeError:
                 ids = [k]
 
+        needOld = False
         if isinstance(f, (tuple, list)):
             assert len(f) == 2, "too many boundary fluxes provided"
             if isinstance(f[0], BndFlux_v) and isinstance(f[1], BndFlux_c):
@@ -82,12 +89,9 @@ def classify_boundary(boundary_dict):
                 boundary_flux_vs.update([(kk, f[1]) for kk in ids])
                 boundary_flux_cs.update([(kk, f[0]) for kk in ids])
 
-            elif isinstance(f[1], BndFlux_c) and isinstance(f[0], BndFlux_v):
-                boundary_flux_vs.update([(kk, f[0]) for kk in ids])
-                boundary_flux_cs.update([(kk, f[1]) for kk in ids])
-
             else:
-                raise ValueError("Need AFlux and DFlux")
+                needOld = True
+                # raise ValueError("Need AFlux and DFlux")
 
         elif isinstance(f, BndFlux_v):
             boundary_flux_vs.update([(kk, f) for kk in ids])
@@ -99,24 +103,46 @@ def classify_boundary(boundary_dict):
             boundary_values.update([(kk, f) for kk in ids])
 
         else:
-            raise NotImplementedError(f"unknown boundary type {k} : {f}")
+            needOld = True
+            # raise NotImplementedError(f"unknown boundary type {k} : {f}")
+
+        #########################################################
+        if needOld: # this will be removed
+            # TODO: raise deprecation warning
+            print("USING OLD BOUNDARY SETUP")
+            if isinstance(f,tuple) or isinstance(f,list):
+                boundary_flux_cs.update( [ (kk,BndFlux_c(f[0])) for kk in ids] )
+                boundary_flux_vs.update( [ (kk,BndFlux_v(f[1])) for kk in ids] )
+            else:
+                if len(inspect.signature(f).parameters) == 4:
+                    if hasAdvFlux and not hasDiffFlux:
+                        boundary_flux_cs.update( [ (kk,BndFlux_v(f)) for kk in ids] )
+                    elif not hasAdvFlux and hasDiffFlux:
+                        boundary_flux_vs.update( [ (kk,BndFlux_c(f)) for kk in ids] )
+                    else:
+                        assert not (hasAdvFlux and hasDiffFlux), "one boundary flux provided for id "+str(k)+" but two bulk fluxes given"
+                else:
+                    boundary_values.update( [ (kk,BndValue(f)) for kk in ids] )
 
     return boundary_flux_cs, boundary_flux_vs, boundary_values
 
 
-def splitBoundary(Model, override_boundary_dict=None):
+def _splitBoundary(Model, override_boundary_dict=None):
     """ take a Model and split boundary dictionary testing and requirements are met
     """
     if override_boundary_dict is not None:
         boundary_dict = override_boundary_dict
     else:
-        boundary_dict = Model.boundary
+        try:
+            boundary_dict = Model.boundary
+        except AttributeError:
+            boundary_dict = {}
 
     hasFlux_c = hasattr(Model, "F_c")
     hasFlux_v = hasattr(Model, "F_v")
 
     boundary_flux_cs, boundary_flux_vs, boundary_values = classify_boundary(
-        boundary_dict
+        boundary_dict, hasFlux_c, hasFlux_v
     )
 
     if hasFlux_c and hasFlux_v:
@@ -134,3 +160,30 @@ def splitBoundary(Model, override_boundary_dict=None):
     assert boundary_values.keys().isdisjoint(boundary_flux_vs)
 
     return boundary_flux_cs, boundary_flux_vs, boundary_values
+
+def splitBoundary(Model, t,x,u,n):
+    """ take a Model and split boundary dictionary testing and requirements are met
+        Replaces all callables with the correct UFL expressions using
+        t, SC, TrialF, FacetN
+    """
+    boundary_flux_cs, boundary_flux_vs, boundary_values = _splitBoundary(Model)
+
+    boundary_flux_cs = {
+        (k(x) if callable(k) else k): f(t, x, u, n) for k, f in boundary_flux_cs.items()
+    }
+    boundary_flux_vs = {
+        (k(x) if callable(k) else k): f(t, x, u, ufl.grad(u), n)
+        for k, f in boundary_flux_vs.items()
+    }
+    boundary_values = {
+        (k(x) if callable(k) else k): f(t, x, u, n)
+         for k, f in boundary_values.items()
+    }
+    hasBoundaryValue = {k: True for k in boundary_values.keys()}
+
+    return (
+        boundary_flux_cs,
+        boundary_flux_vs,
+        boundary_values,
+        hasBoundaryValue,
+    )

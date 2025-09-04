@@ -13,7 +13,7 @@ from dune.femdg.testing import run
 from scalar import pulse as problem
 # from scalar import diffusivePulse as problem
 
-parameter.append({"fem.verboserank": 0})
+parameter.append({"fem.verboserank": -1})
 
 parameters = {"fem.ode.odesolver": "EX",   # EX, IM, IMEX
               "fem.ode.order": 3,

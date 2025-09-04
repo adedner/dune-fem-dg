@@ -66,8 +66,8 @@ psi = space.interpolate(0,name="streamFunction")
 scheme = galerkin( model2ufl(VelocityModel, space) )
 scheme.solve(target=psi)
 velocity = as_vector([-psi[0].dx(1),psi[0].dx(0)])
-gridFunction(velocity).plot(gridLines=None, vectors=[0,1], block=False)
-pyplot.show()
+# gridFunction(velocity).plot(gridLines=None, vectors=[0,1], block=False)
+# pyplot.show()
 
 #############################################################
 
@@ -112,5 +112,5 @@ while t<endTime:
 
 from dune.fem.plotting import plotComponents
 from matplotlib import ticker
-plotComponents(c_new, gridLines=None, level=1,
-               colorbar={"orientation":"horizontal", "ticks":ticker.MaxNLocator(nbins=4)})
+# plotComponents(c_new, gridLines=None, level=1,
+#                colorbar={"orientation":"horizontal", "ticks":ticker.MaxNLocator(nbins=4)})

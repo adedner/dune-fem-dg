@@ -5,6 +5,7 @@ from ufl import grad, TrialFunction, SpatialCoordinate, FacetNormal,\
                 Coefficient, conditional
 from dune.source.cplusplus import Variable, UnformattedExpression,\
                                   AccessModifier, Declaration, Method
+from .boundary import splitBoundary
 
 def uflExpr(Model,space,t):
     u = TrialFunction(space)
@@ -69,49 +70,13 @@ def uflExpr(Model,space,t):
         jump = jump(t,x,u,u)
     hasAdvFlux = hasattr(Model,"F_c")
     hasDiffFlux = hasattr(Model,"F_v")
-    boundaryDict = getattr(Model,"boundary",{})
-    boundaryAFlux = {}
-    boundaryDFlux = {}
-    boundaryValue = {}
-    hasBoundaryValue = {}
-    for k,f in boundaryDict.items():
-        # collect all ids (could be list or range)
-        ids = []
-        try:
-            for kk in k:
-                ids += [kk]
-        except TypeError:
-            ids += [k]
-        # TODO: check that id is not used more then once
-        # figure out what type of boundary condition is used
-        if isinstance(f,tuple) or isinstance(f,list):
-            assert hasAdvFlux and hasDiffFlux, "two boundary fluxes provided for id "+str(k)+" but only one bulk flux given"
-            method = [f[0](t,x,u,n), f[1](t,x,u,grad(u),n)]
-            boundaryAFlux.update( [ (kk,method[0]) for kk in ids] )
-            boundaryDFlux.update( [ (kk,method[1]) for kk in ids] )
-        else:
-            try:
-                method = f(t,x,u,n)
-                if hasAdvFlux and not hasDiffFlux:
-                    boundaryAFlux.update( [ (kk,method) for kk in ids] )
-                elif not hasAdvFlux and hasDiffFlux:
-                    boundaryDFlux.update( [ (kk,method) for kk in ids] )
-                else:
-                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk fluxes given"
-            except TypeError:
-                if isinstance(f, ufl.core.expr.Expr):
-                    # allow to pass in a ufl expression instead of a function for the boundary conditions
-                    # This works for non time dependent b.c
-                    method = f
-                else:
-                    try:
-                        method = f(t,x,u)
-                    except TypeError:
-                        method = f(t,x,u,n,n)
-                boundaryValue.update( [ (kk,method) for kk in ids] )
-                # add dummy values for hasBoundaryValue method
-                bndReturn = True
-                hasBoundaryValue.update( [ (kk,bndReturn) for kk in ids] )
+
+    (
+        boundaryAFlux,
+        boundaryDFlux,
+        boundaryValue,
+        hasBoundaryValue,
+    ) = splitBoundary(Model, t, x, u, n)
 
     limiterModifiedDict = getattr(Model,"limitedRange",None)
     if limiterModifiedDict is None:
@@ -303,49 +268,12 @@ def codeFemDg(self, *args, **kwargs):
     #####################
     ## boundary treatment
     # TODO make 'copy' boundary conditions the default?
-    boundaryDict = getattr(Model,"boundary",{})
-    boundaryAFlux = {}
-    boundaryDFlux = {}
-    boundaryValue = {}
-    hasBoundaryValue = {}
-    for k,f in boundaryDict.items():
-        # collect all ids (could be list or range)
-        ids = []
-        try:
-            for kk in k:
-                ids += [kk]
-        except TypeError:
-            ids += [k]
-        # TODO: check that id is not used more then once
-        # figure out what type of boundary condition is used
-        if isinstance(f,tuple) or isinstance(f,list):
-            assert hasAdvFlux and hasDiffFlux, "two boundary fluxes provided for id "+str(k)+" but only one bulk flux given"
-            method = [f[0](t,x,u,n), f[1](t,x,u,grad(u),n)]
-            boundaryAFlux.update( [ (kk,method[0]) for kk in ids] )
-            boundaryDFlux.update( [ (kk,method[1]) for kk in ids] )
-        else:
-            try:
-                method = f(t,x,u,n)
-                if hasAdvFlux and not hasDiffFlux:
-                    boundaryAFlux.update( [ (kk,method) for kk in ids] )
-                elif not hasAdvFlux and hasDiffFlux:
-                    boundaryDFlux.update( [ (kk,method) for kk in ids] )
-                else:
-                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk flux given"
-            except TypeError:
-                if isinstance(f, ufl.core.expr.Expr):
-                    # allow to pass in a ufl expression instead of a function for the boundary conditions
-                    # This works for non time dependent b.c
-                    method = f
-                else: # must be suitable functions instead
-                    try:
-                        method = f(t,x,u)
-                    except TypeError:
-                        method = f(t,x,u,n,n)
-                boundaryValue.update( [ (kk,method) for kk in ids] )
-                # add dummy values for hasBoundaryValue method
-                bndReturn = True
-                hasBoundaryValue.update( [ (kk,bndReturn) for kk in ids] )
+    (
+        boundaryAFlux,
+        boundaryDFlux,
+        boundaryValue,
+        hasBoundaryValue,
+    ) = splitBoundary(Model, t, x, u, n)
 
     self.generateMethod(code, boundaryAFlux,
             'bool', 'boundaryFlux',
