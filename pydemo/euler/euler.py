@@ -4,6 +4,7 @@ from dune.grid import reader
 from dune.ufl import cell, GridFunction
 from dune.fem.function import gridFunction
 import numpy
+from dune.femdg import BndValue, BndFlux_v, BndFlux_c
 
 def CompressibleEuler(dim, gamma):
     class Model:
@@ -85,27 +86,27 @@ def CompressibleEuler(dim, gamma):
     return Model
 def CompressibleEulerNeuman(dim, gamma, bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
-        boundary = {bnd: lambda t,x,u,n: Model.F_c(t,x,u)*n}
+        boundary = {bnd: BndFlux_c(lambda t,x,u,n: Model.F_c(t,x,u)*n)}
     return Model
 def CompressibleEulerDirichlet(dim, gamma, bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
-        boundary = {bnd: lambda t,x,u: u}
+        boundary = {bnd: BndValue(lambda t,x,u: u)}
     return Model
 def CompressibleEulerSlip(dim, gamma,bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
         def outflowFlux(t,x,u,n):
             _,_, p = CompressibleEuler(dim,gamma).toPrim(u)
             return as_vector([ 0, *(p*n), 0 ])
-        boundary = {bnd: outflowFlux}
+        boundary = {bnd: BndFlux_c(outflowFlux)}
     return Model
 def CompressibleEulerReflection(dim, gamma,bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
-        def reflection(t,x,u,n,k):
+        def reflection(t,x,u,n):
             uRot = CompressibleEuler(dim,gamma).rotateForth(u, n)
             # flip sign of x-momentum (velocity)
             uRot[ 1 ] = -uRot[ 1 ]
             return as_vector( CompressibleEuler(dim,gamma).rotateBack(uRot, n) )
-        boundary = {bnd: reflection}
+        boundary = {bnd: BndValue(reflection)}
     return Model
 
 def riemanProblem(Model,x,x0,UL,UR):
@@ -120,12 +121,13 @@ def constant(dim=2,gamma=1.4):
     Model.name="constant"
     return Model
 def sod(dim=2,gamma=1.4):
-    x0 = 0.5
+    x0 = 0
     x = SpatialCoordinate(cell(dim))
     Model = CompressibleEulerReflection(dim,gamma)
     Vl, Vr = [1.,0.,0.,1.], [0.125,0,0,0.1]
     Model.initial=riemanProblem( Model, x[0], x0, Vl, Vr)
-    Model.domain=[[0, 0], [1, 0.25], [8, 2]]
+    # Model.domain=[[-1, 0], [1, 0.25], [100, 5]]
+    Model.domain=[[-1, 0], [1, 0.25], [10, 5]]
     Model.endTime=0.15
     def chorin(gv,t):
         gf = gv.function("chorin","chorin.hh", Vl,Vr,gamma,x0,t,name="chorin")
