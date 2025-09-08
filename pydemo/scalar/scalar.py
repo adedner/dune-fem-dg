@@ -1,6 +1,7 @@
 from ufl import *
 from dune.ufl import Space
 import dune.fem
+from dune.femdg import BndValue, BndFlux_v, BndFlux_c
 
 class Transport1D:
     dimRange = 1
@@ -8,7 +9,7 @@ class Transport1D:
     def F_c(t,x,U):
         return as_matrix( [ [U[0], 0] ] )
 
-    boundary = {range(1,5): lambda t,x,u: u}
+    boundary = {range(1,5): BndValue(lambda t,x,u: u)}
 
     def maxWaveSpeed(t,x,U,n):
         return abs(n[0])
@@ -45,12 +46,9 @@ def LinearAdvectionDiffusion1D(v,eps):
     return Model
 def LinearAdvectionDiffusion1DMixed(v,eps,bnd):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
-        def dirichletValue(t,x,u):
-            return bnd(t,x)
-        def zeroFlux(t,x,u,n):
-            return 0
-        def zeroDiffFlux(t,x,u,du,n):
-            return 0
+        dirichletValue = BndValue(lambda t,x,u: bnd(t,x))
+        zeroFlux = BndFlux_c(lambda t,x,u,n: 0)
+        zeroDiffFlux = BndFlux_v(lambda t,x,u,du,n: 0)
         if v is not None and eps is not None:
             boundary = {(1,2): dirichletValue, (3,4): [zeroFlux,zeroDiffFlux] }
         else:
@@ -60,7 +58,7 @@ def LinearAdvectionDiffusion1DDirichlet(v,eps,bnd):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
         def dirichletValue(t,x,u):
             return bnd(t,x)
-        boundary = { range(1,5): dirichletValue }
+        boundary = { range(1,5): BndValue(dirichletValue) }
     return Model
 def LinearAdvectionDiffusion1DPeriodic(v,eps):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
@@ -69,9 +67,10 @@ def LinearAdvectionDiffusion1DPeriodic(v,eps):
         def zeroDiffFlux(t,x,u,du,n):
             return 0
         if v is not None and eps is not None:
-            boundary = {(3,4): [zeroFlux,zeroDiffFlux] }
+            boundary = {(3,4): [BndFlux_c(zeroFlux),
+                                BndFlux_v(zeroDiffFlux)] }
         else:
-            boundary = {(3,4): zeroFlux }
+            boundary = {(3,4): BndFlux_c(zeroFlux) }
     return Model
 
 

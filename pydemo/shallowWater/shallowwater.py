@@ -3,6 +3,7 @@
 from dune.grid import cartesianDomain, yaspGrid
 from dune.fem.space import dgonb
 from dune.alugrid import aluCubeGrid
+from dune.femdg import BndValue, BndFlux_v, BndFlux_c
 from ufl import *
 
 def ShallowWater(topo,g):
@@ -37,8 +38,8 @@ def ShallowWater(topo,g):
             return (hL - hR)/(0.5*(hL + hR))
         def S_e(t,x,U,DU): # or S_i for a stiff source
             return as_vector( [0, *(-U[0]*g*grad(topo)) ])
-        # boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
-        boundary = {range(1,5): lambda t,x,u: u}
+        # boundary = {range(1,5): BndFlux_c(lambda t,x,u,n: Model.F_c(t,x,u)*n)}
+        # boundary = {range(1,5): BndValue(lambda t,x,u: u)}
         topography   = topo
         #def NumericalF_c(model,clsName,includes):
         #    print("NumericalFlux_c")
@@ -85,8 +86,12 @@ def bgModel(OrigModel,space):
         def S_e(t,x,U,DU): # or S_i for a stiff source
             return OrigModel.S_e(t,x,U+bg_h,DU+grad(bg_h)) - OrigModel.S_e(t,x,bg_h,grad(bg_h))
         # might want something like: U+bg(entity)-bg(boundary)
-        boundary = {(1,2,3,4): lambda t,x,U: U}
-        # boundary = {(1,2): lambda t,x,U: U, (3,4): lambda t,x,U: as_vector([U[0],U[1],-U[0]])}
+        boundary = {(2,3,4): BndValue(lambda t,x,U: U),
+                    1: BndValue(lambda t,x,U: as_vector([U[0],-U[1],U[2]]))}
+        # boundary = {(1,2): BndValue(lambda t,x,U: U),
+        #             (3,4): BndValue(lambda t,x,U: as_vector([U[0],U[1],-U[2]]))}
+        # due to the use of 'topography_h in the following this fails with
+        #     raise KeyError('coefficient provided with no name')
         # boundary = {range(1,5): lambda t,x,U,n: Model.F_c(t,x,U)*n}
         initial = OrigModel.initial - OrigModel.bg_h
     return Model

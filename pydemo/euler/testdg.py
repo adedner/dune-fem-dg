@@ -37,12 +37,13 @@ parameters = {"fem.ode.odesolver": "EX",
 
 Model = problem()
 # use shorter end time for testing
+# Model.endTime = 0.4
 Model.endTime = 0.025
 Model.exact = None
 
 run(Model,
     startLevel=0, polOrder=2, limiter="default",
-    primitive=primitive, saveStep=0.16, subsamp=2,
+    primitive=primitive, saveStep=0.04, subsamp=2,
     dt=None,threading=True,grid="alucube", space="dgonb",
     parameters=parameters)
 

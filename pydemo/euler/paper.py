@@ -5,6 +5,7 @@ from dune.grid import structuredGrid
 from dune.fem.space import dgonb, finiteVolume
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
+from dune.femdg import BndValue, BndFlux_v, BndFlux_c
 
 # Basic model for hyperbolic conservation law
 class Model:
@@ -25,7 +26,7 @@ class Model:
                   [rho*v[0]*v[1], rho*v[1]*v[1] + p],
                   [(U[3]+p)*v[0], (U[3]+p)*v[1]] ] )
     # simple 'outflow' boundary conditions on all boundaries
-    boundary = {range(1,5): lambda t,x,U: U}
+    boundary = {range(1,5): BndValue(lambda t,x,U: U)}
 
     # interface method needed for LLF and time step control
     def maxWaveSpeed(t,x,U,n):
@@ -99,6 +100,18 @@ for op in versions:
 
 # Part 3: FV on polygonal grid
 print("\n###############\n Start Part 3\n",flush=True)
+
+"""
+This fails with
+dune-fem/dune/fem/space/shapefunctionset/caching.hh:266:
+void Dune::Fem::CachingShapeFunctionSet<Dune::Fem::DiscontinuousGalerkinSpaceTraits<Dune::Fem::FunctionSpace<double, double, 2, 4>, Dune::Fem::GridPartAdapter<Dune::GridView<Dune::__PolygonGrid::GridViewTraits<double>>>, 1, Dune::Fem::CodegenStorage>::ScalarShapeFunctionSet>
+     ::evaluateEach(const Quadrature &, std::size_t, Functor, std::integral_constant<bool, true>) const
+     [ShapeFunctionSet = Dune::Fem::DiscontinuousGalerkinSpaceTraits<Dune::Fem::FunctionSpace<double, double, 2, 4>, Dune::Fem::GridPartAdapter<Dune::GridView<Dune::__PolygonGrid::GridViewTraits<double>>>, 1, Dune::Fem::CodegenStorage>::ScalarShapeFunctionSet, Quadrature = Dune::FemPy::CachingPoint<Dune::Fem::GridPartAdapter<Dune::GridView<Dune::__PolygonGrid::GridViewTraits<double>>>, Dune::FieldVector<double, 2>, 0>, Functor = Dune::Fem::VectorialShapeFunctionSet<Dune::Fem::ShapeFunctionSetProxy<Dune::Fem::SelectCachingShapeFunctionSet<Dune::Fem::DiscontinuousGalerkinSpaceTraits<Dune::Fem::FunctionSpace<double, double, 2, 4>, Dune::Fem::GridPartAdapter<Dune::GridView<Dune::__PolygonGrid::GridViewTraits<double>>>, 1, Dune::Fem::CodegenStorage>::ScalarShapeFunctionSet, Dune::Fem::CodegenStorage>>, Dune::FieldVector<double, 4>>::VectorialFunctor<Dune::Fem::AxpyFunctor<Dune::DynamicVector<double, Dune::Fem::StackAllocator<double, Dune::Fem::ThreadSafeValue<Dune::Fem::UninitializedObjectStack> *>>, Dune::FieldVector<double, 4>>, Dune::FieldVector<double, 4>>]:
+Assertion `(quadrature.id() < rangeCaches_.size()) && !rangeCaches_[ quadrature.id() ].empty()' failed.
+"""
+
+sys.exit(0)
+
 from dune.generator import algorithm
 from dune.polygongrid import voronoiDomain, polygonGrid
 from dune.grid import reader

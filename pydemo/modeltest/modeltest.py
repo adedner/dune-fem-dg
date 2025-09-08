@@ -9,7 +9,7 @@ from dune.fem.function import gridFunction
 from dune.fem.plotting import plotPointData as plot
 from dune.fem.space import lagrange, dgonb
 from dune.fem.scheme import galerkin
-from dune.femdg import femDGUFL
+from dune.femdg import model2ufl, BndValue, BndFlux_v, BndFlux_c
 from dune.femdg.rk import femdgStepper
 
 from dune.fem import threading
@@ -50,15 +50,20 @@ def timeModel(Model, old):
 
 class VelocityModel:
     def S_e(t,x,U,DU):
-        return conditional(x[1]<0,as_vector([3]),as_vector([-3]))
+        # issue with using as_vector([3]) due to fatal error:
+        # non-constant-expression cannot be narrowed from type 'int' to 'double' in initializer list [-Wc++11-narrowing]
+        # this is due to use of 'auto' in integrands C++ code which leads to 'int'
+        # while the return type then needs to be a 'double'. Perhaps we
+        # somehow need to introduce a cast or change code to double(3)
+        return conditional(x[1]<0,as_vector([3.]),as_vector([-3.]))
     def F_v(t,x,U,DU):
         return DU
-    boundary = {range(1,5): as_vector([0.])}
+    boundary = {range(1,5): BndValue(as_vector([0.]))}
 
 gridView = structuredGrid([0,-np.pi],[np.pi,np.pi],[30,60])
 space = lagrange(gridView,dimRange=1)
 psi = space.interpolate(0,name="streamFunction")
-scheme = galerkin( femDGUFL(VelocityModel, space) )
+scheme = galerkin( model2ufl(VelocityModel, space) )
 scheme.solve(target=psi)
 velocity = as_vector([-psi[0].dx(1),psi[0].dx(0)])
 # gridFunction(velocity).plot(gridLines=None, vectors=[0,1], block=False)
@@ -79,13 +84,13 @@ class ChemicalModel:
         return as_matrix([ [*(velocity*u)] for u in U ])
     def F_v(t,x,U,DU):
         return 0.02*DU
-    boundary = {range(1,5): as_vector([0,0,0])}
+    boundary = {range(1,5): BndValue(as_vector([0,0,0]))}
 
 space = lagrange(gridView,dimRange=3)
 c_old = space.interpolate(as_vector([0,0,0]),name="concentrations")
 c_new = space.interpolate(as_vector([0,0,0]),name="concentrations")
 Model = timeModel(ChemicalModel, c_old)
-scheme = galerkin( femDGUFL(Model, space) )
+scheme = galerkin( model2ufl(Model, space) )
 
 ###################################
 
