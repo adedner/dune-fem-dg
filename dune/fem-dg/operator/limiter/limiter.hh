@@ -238,7 +238,7 @@ namespace Fem
    *
    * \ingroup PassBased
    */
-  template <class Model, class DiscreteFunction>
+  template <class Model, class DiscreteFunction, bool threading = false >
   class LimitedReconstruction
   {
     // MethodOrderTraits
@@ -297,15 +297,22 @@ namespace Fem
     typedef typename ReconstructionType :: LocalFunctionType  LocalFunctionType;
 
     typedef StartPass< DiscreteFunctionType , u > StartPassType;
-    typedef LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > LimitPassType;
+    typedef LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > InnerPassType;
+
+    typedef Fem::ThreadIterator< GridPartType >                               ThreadIteratorType;
+
+    typedef typename std::conditional< threading,
+            ThreadPass < InnerPassType, ThreadIteratorType, true>,
+            InnerPassType > :: type                                           LimitPassType;
 
   public:
-    LimitedReconstruction( const Model& model, const DiscreteFunctionSpaceType& space )
+    LimitedReconstruction( const Model& model, const DiscreteFunctionSpaceType& space,
+                           const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container())
       : space_( space.gridPart() )
       , reconstruction_( "LimitedReconstruction" , space_ )
       , problem_( model, 1 )
       , startPass_()
-      , limitPass_( problem_ , startPass_, space_ )
+      , limitPass_( problem_ , startPass_, space_, parameter )
     {}
 
     //! calculate internal reconstruction

@@ -8,12 +8,16 @@
 #include <dune/grid/common/geometry.hh>
 
 #include <dune/fem/gridpart/common/capabilities.hh>
+#include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
 
 #include <dune/grid/common/gridenums.hh>
 #include <dune/fem/space/finitevolume.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 #include <dune/fem-dg/pass/context.hh>
+
+#include <dune/fem-dg/operator/limiter/limitermodel.hh>
+#include <dune/fem-dg/operator/limiter/limiter.hh>
 
 namespace Dune
 {
@@ -87,6 +91,10 @@ namespace detail
     typedef PointContext< Entity >                LocalEvalEntityType;
     typedef PointContext< Entity, Intersection >  LocalEvalIntersectionType;
 
+    // use IntersectionQuadrature to create appropriate face quadratures
+    typedef Fem::IntersectionQuadrature< FaceQuadratureType, true /* conforming */ > IntersectionQuadratureType;
+    typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
+
   public:
     /** \brief constructor
      *
@@ -103,7 +111,8 @@ namespace detail
       jacRight_( 0 ),
       center_( 0 ),
       faceCenters_(),
-      localFaceCenter_( 0.5 )
+      localFaceCenter_( 0.5 ),
+      numberOfElements_( 0 )
     {
       typedef typename GridPartType::ctype ctype;
       {
@@ -125,6 +134,7 @@ namespace detail
         assert( geomTypes.size() == 1 );
         localFaceCenter_ = Dune::referenceElement<ctype, GridPartType::dimension-1>( geomTypes[ 0 ] ).position( 0, 0 );
       }
+
     }
 
     template <class GridFunction, class Iterators>
@@ -164,7 +174,8 @@ namespace detail
     template <class GridFunction, class Iterators, class Functor>
     void evaluate( const GridFunction& u, DestinationType& w, const Iterators& iterators, Functor& addLocalDofs ) const
     {
-      if( u.space().order() > 0 )
+      // check for linear reconstructions
+      if ( u.space().order() > 0 )
       {
         // higher order needs more sophisticated eval
         applyImpl( u, iterators, addLocalDofs, std::true_type() );
@@ -320,23 +331,40 @@ namespace detail
             // local context neighbor
             LocalEvalIntersectionType right( neighbor, intersection, faceCenters_[ intersection.indexInOutside() ], localFaceCenter_, nbVolume );
 
+            // apply numerical flux
+            RangeType fluxLeft, fluxRight;
+            double waveSpeed = 0;
+
             // evaluate data for higher order
             if constexpr ( higherOrder )
             {
-              uNb.init( neighbor );
-              std::abort();
-              // TODO: need face center here
-              uEn.evaluate( center_, uLeft );
-              uNb.evaluate( center_, uRight );
-            }
-            else
-            {
-              u.getLocalDofs( neighbor, uRight );
-            }
+              // otherwise adjust quadrature
+              assert( intersection.conforming() );
 
-            // apply numerical flux
-            RangeType fluxLeft, fluxRight;
-            const double waveSpeed = numFlux_.numericalFlux( left, right, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
+              // create intersection quadrature (without neighbor check)
+              IntersectionQuadratureType interQuad( gridPart(), intersection, 0 /* faceQuadOrder */, true /* noNbCheck */);
+
+              // get appropriate references
+              const auto& faceQuadInner = interQuad.inside();
+              const auto& faceQuadOuter = interQuad.outside();
+
+              uNb.init( neighbor );
+              assert( faceQuadInner.nop() == 1 );
+
+              uEn.evaluate( faceQuadInner[0], uLeft );
+              uNb.evaluate( faceQuadOuter[0], uRight );
+
+              // compute numerical flux (2nd order)
+              waveSpeed = numFlux_.numericalFlux( left, right, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
+            }
+            else // low order scheme
+            {
+              // evaluate u on neighbor
+              u.getLocalDofs( neighbor, uRight );
+
+              // compute numerical flux (low order)
+              waveSpeed = numFlux_.numericalFlux( left, right, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
+            }
 
             // calc update of entity
             enUpdate.axpy( -enVolume_1, fluxLeft );
@@ -355,8 +383,11 @@ namespace detail
           // evaluate data for higher order
           if constexpr ( higherOrder )
           {
+            FaceQuadratureType faceQuadInner(gridPart(), intersection, 0 /* faceQuadOrder */,
+                                             FaceQuadratureType::INSIDE);
+
             // evaluate data
-            uEn.evaluate( center_, uLeft );
+            uEn.evaluate( faceQuadInner[0], uLeft );
           }
 
           const bool hasBndValue = model_.hasBoundaryValue( left );
@@ -401,7 +432,7 @@ namespace detail
  * \ingroup PassBased
  * \ingroup PassOperator
  */
-template< class Traits >
+template< class Traits, bool limiter >
 class FVOperator :
   public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
 {
@@ -443,6 +474,8 @@ public:
   // threading types
   typedef Fem::ThreadIterator< GridPartType >                ThreadIteratorType;
 
+  typedef Dune::Fem::LimitedReconstruction< ModelType, DestinationType, threading >  LimitedReconstructionType;
+
 public:
   template< class ExtraParameterTupleImp >
   FVOperator( GridPartType& gridPart,
@@ -462,6 +495,7 @@ public:
     : gridPart_( gridPart )
     , space_( gridPart_ )
     , iterators_( gridPart_ )
+    , reconstruction_()
     , impl_( space_, model, numFlux )
     , wTmp_()
     , numberOfElements_( 0 )
@@ -474,6 +508,11 @@ public:
       wTmp_.clear();
       for( size_t i=0; i<threadM1; ++i )
         wTmp_.emplace_back( DestinationType( "wTmp", space_ ) );
+    }
+
+    if constexpr ( limiter )
+    {
+      reconstruction_.reset( new LimitedReconstructionType( model, space_ ) );
     }
   }
 
@@ -594,6 +633,23 @@ protected:
   template <class GridFunction>
   void evaluate( const GridFunction& u, DestinationType& w ) const
   {
+    if constexpr( limiter )
+    {
+      // compute reconstruction
+      reconstruction_->update( u );
+
+      // use reconstruction to compute fluxes
+      evaluateFV( reconstruction_->function(), w );
+    }
+    else
+    {
+      evaluateFV( u, w );
+    }
+  }
+
+  template <class GridFunction>
+  void evaluateFV( const GridFunction& u, DestinationType& w ) const
+  {
     // update counter
     called();
 
@@ -637,7 +693,9 @@ protected:
   GridPartType&                       gridPart_;
   DiscreteFunctionSpaceType           space_;
   mutable ThreadIteratorType          iterators_;
+  mutable std::shared_ptr< LimitedReconstructionType > reconstruction_;
   ThreadSafeValue< FVOperatorType >   impl_;
+
   mutable std::vector< DestinationType >  wTmp_;
   mutable double                      timeStepEstimate_;
   mutable size_t                      numberOfElements_;
