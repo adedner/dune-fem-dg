@@ -265,6 +265,20 @@ namespace Fem
     typedef std::shared_ptr< TroubledCellIndicatorBase<ArgumentFunctionType> > TroubledCellIndicatorType;
 
   protected:
+    template < class SpaceImp >
+    struct isFVSpace
+    {
+      static const bool v = false ;
+    };
+
+    template< class FunctionSpace, class GridPart, int codim, class Storage >
+    struct isFVSpace< FiniteVolumeSpace< FunctionSpace, GridPart, codim, Storage > >
+    {
+      static const bool v = true ;
+    };
+
+    static const bool isFiniteVolumeSpace = isFVSpace< typename ArgumentFunctionType::DiscreteFunctionSpaceType > :: v ;
+
     typedef typename GridPartType :: GridViewType  GridViewType ;
 
     struct BoundaryValue
@@ -1226,6 +1240,8 @@ namespace Fem
       comboVec_.push_back(comb);
     }
 
+
+
     // check physicality on given quadrature
     template <class QuadratureType, class LocalFunctionImp>
     bool checkPhysicalQuad(const QuadratureType& quad,
@@ -1412,9 +1428,19 @@ namespace Fem
                      const LocalFunctionType& lf,
                      RangeType& val) const
     {
-      bool notphysical = false;
-      const Geometry& geo = lf.geometry();
+      if constexpr ( isFiniteVolumeSpace )
+      {
+        for(int r=0; r<dimRange; ++r)
+        {
+          val[r] = lf[r];
+        }
 
+        // return whether value is physical
+        return true; // always true for FV (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( 0 ), val ) );
+      }
+
+      bool notphysical = false ;
+      const Geometry& geo = lf.geometry();
       if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v && geo.affine() )
       {
         // get point quadrature
