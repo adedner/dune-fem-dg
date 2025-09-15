@@ -256,7 +256,7 @@ namespace Fem
     void compute(const ArgumentType& arg, DestinationType& dest, const size_t breakAfter ) const
     {
       // get stopwatch
-      Dune::Timer timer;
+      // Dune::Timer timer;
 
       prepare(arg, dest);
 
@@ -273,7 +273,7 @@ namespace Fem
       }
 
       // accumulate time
-      this->computeTime_ += timer.elapsed();
+      // this->computeTime_ += timer.elapsed();
     }
 
     void applyForBlock( const EntityType& entity,

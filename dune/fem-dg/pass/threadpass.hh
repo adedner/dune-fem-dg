@@ -643,7 +643,7 @@ namespace Fem
       InnerPassType& myPass = pass( thread );
 
       // stop time
-      Dune::Timer timer ;
+      // Dune::Timer timer ;
 
       const bool computeInteriorIntegrals = firstStage_;
 
@@ -719,7 +719,7 @@ namespace Fem
       }
 
       // accumulate compute time for this thread
-      passComputeTime_[ thread ] += timer.elapsed();
+      // passComputeTime_[ thread ] += timer.elapsed();
     }
 
 

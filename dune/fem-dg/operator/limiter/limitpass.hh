@@ -148,6 +148,15 @@ namespace Fem
     typedef LimitDGPass< DiscreteModelImp, PreviousPassImp, passId > ThisType;
     typedef LocalPass< DiscreteModelImp, PreviousPassImp, passId >   BaseType;
 
+    static const bool provideTiming = false ;
+    struct EmptyTimer
+    {
+      EmptyTimer() {}
+      double elapsed() const { return 0.0; }
+      void reset() const {}
+    };
+    typedef typename std::conditional< provideTiming, Dune::Timer, EmptyTimer > :: type Timer;
+
   public:
     //- Typedefs and enums
 
@@ -643,7 +652,7 @@ namespace Fem
     void compute(const ArgumentType& arg, DestinationType& dest, const size_t breakAfter) const
     {
       // get stopwatch
-      Dune::Timer timer;
+      Timer timer;
 
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
@@ -946,7 +955,7 @@ namespace Fem
       ++this->numberOfElements_;
 
       // timer for shock detection
-      Dune::Timer indiTime;
+      Timer indiTime;
 
       // check argument is not zero
       assert( arg_ );
@@ -1105,7 +1114,7 @@ namespace Fem
       // use linear function from LP reconstruction
       if( usedAdmissibleFunctions_ == lp )
       {
-        Dune::Timer timer;
+        Timer timer;
         // compute average values on neighboring elements
         fillAverageValues( U, en, enIndex, *uEnAvg_, enVal );
         assert( linProg_ );

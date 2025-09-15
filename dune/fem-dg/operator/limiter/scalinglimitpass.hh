@@ -31,6 +31,15 @@ namespace Fem
     typedef ScalingLimitDGPass< DiscreteModelImp, PreviousPassImp, passId > ThisType;
     typedef LocalPass< DiscreteModelImp, PreviousPassImp, passId >   BaseType;
 
+    static const bool provideTiming = false ;
+    struct EmptyTimer
+    {
+      EmptyTimer() {}
+      double elapsed() const { return 0.0; }
+      void reset() const {}
+    };
+    typedef typename std::conditional< provideTiming, Dune::Timer, EmptyTimer > :: type Timer;
+
   public:
     //- Typedefs and enums
 
@@ -263,7 +272,7 @@ namespace Fem
     void compute(const ArgumentType& arg, DestinationType& dest, const size_t breakAfter) const
     {
       // get stopwatch
-      Dune::Timer timer;
+      Timer timer;
 
       //std::cout << "ScalingLimitPass::compute " << std::endl;
 
@@ -281,7 +290,7 @@ namespace Fem
         {
           // for initialization of thread passes for only a few iterations
           const auto& en = *it;
-          Dune::Timer localTime;
+          Timer localTime;
           applyLocalImp(en);
           stepTime_[2] += localTime.elapsed();
         }
@@ -616,7 +625,7 @@ namespace Fem
     void applyLocalImp(const EntityType& en) const
     {
       // timer for shock detection
-      Dune::Timer indiTime;
+      Timer indiTime;
 
       // check argument is not zero
       assert( arg_ );

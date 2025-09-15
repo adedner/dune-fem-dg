@@ -482,7 +482,7 @@ namespace Dune
         if( ! active() ) return ;
 
         // get stopwatch
-        Dune::Timer timer;
+        //Dune::Timer timer;
 
         prepare(arg, dest);
 
@@ -496,7 +496,7 @@ namespace Dune
         finalize(arg, dest);
 
         // accumulate time
-        computeTime_ += timer.elapsed();
+        //computeTime_ += timer.elapsed();
       }
 
     protected:
