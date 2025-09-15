@@ -29,6 +29,9 @@
 #include <dune/optim/lp.hh>
 #include <dune/optim/solver/gaussjordan.hh>
 
+#include <dune/fem/gridpart/common/capabilities.hh>
+
+
 namespace Dune
 {
 
@@ -75,6 +78,7 @@ namespace Dune
       typedef FieldMatrix< Field, StateVector::dimension, GlobalCoordinate::dimension > Jacobian;
 
       static const int dimension = GridView::dimension;
+      static const bool isCartesian = Dune::Fem::GridPartCapabilities::isCartesian< GridView >::v;
 
     private:
       typedef Optim::LinearConstraint< GlobalCoordinate > Constraint;
@@ -103,6 +107,38 @@ namespace Dune
           faceAxes.resize( numFaces[ topologyId ], dimension );
           for( int i = 0; i < dimension; ++i )
             faceAxes[ faceIndices[ topologyId*dimension + i ] ] = i;
+        }
+
+        if constexpr ( isCartesian )
+        {
+          centerDiff_.resize( GridView::dimension*2 );
+          const auto& mapper = gridView().indexSet();
+          neighbors_.resize( mapper.size(0) );
+
+          const auto end = gridView().template end< 0, Dune::InteriorBorder_Partition >();
+          for( auto it = gridView().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
+          {
+            const auto& element = *it ;
+            const std::size_t elIndex = mapper.index( element );
+            auto& neighbors = neighbors_[ elIndex ];
+
+            const GlobalCoordinate elCenter = element.geometry().center();
+
+            const auto iend = gridView().iend( element );
+            for( auto iit = gridView().ibegin( element ); iit != iend; ++iit )
+            {
+              const auto intersection = *iit;
+
+              if( intersection.neighbor() )
+              {
+                const auto neighbor = intersection.outside();
+                const std::size_t nbIndex = mapper.index( neighbor );
+                neighbors[ intersection.indexInInside() ] = nbIndex;
+                const GlobalCoordinate nbCenter = neighbor.geometry().center();
+                centerDiff_[ intersection.indexInInside() ] = nbCenter - elCenter;
+              }
+            }
+          }
         }
       }
 
@@ -140,9 +176,16 @@ namespace Dune
             }
             else if( intersection.neighbor() )
             {
-              const auto neighbor = intersection.outside();
-              const GlobalCoordinate nbCenter = neighbor.geometry().center();
-              differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              if constexpr ( isCartesian )
+              {
+                differences.emplace_back( centerDiff_[ intersection.indexInInside() ], u[ neighbors_[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
+              }
+              else
+              {
+                const auto neighbor = intersection.outside();
+                const GlobalCoordinate nbCenter = neighbor.geometry().center();
+                differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              }
             }
           }
         }
@@ -166,9 +209,16 @@ namespace Dune
             }
             else if( intersection.neighbor() )
             {
-              const auto neighbor = intersection.outside();
-              const GlobalCoordinate nbCenter = neighbor.geometry().center();
-              differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              if constexpr ( isCartesian )
+              {
+                differences.emplace_back( centerDiff_[ intersection.indexInInside() ], u[ neighbors_[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
+              }
+              else
+              {
+                const auto neighbor = intersection.outside();
+                const GlobalCoordinate nbCenter = neighbor.geometry().center();
+                differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              }
             }
 
             if( onb.size() < dimension )
@@ -241,6 +291,8 @@ namespace Dune
       Real tolerance_;
       LP lp_;
       std::vector< std::vector< unsigned int > > faceAxes_;
+      std::vector< GlobalCoordinate > centerDiff_;
+      std::vector< std::array< int, GridView::dimension*2 > > neighbors_;
       mutable DifferencesVectorType differences_;
     };
 

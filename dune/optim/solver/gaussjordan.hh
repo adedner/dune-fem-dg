@@ -20,6 +20,14 @@ namespace Dune
     template< class M >
     bool invertGaussJordan ( DenseMatrix< M > &matrix, const typename FieldTraits< DenseMatrix< M > >::real_type &tolerance )
     {
+      std::vector< typename DenseMatrix< M >::size_type > pivot;
+      return invertGaussJordan( matrix, tolerance, pivot );
+    }
+
+    template< class M >
+    bool invertGaussJordan ( DenseMatrix< M > &matrix, const typename FieldTraits< DenseMatrix< M > >::real_type &tolerance,
+                             std::vector< typename DenseMatrix< M >::size_type >& p )
+    {
       typedef std::remove_const_t< typename FieldTraits< DenseMatrix< M > >::field_type > Field;
       typedef std::remove_const_t< typename FieldTraits< DenseMatrix< M > >::real_type > Real;
       typedef typename DenseMatrix< M >::size_type Size;
@@ -29,11 +37,12 @@ namespace Dune
       using std::swap;
 
       assert( matrix.rows() == matrix.cols() );
+
       const Size size = matrix.rows();
       if( size == 0 )
         return true;
 
-      std::vector< Size > p( size );
+      p.resize( size );
       for( Size j = 0; j < size; ++j )
         p[ j ] = j;
       for( Size j = 0; j < size; ++j )
@@ -107,9 +116,9 @@ namespace Dune
       {
         template< class A >
         Inverse ( const A &a, Real epsilon )
-          : matrix_( a ), epsilon_( epsilon )
+          : matrix_( a ), epsilon_( epsilon ), pivot_()
         {
-          invertGaussJordan( matrix_, epsilon_ );
+          invertGaussJordan( matrix_, epsilon_, pivot_ );
         }
 
         template< class X, class Y >
@@ -128,11 +137,12 @@ namespace Dune
         void updateRow ( int k, const A &a )
         {
           matrix_ = a;
-          invertGaussJordan( matrix_, epsilon_ );
+          invertGaussJordan( matrix_, epsilon_, pivot_ );
         }
 
       private:
         Matrix matrix_;
+        std::vector< size_t > pivot_;
         Real epsilon_;
       };
 

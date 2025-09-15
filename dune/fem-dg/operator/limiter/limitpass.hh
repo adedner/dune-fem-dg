@@ -220,7 +220,7 @@ namespace Fem
 
     typedef PointBasedDofConversionUtility< dimRange >                     DofConversionUtilityType;
 
-    static const bool StructuredGrid     = GridPartCapabilities::isCartesian< GridPartType >::v;
+    static const bool isCartesian        = GridPartCapabilities::isCartesian< GridPartType >::v;
     static const bool conformingGridPart = GridPartCapabilities::isConforming< GridPartType >::v;
 
     typedef typename LimiterUtilityType::GradientType  GradientType;
@@ -367,6 +367,29 @@ namespace Fem
 
       unsigned int order() const { return 1; }
       std::string name() const { return "LimmitPass::LinearFunction"; } // needed for output
+
+      template <class LocalFunction, class DofConversion >
+      void copyTo( LocalFunction& lf, const DofConversion& dofConversion ) const
+      {
+        assert( isFiniteVolume && isCartesian );
+
+        // copy to limitEn skipping components that should not be limited
+        const int numBasis = lf.numDofs()/dimRange;
+        // copy constant value
+        for(int r=0; r<dimRange; ++r)
+        {
+          lf[ r ] = value_[ r] ;
+        }
+
+        for(int i=1; i<numBasis; ++i)
+        {
+          for(int r=0; r<dimRange; ++r )
+          {
+            const int dofIdx = dofConversion.combinedDof(i,r);
+            lf[ dofIdx ] = gradient_[ r ][ i-1 ];
+          }
+        }
+      }
     };
 
 
@@ -799,7 +822,21 @@ namespace Fem
       {
         values_.resize( size );
         valuesComputed_.resize( size );
-        std::fill( valuesComputed_.begin(), valuesComputed_.end(), false );
+
+        // copy all values to local vector
+        if constexpr ( isFiniteVolumeSpace )
+        {
+          for( size_t i=0; i<size; ++i )
+          {
+            values_[ i ] = U.dofVector()[ i ];
+          }
+          std::fill( valuesComputed_.begin(), valuesComputed_.end(), true );
+        }
+        else
+        {
+          // compute as needed
+          std::fill( valuesComputed_.begin(), valuesComputed_.end(), false );
+        }
       }
     }
 
@@ -1049,18 +1086,6 @@ namespace Fem
       // cartesian is true if the grid is cartesian and no nonconforming refinement present
       typename LimiterUtilityType::Flags flags( cartesianGrid_, limiter );
 
-      // evaluate function
-      if( limiter )
-      {
-        // helper class for evaluation of average value of discrete function
-        assert( uEnAvg_ );
-        EvalAverage average( *this, *uEnAvg_, discreteModel_, geo.volume() );
-
-        // setup neighbors barycenter and mean value for all neighbors
-        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, uEn,
-                                                 StructuredGrid, flags, barys_, nbVals_ );
-      }
-
       const unsigned int enIndex = indexSet_.index( en );
 
       // mark entity as finished, even if not limited everything necessary was done
@@ -1082,7 +1107,7 @@ namespace Fem
       {
         Dune::Timer timer;
         // compute average values on neighboring elements
-        fillAverageValues( en, enIndex, *uEnAvg_, enVal );
+        fillAverageValues( U, en, enIndex, *uEnAvg_, enVal );
         assert( linProg_ );
         // compute optimal linear reconstruction
         linProg_->applyLocal( en, gridPart_.indexSet(), values_, gradient );
@@ -1091,6 +1116,14 @@ namespace Fem
       }
       else
       {
+        // helper class for evaluation of average value of discrete function
+        assert( uEnAvg_ );
+        EvalAverage average( *this, *uEnAvg_, discreteModel_, geo.volume() );
+
+        // setup neighbors barycenter and mean value for all neighbors
+        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, uEn,
+                                                 isCartesian, flags, barys_, nbVals_ );
+
         // obtain combination set
         ComboSetType& comboSet = storedComboSets_[ nbVals_.size() ];
         if( comboSet.empty() )
@@ -1156,15 +1189,22 @@ namespace Fem
     }
 
   protected:
-    void fillAverageValues( const EntityType& en, const unsigned int enIndex,
+    void fillAverageValues( const ArgumentFunctionType &U,
+                            const EntityType& en, const unsigned int enIndex,
                             LocalFunctionType &uLocal, const RangeType& enVal ) const
     {
+      // specialization for FiniteVolume space on Cartesian grids
+      if constexpr ( isFiniteVolumeSpace )
+      {
+        return ;
+      }
+
       // helper class for evaluation of average value of discrete function
       EvalAverage average( *this, uLocal, discreteModel_);
 
       if( ! valuesComputed_[ enIndex ] )
       {
-        values_[ enIndex ] = enVal;
+        average.evaluate( en, values_[ enIndex ] );
         valuesComputed_[ enIndex ] = true;
       }
 
@@ -1333,6 +1373,15 @@ namespace Fem
                      const LinearFunction& linearFunction,
                      LocalFunctionImp& limitEn ) const
     {
+      if constexpr ( isFiniteVolumeSpace && isCartesian )
+      {
+        assert( reconstruct_ );
+        // interpolate directly to limitEn, since we are only doing reconstruction
+        interpolEn_( linearFunction, limitEn );
+        //linearFunction.copyTo( limitEn, dofConversion_ );
+        return ;
+      }
+
       // true if geometry mapping is affine
       const bool affineMapping = geo.affine();
 

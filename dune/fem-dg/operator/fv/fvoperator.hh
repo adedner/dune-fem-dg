@@ -112,7 +112,8 @@ namespace detail
       center_( 0 ),
       faceCenters_(),
       localFaceCenter_( 0.5 ),
-      numberOfElements_( 0 )
+      numberOfElements_( 0 ),
+      sequence_( -1 )
     {
       typedef typename GridPartType::ctype ctype;
       {
@@ -171,9 +172,56 @@ namespace detail
     size_t numberOfElements () const { return numberOfElements_; }
 
   protected:
+    template <class Iterators>
+    void updateComputeFlux(const Iterators& iterators) const
+    {
+      if constexpr ( isCartesian )
+      {
+        if ( sequence_ != space().sequence() )
+        {
+          const auto& indexSet = gridPart().indexSet();
+          computeFlux_.resize( indexSet.size( 0 ) );
+          for( auto& item : computeFlux_ )
+            item = false ;
+
+          // compute update vector and optimum dt in one grid traversal
+          const auto endit = iterators.end();
+          for( auto it = iterators.begin(); it != endit; ++it )
+          {
+            const auto& entity = *it;
+            const auto enIndex = index( entity );
+            // run through all intersections with neighbors and boundary
+            const auto iitend = gridPart().iend( entity );
+            for( auto iit = gridPart().ibegin( entity ); iit != iitend; ++iit )
+            {
+              const Intersection& intersection = *iit;
+
+              // handle interior face
+              if( intersection.neighbor() )
+              {
+                // access neighbor
+                const Entity &neighbor = intersection.outside();
+
+                auto nbIndex = index( neighbor );
+                // mark compute flux from one side only
+                if( neighbor.partitionType() != InteriorEntity ||
+                    enIndex < nbIndex )
+                {
+                  computeFlux_[ enIndex ][ intersection.indexInInside() ] = true ;
+                }
+              }
+            }
+          }
+          sequence_ = space().sequence();
+        }
+      }
+    }
+
     template <class GridFunction, class Iterators, class Functor>
     void evaluate( const GridFunction& u, DestinationType& w, const Iterators& iterators, Functor& addLocalDofs ) const
     {
+      updateComputeFlux( iterators );
+
       // check for linear reconstructions
       if ( u.space().order() > 0 )
       {
@@ -214,7 +262,11 @@ namespace detail
     std::vector< DomainType > faceCenters_;
     FaceDomainType localFaceCenter_;
 
+    mutable std::vector< Dune::FieldVector< bool, dim*2 > > computeFlux_;
+
     mutable size_t numberOfElements_;
+
+    mutable int sequence_;
 
   }; // end FVOperatorImpl
 
@@ -302,6 +354,8 @@ namespace detail
       model_.nonStiffSource( left, uLeft, jacLeft_, enUpdate );
     }
 
+    Entity nbStorage;
+
     // the following only makes sense if the model has a flux implemented
     if ( model_.hasFlux() )
     {
@@ -317,14 +371,34 @@ namespace detail
         // handle interior face
         if( intersection.neighbor() )
         {
-          // access neighbor
-          const Entity &neighbor = intersection.outside();
+          bool computeFlux = false;
 
-          auto nbIndex = index( neighbor );
-          // compute flux from one side only
-          if( neighbor.partitionType() != InteriorEntity ||
-              enIndex < nbIndex )
+          if constexpr ( isCartesian )
           {
+            computeFlux = computeFlux_[ enIndex ][ intersection.indexInInside() ];
+          }
+          else
+          {
+            nbStorage = intersection.outside();
+            // access neighbor
+            const Entity &neighbor = nbStorage;
+
+            auto nbIndex = index( neighbor );
+            // compute flux from one side only
+            if( neighbor.partitionType() != InteriorEntity ||
+                enIndex < nbIndex )
+            {
+              computeFlux = true ;
+            }
+          }
+
+          if( computeFlux )
+          {
+            if constexpr ( isCartesian )
+              nbStorage = intersection.outside();
+
+            const Entity &neighbor = nbStorage;
+
             const ctype nbVolume   = ( isCartesian ) ? enVolume   : neighbor.geometry().volume();
             const ctype nbVolume_1 = ( isCartesian ) ? enVolume_1 : 1.0/nbVolume;
 
