@@ -145,3 +145,57 @@ def model2ufl(
         boundary_model["f_v_model"] = f_v_model
         boundary_model["form"] = form
         return boundary_model
+
+# full set of boundary conditions still need to be added
+def model2dgufl(Model,space):
+    from ufl import ( TrialFunction, TestFunction,
+                      SpatialCoordinate, FacetNormal,
+                      dx, ds, dot )
+    from dune.femdg.boundary import splitBoundary
+    from dune.ufl import Constant
+    from dolfin_dg import ( HyperbolicOperator, DGDirichletBC, LocalLaxFriedrichs,
+                            EllipticOperator )
+    t = Constant(0,"time")
+    x = SpatialCoordinate(space.cell())
+    n = FacetNormal(space.cell())
+    u = TrialFunction(space)
+    v = TestFunction(space)
+
+    ( boundary_flux_cs,
+      boundary_flux_vs,
+      boundary_values,
+      hasBoundaryValue ) = splitBoundary(Model, t, x, u, n)
+
+    # is there a way to get different boundary condition into the dolfin-dg operators?
+    # assume single dirichlet condition for now.
+    # Perhaps ds(id) can work?
+    dbc = []
+    for i,item in enumerate(boundary_values.items()):
+        dbc += [DGDirichletBC(ds(item[0]), item[1])]
+
+    rhs = 0
+    if hasattr(Model,"S_i"):
+        rhs += dot(Model.S_i(t,x,u,grad(u)),v) * dx
+    if hasattr(Model,"S_e"):
+        rhs += dot(Model.S_e(t,x,u,grad(u)),v) * dx
+
+    lhs = 0
+    if hasattr(Model,"F_c"):
+        def F_c(u):
+            return Model.F_c(t,x,u)
+        if hasattr(Model,"maxWaveSpeed"):
+            def alpha(u, n):
+                return Model.maxWaveSpeed(t,x,u,n)
+        else:
+            def alpha(u, n):
+                return Model.dimRange*[0.]
+        ho += HyperbolicOperator(space.cell(), space, dbc, F_c,
+                                 LocalLaxFriedrichs(alpha))
+        lhs += eo.generate_fem_formulation(u, v)
+    if hasattr(Model,"F_v"):
+        def F_v(u, grad_u):
+            return Model.F_v(t,x,u,grad_u)
+        eo = EllipticOperator(space.cell(), space, dbc, F_v)
+        lhs += eo.generate_fem_formulation(u, v)
+
+    return lhs == rhs
