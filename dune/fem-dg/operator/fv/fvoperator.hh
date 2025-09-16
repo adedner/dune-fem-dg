@@ -135,7 +135,6 @@ namespace detail
         assert( geomTypes.size() == 1 );
         localFaceCenter_ = Dune::referenceElement<ctype, GridPartType::dimension-1>( geomTypes[ 0 ] ).position( 0, 0 );
       }
-
     }
 
     template <class GridFunction, class Iterators>
@@ -183,6 +182,29 @@ namespace detail
           computeFlux_.resize( indexSet.size( 0 ) );
           for( auto& item : computeFlux_ )
             item = false ;
+
+          if( faceQuadratures_.empty() )
+          {
+            faceQuadratures_.resize( dim*2 );
+            // compute update vector and optimum dt in one grid traversal
+            const auto endit = iterators.end();
+            for( auto it = iterators.begin(); it != endit; ++it )
+            {
+              const auto& entity = *it;
+              const auto enIndex = index( entity );
+              // run through all intersections with neighbors and boundary
+              const auto iitend = gridPart().iend( entity );
+              for( auto iit = gridPart().ibegin( entity ); iit != iitend; ++iit )
+              {
+                const Intersection& intersection = *iit;
+                faceQuadratures_[ intersection.indexInInside() ].reset(
+                    new FaceQuadratureType(gridPart(), intersection, 0 /* faceQuadOrder */,
+                                           FaceQuadratureType::INSIDE) );
+              }
+
+              break; // only one element needed
+            }
+          }
 
           // compute update vector and optimum dt in one grid traversal
           const auto endit = iterators.end();
@@ -263,6 +285,7 @@ namespace detail
     FaceDomainType localFaceCenter_;
 
     mutable std::vector< Dune::FieldVector< bool, dim*2 > > computeFlux_;
+    mutable std::vector< std::shared_ptr< FaceQuadratureType > > faceQuadratures_;
 
     mutable size_t numberOfElements_;
 
@@ -415,18 +438,30 @@ namespace detail
               // otherwise adjust quadrature
               assert( intersection.conforming() );
 
-              // create intersection quadrature (without neighbor check)
-              IntersectionQuadratureType interQuad( gridPart(), intersection, 0 /* faceQuadOrder */, true /* noNbCheck */);
-
-              // get appropriate references
-              const auto& faceQuadInner = interQuad.inside();
-              const auto& faceQuadOuter = interQuad.outside();
-
               uNb.init( neighbor );
-              assert( faceQuadInner.nop() == 1 );
+              if constexpr ( isCartesian )
+              {
+                // get appropriate references
+                const auto& faceQuadInner = *(faceQuadratures_[ intersection.indexInInside() ]);
+                const auto& faceQuadOuter = *(faceQuadratures_[ intersection.indexInOutside() ]);
 
-              uEn.evaluate( faceQuadInner[0], uLeft );
-              uNb.evaluate( faceQuadOuter[0], uRight );
+                uEn.evaluate( faceQuadInner[0], uLeft );
+                uNb.evaluate( faceQuadOuter[0], uRight );
+              }
+              else
+              {
+                // create intersection quadrature (without neighbor check)
+                IntersectionQuadratureType interQuad( gridPart(), intersection, 0 /* faceQuadOrder */, true /* noNbCheck */);
+
+                // get appropriate references
+                const auto& faceQuadInner = interQuad.inside();
+                const auto& faceQuadOuter = interQuad.outside();
+
+                assert( faceQuadInner.nop() == 1 );
+
+                uEn.evaluate( faceQuadInner[0], uLeft );
+                uNb.evaluate( faceQuadOuter[0], uRight );
+              }
 
               // compute numerical flux (2nd order)
               waveSpeed = numFlux_.numericalFlux( left, right, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
@@ -457,11 +492,20 @@ namespace detail
           // evaluate data for higher order
           if constexpr ( higherOrder )
           {
-            FaceQuadratureType faceQuadInner(gridPart(), intersection, 0 /* faceQuadOrder */,
-                                             FaceQuadratureType::INSIDE);
+            if constexpr ( isCartesian )
+            {
+              const auto& faceQuadInner = *(faceQuadratures_[ intersection.indexInInside() ]);
+              // evaluate data
+              uEn.evaluate( faceQuadInner[0], uLeft );
+            }
+            else
+            {
 
-            // evaluate data
-            uEn.evaluate( faceQuadInner[0], uLeft );
+              FaceQuadratureType faceQuadInner(gridPart(), intersection, 0 /* faceQuadOrder */,
+                                               FaceQuadratureType::INSIDE);
+              // evaluate data
+              uEn.evaluate( faceQuadInner[0], uLeft );
+            }
           }
 
           const bool hasBndValue = model_.hasBoundaryValue( left );
