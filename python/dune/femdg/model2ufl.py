@@ -154,7 +154,7 @@ def model2dgufl(Model,space):
     from dune.femdg.boundary import splitBoundary
     from dune.ufl import Constant
     from dolfin_dg import ( HyperbolicOperator, DGDirichletBC, LocalLaxFriedrichs,
-                            EllipticOperator )
+                            EllipticOperator, DGFemNIPG, DGFemBO, DGFemSIPG )
     t = Constant(0,"time")
     x = SpatialCoordinate(space.cell())
     n = FacetNormal(space.cell())
@@ -196,6 +196,6 @@ def model2dgufl(Model,space):
         def F_v(u, grad_u):
             return Model.F_v(t,x,u,grad_u)
         eo = EllipticOperator(space.cell(), space, dbc, F_v)
-        lhs += eo.generate_fem_formulation(u, v)
+        lhs += eo.generate_fem_formulation(u, v, vt = DGFemSIPG)
 
     return lhs == rhs
