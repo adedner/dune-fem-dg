@@ -288,14 +288,12 @@ namespace Fem
 
     static const bool isFiniteVolumeSpace = isFVSpace< typename ArgumentFunctionType::DiscreteFunctionSpaceType > :: v ;
 
-    typedef typename GridPartType :: GridViewType  GridViewType ;
-
     struct BoundaryValue
     {
       const ThisType& op_;
       BoundaryValue( const ThisType& op ) : op_( op ) {}
 
-      RangeType operator () ( const typename GridViewType::Intersection &i,
+      RangeType operator () ( const typename GridPartType::Intersection &i,
                               const DomainType &x,
                               const DomainType &n,
                               const RangeType &uIn ) const
@@ -304,7 +302,7 @@ namespace Fem
       }
     };
 
-    typedef Dune::FV::LPReconstruction< GridViewType, RangeType, BoundaryValue > LinearProgramming;
+    typedef Dune::FV::LPReconstruction< GridPartType, RangeType, BoundaryValue > LinearProgramming;
 
     struct ConstantFunction :
       public Dune::Fem::BindableGridFunction< GridPartType, Dune::Dim<dimRange> >
@@ -376,29 +374,6 @@ namespace Fem
 
       unsigned int order() const { return 1; }
       std::string name() const { return "LimmitPass::LinearFunction"; } // needed for output
-
-      template <class LocalFunction, class DofConversion >
-      void copyTo( LocalFunction& lf, const DofConversion& dofConversion ) const
-      {
-        assert( isFiniteVolume && isCartesian );
-
-        // copy to limitEn skipping components that should not be limited
-        const int numBasis = lf.numDofs()/dimRange;
-        // copy constant value
-        for(int r=0; r<dimRange; ++r)
-        {
-          lf[ r ] = value_[ r] ;
-        }
-
-        for(int i=1; i<numBasis; ++i)
-        {
-          for(int r=0; r<dimRange; ++r )
-          {
-            const int dofIdx = dofConversion.combinedDof(i,r);
-            lf[ dofIdx ] = gradient_[ r ][ i-1 ];
-          }
-        }
-      }
     };
 
 
@@ -1387,7 +1362,6 @@ namespace Fem
         assert( reconstruct_ );
         // interpolate directly to limitEn, since we are only doing reconstruction
         interpolEn_( linearFunction, limitEn );
-        //linearFunction.copyTo( limitEn, dofConversion_ );
         return ;
       }
 
