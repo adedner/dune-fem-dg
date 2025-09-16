@@ -35,6 +35,7 @@
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem-dg/operator/limiter/lpreconstruction.hh>
+#include <dune/fem-dg/operator/limiter/cartesiantvd.hh>
 
 #include <dune/fem-dg/operator/limiter/smoothness.hh>
 #include <dune/fem-dg/operator/limiter/indicatorbase.hh>
@@ -304,6 +305,11 @@ namespace Fem
 
     typedef Dune::FV::LPReconstruction< GridPartType, RangeType, BoundaryValue > LinearProgramming;
 
+    // select TVDReconstruction for Cartesian grids, otherwise LinearProgramming (will not be activated)
+    typedef typename std::conditional< isCartesian,
+            Dune::FV::TVDReconstruction< GridPartType, RangeType, BoundaryValue >,
+            LinearProgramming > :: type  CartesianReconstructionType;
+
     struct ConstantFunction :
       public Dune::Fem::BindableGridFunction< GridPartType, Dune::Dim<dimRange> >
     {
@@ -424,6 +430,7 @@ namespace Fem
       gridPart_(spc_.gridPart()),
       linearFunction_( gridPart_ ),
       linProg_(),
+      cartesianTVD_(),
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       uTmpLocal_( spc_ ),
@@ -463,6 +470,15 @@ namespace Fem
       {
         linProg_.reset( new LinearProgramming( gridPart_, BoundaryValue( *this ),
                         parameter.getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
+      }
+
+      if constexpr ( isCartesian )
+      {
+        if( usedAdmissibleFunctions_ == muscl )
+        {
+          cartesianTVD_.reset( new CartesianReconstructionType( gridPart_, BoundaryValue( *this ),
+                          parameter.getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
+        }
       }
 
       if( verbose_ )
@@ -580,8 +596,11 @@ namespace Fem
         }
         else
         {
-          // default for all other element types is lp reconstruction
-          return lp;
+          if( isCartesian )
+            return muscl; // specialized TVD reconstruction
+          else
+            // default for all other element types is lp reconstruction
+            return lp;
         }
       }
       return admissibleFunctions_;
@@ -643,9 +662,7 @@ namespace Fem
         {
           // for initialization of thread passes for only a few iterations
           const auto& entity = *it;
-          //Dune::Timer localTime;
           applyLocalImp( entity );
-          //stepTime_[2] += localTime.elapsed();
         }
 
         // finalize
@@ -802,7 +819,8 @@ namespace Fem
         matrixCacheVec_.resize( numLevels );
       }
 
-      if( linProg_ )
+      // compute all average values at once for LinearProgramming and CartesianReconstruction
+      if( linProg_ || cartesianTVD_ )
       {
         values_.resize( size );
         valuesComputed_.resize( size );
@@ -1086,8 +1104,18 @@ namespace Fem
 
       GradientType& gradient = linearFunction_.gradient_;
 
-      // use linear function from LP reconstruction
-      if( usedAdmissibleFunctions_ == lp )
+      if( isCartesian && usedAdmissibleFunctions_ == muscl )
+      {
+        Timer timer;
+        // compute average values on neighboring elements
+        fillAverageValues( U, en, enIndex, *uEnAvg_, enVal );
+        assert( cartesianTVD_ );
+        // compute optimal linear reconstruction
+        cartesianTVD_->applyLocal( en, gridPart_.indexSet(), values_, gradient );
+        lpTime = timer.elapsed();
+        stepTime_[2] += lpTime;
+      }
+      else if( usedAdmissibleFunctions_ == lp ) // use linear function from LP reconstruction
       {
         Timer timer;
         // compute average values on neighboring elements
@@ -1357,16 +1385,44 @@ namespace Fem
                      const LinearFunction& linearFunction,
                      LocalFunctionImp& limitEn ) const
     {
+      // true if geometry mapping is affine
+      const bool affineMapping = geo.affine();
+
       if constexpr ( isFiniteVolumeSpace && isCartesian )
       {
         assert( reconstruct_ );
         // interpolate directly to limitEn, since we are only doing reconstruction
         interpolEn_( linearFunction, limitEn );
+
+        /*
+        // check physicality of projected data
+        if ( ! checkPhysical(en, geo, limitEn ) )
+        {
+          // for affine mapping we only need to set higher moments to zero
+          if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v &&
+              affineMapping )
+          {
+            // note: the following assumes an ONB made up of moments and affine mapping
+            const int numBasis = uTmpLocal_.numDofs()/dimRange;
+            for(int i=1; i<numBasis; ++i)
+            {
+              for(int r=0; r<dimRange; ++r)
+              {
+                const int dofIdx = dofConversion_.combinedDof(i,r);
+                limitEn[dofIdx] = 0;
+              }
+            }
+          }
+          else
+          {
+            //limitEn.clear();
+            const ConstantFunction& constFct = linearFunction;
+            interpolEn_( constFct, limitEn );
+          }
+        }
+        */
         return ;
       }
-
-      // true if geometry mapping is affine
-      const bool affineMapping = geo.affine();
 
       // set zero dof to zero
       uTmpLocal_.init( en );
@@ -1908,6 +1964,7 @@ namespace Fem
     mutable LinearFunction linearFunction_;
 
     std::unique_ptr< LinearProgramming > linProg_;
+    std::unique_ptr< CartesianReconstructionType > cartesianTVD_;
 
     const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;

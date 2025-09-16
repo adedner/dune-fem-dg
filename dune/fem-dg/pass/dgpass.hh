@@ -255,9 +255,6 @@ namespace Fem
     //! call finalize.
     void compute(const ArgumentType& arg, DestinationType& dest, const size_t breakAfter ) const
     {
-      // get stopwatch
-      // Dune::Timer timer;
-
       prepare(arg, dest);
 
       if( reallyCompute_ )
@@ -271,9 +268,6 @@ namespace Fem
 
         finalize(arg, dest);
       }
-
-      // accumulate time
-      // this->computeTime_ += timer.elapsed();
     }
 
     void applyForBlock( const EntityType& entity,
