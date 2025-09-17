@@ -72,6 +72,7 @@ namespace Dune
         : gridPart_( gp ),
           dofManager_( DofManagerType :: instance( gridPart_.grid() ) ),
           boundaryValue_( std::move( boundaryValue ) ),
+          h_( 0 ),
           limiterFunction_(),
           sequence_( -1 )
       {
@@ -111,6 +112,8 @@ namespace Dune
         const auto& mapper = gridPart().indexSet();
         neighbors_.resize( mapper.size(0) );
 
+        h_ = 0;
+
         const auto end = gridPart().template end< 0, Dune::InteriorBorder_Partition >();
         for( auto it = gridPart().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
         {
@@ -130,8 +133,21 @@ namespace Dune
               const auto neighbor = intersection.outside();
               const std::size_t nbIndex = mapper.index( neighbor );
               neighbors[ intersection.indexInInside() ] = nbIndex;
+
               const GlobalCoordinate nbCenter = neighbor.geometry().center();
               centerDiff_[ intersection.indexInInside() ] = nbCenter - elCenter;
+
+              const int d = intersection.indexInInside() / dimension;
+              if( h_[ d ] > 0.0 )
+              {
+                if( std::abs( h_[ d ] - std::abs(centerDiff_[ d*2 ][ d ]) )> 1e-10 )
+                  DUNE_THROW(InvalidStateException, "TVDReconstruction::update: different dx detected in one direction");
+              }
+              else
+              {
+                // compute h
+                h_[ d ] = std::abs(centerDiff_[ d*2 ][ d ]);
+              }
             }
             else if ( intersection.boundary() )
             {
@@ -139,11 +155,6 @@ namespace Dune
               neighbors[ intersection.indexInInside() ] = elIndex;
             }
           }
-        }
-
-        for( int d=0; d<dimension; ++d )
-        {
-          h_[ d ] = std::abs(centerDiff_[d*2][d]);
         }
 
         // update sequence counter
@@ -249,7 +260,7 @@ namespace Dune
               {
                 // evaluate values for limiter function
                 const Field d = diffs_[ c ][ r ];
-                const Field g = slopes[ i ][ r ] * dx[  c ];
+                const Field g = slopes[ i ][ r ] * dx[ c ];
 
                 // if the gradient in direction of the line
                 // connecting the barycenters is very small
@@ -258,6 +269,25 @@ namespace Dune
                 // call limiter function
                 // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
                 Field localFactor = limiterFunction_( g, d );
+
+                /*
+                if( localFactor < 1.0 )
+                {
+                  const Field limitEps = 1e-8;
+                  const Field length2 = dx[ c ]*dx[ c ];
+
+                  // if length is to small then the grid is corrupted
+                  assert( length2 > 1e-14 );
+
+                  const Field factor = (g*g) / length2 ;
+                  if( factor < limitEps )
+                  {
+                    //std::cout << "Using tanh" << std::endl;
+                    //localFactor = 1.0 - std::tanh( factor / limitEps );
+                    localFactor = 1.0 - ( factor / limitEps );
+                  }
+                }
+                */
 
                 // take minimum
                 minimalFactor = std::min( localFactor , minimalFactor );
@@ -306,7 +336,7 @@ namespace Dune
       const GridPartType& gridPart_;
       const DofManagerType& dofManager_;
       BoundaryValue boundaryValue_;
-      std::array< Field, dimension > h_;
+      Dune::FieldVector< Field, dimension > h_;
 
       std::array< std::array< int8_t, 2>, numFunc > combos_;
       std::array< std::vector< int8_t >, numFunc > testset_;

@@ -128,6 +128,8 @@ namespace Dune
           const auto& mapper = gridPart().indexSet();
           neighbors_.resize( mapper.size(0) );
 
+          Dune::FieldVector< Field, dimension > h( 0 );
+
           const auto end = gridPart().template end< 0, Dune::InteriorBorder_Partition >();
           for( auto it = gridPart().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
           {
@@ -149,6 +151,18 @@ namespace Dune
                 neighbors[ intersection.indexInInside() ] = nbIndex;
                 const GlobalCoordinate nbCenter = neighbor.geometry().center();
                 centerDiff_[ intersection.indexInInside() ] = nbCenter - elCenter;
+
+                const int d = intersection.indexInInside() / dimension;
+                if( h[ d ] > 0.0 )
+                {
+                  if( std::abs( h[ d ] - std::abs(centerDiff_[ d*2 ][ d ]) )> 1e-10 )
+                    DUNE_THROW(InvalidStateException, "LPReconstruction::update: different dx detected in one direction");
+                }
+                else
+                {
+                  // compute h
+                  h[ d ] = std::abs(centerDiff_[ d*2 ][ d ]);
+                }
               }
             }
           }
