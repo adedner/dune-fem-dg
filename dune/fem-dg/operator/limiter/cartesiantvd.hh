@@ -52,6 +52,8 @@ namespace Dune
 
       typedef StateVector RangeType;
 
+      typedef Dune::Fem::DofManager< typename GridPartType::GridType > DofManagerType;
+
       typedef FieldVector< typename GridPartType::ctype, GridPartType::dimensionworld > GlobalCoordinate;
 
       typedef typename GridPartType::Intersection Intersection;
@@ -68,9 +70,44 @@ namespace Dune
     public:
       TVDReconstruction ( const GridPartType &gp, BoundaryValue boundaryValue, Real tolerance )
         : gridPart_( gp ),
+          dofManager_( DofManagerType :: instance( gridPart_.grid() ) ),
           boundaryValue_( std::move( boundaryValue ) ),
-          limiterFunction_()
+          limiterFunction_(),
+          sequence_( -1 )
       {
+        //         inside
+        //   1       0       2
+        //   * ----- * ----- *
+        //       h       h
+
+        combos_[ 0 ][ 0 ] = 0;
+        combos_[ 0 ][ 1 ] = 1;
+        combos_[ 1 ][ 0 ] = 0;
+        combos_[ 1 ][ 1 ] = 2;
+        combos_[ 2 ][ 0 ] = 1;
+        combos_[ 2 ][ 1 ] = 2;
+
+        testset_[0] = std::vector< int8_t > (1, 1); // 1,0 test with 2,0 which is 1
+        testset_[1] = std::vector< int8_t > (1, 0); // 2,0 test with 1,0 which is 0
+        if( numFunc > 2 )
+        {
+          // 2,1
+          testset_[2] = std::vector< int8_t > (2);
+          testset_[2][0] = 0;
+          testset_[2][1] = 1;
+        }
+
+        // update grid width
+        update();
+      }
+
+      void update()
+      {
+        // do nothing if up to date
+        const int dmSequence = dofManager_.sequence();
+        if( sequence_ == dmSequence )
+          return ;
+
         const auto& mapper = gridPart().indexSet();
         neighbors_.resize( mapper.size(0) );
 
@@ -104,36 +141,13 @@ namespace Dune
           }
         }
 
-        //for( int i=0; i<2*dimension; ++i )
-        //  std::cout << "diff[ " << i << " ] = " << centerDiff_[ i ] << std::endl;
-
         for( int d=0; d<dimension; ++d )
         {
           h_[ d ] = std::abs(centerDiff_[d*2][d]);
-          //std::cout << "h[ " << d << " ] = " << h_[ d ] << std::endl;
         }
 
-        //         inside
-        //   1       0       2
-        //   * ----- * ----- *
-        //       h       h
-
-        combos_[ 0 ][ 0 ] = 0;
-        combos_[ 0 ][ 1 ] = 1;
-        combos_[ 1 ][ 0 ] = 0;
-        combos_[ 1 ][ 1 ] = 2;
-        combos_[ 2 ][ 0 ] = 1;
-        combos_[ 2 ][ 1 ] = 2;
-
-        testset_[0] = std::vector< int8_t > (1, 1); // 1,0 test with 2,0 which is 1
-        testset_[1] = std::vector< int8_t > (1, 0); // 2,0 test with 1,0 which is 0
-        if( numFunc > 2 )
-        {
-          // 2,1
-          testset_[2] = std::vector< int8_t > (2);
-          testset_[2][0] = 0;
-          testset_[2][1] = 1;
-        }
+        // update sequence counter
+        sequence_ = dmSequence;
       }
 
       template< class Entity, class Mapper, class Vector >
@@ -146,9 +160,6 @@ namespace Dune
         static const int dimRange = Jacobian::rows;
 
         const std::size_t elIndex = mapper.index( element );
-        const GlobalCoordinate elCenter = element.geometry().center();
-
-        // TODO check boundary based on neighs
 
         const auto& neighs = neighbors_[ elIndex ];
         const RangeType &enVal = u[ elIndex ];
@@ -271,38 +282,6 @@ namespace Dune
             du[ r ][ d ] = slope[ r ];
           }
         }
-
-        //std::cout << du << " computed gradient " << std::endl;
-#if 0
-        const auto iend = gridPart().iend( element );
-        for( auto iit = gridPart().ibegin( element ); iit != iend; ++iit )
-        {
-          const auto intersection = *iit;
-
-          std::cout << "Intersec : " << intersection.indexInInside() << std::endl;
-
-          if( intersection.boundary() )
-          {
-            const GlobalCoordinate iCenter = intersection.geometry().center();
-            const GlobalCoordinate iNormal = intersection.centerUnitOuterNormal();
-            const StateVector uBnd = boundaryValue_( intersection, iCenter, iNormal, u[ elIndex ] );
-            differences.emplace_back( iCenter - elCenter, uBnd - u[ elIndex ] );
-          }
-          else if( intersection.neighbor() )
-          {
-            if constexpr ( isCartesian )
-            {
-              differences.emplace_back( centerDiff_[ intersection.indexInInside() ], u[ neighbors_[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
-            }
-            else
-            {
-              const auto neighbor = intersection.outside();
-              const GlobalCoordinate nbCenter = neighbor.geometry().center();
-              differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
-            }
-          }
-        }
-#endif
       }
 
       template< class Mapper, class Vector >
@@ -316,9 +295,6 @@ namespace Dune
           const auto element = *it;
           applyLocal( element, mapper, u, du[ mapper.index( element ) ] );
         }
-
-        //auto handle = vectorCommDataHandle( mapper, du, [] ( Jacobian a, Jacobian b ) { return b; } );
-        //gridPart().communicate( handle, InteriorBorder_All_Interface, ForwardCommunication );
       }
 
       const GridPartType &gridPart () const { return gridPart_; }
@@ -328,6 +304,7 @@ namespace Dune
 
     private:
       const GridPartType& gridPart_;
+      const DofManagerType& dofManager_;
       BoundaryValue boundaryValue_;
       std::array< Field, dimension > h_;
 
@@ -340,6 +317,8 @@ namespace Dune
       //Dune::Fem::VanLeerLimiter< Field > limiterFunction_;
       //Dune::Fem::SuperBeeLimiter< Field > limiterFunction_;
       Dune::Fem::MinModLimiter< Field > limiterFunction_;
+
+      int sequence_;
     };
 
 

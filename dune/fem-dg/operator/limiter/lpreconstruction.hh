@@ -73,6 +73,8 @@ namespace Dune
 
       typedef typename GridPartType::Intersection Intersection;
 
+      typedef Dune::Fem::DofManager< typename GridPartType::GridType > DofManagerType;
+
       typedef typename FieldTraits< StateVector >::field_type Field;
       typedef typename FieldTraits< StateVector >::real_type Real;
       typedef FieldMatrix< Field, StateVector::dimension, GlobalCoordinate::dimension > Jacobian;
@@ -91,10 +93,12 @@ namespace Dune
     public:
       LPReconstruction ( const GridPartType &gp, BoundaryValue boundaryValue, Real tolerance )
         : gridPart_( gp ),
+          dofManager_( DofManagerType :: instance( gridPart_.grid() ) ),
           boundaryValue_( std::move( boundaryValue ) ),
           tolerance_( std::move( tolerance ) ),
           lp_( tolerance_ ),
-          faceAxes_( LocalGeometryTypeIndex::size( dimension ) )
+          faceAxes_( LocalGeometryTypeIndex::size( dimension ) ),
+          sequence_( -1 )
       {
         const unsigned int numTopo = Impl::numTopologies( dimension );
         std::unique_ptr< unsigned int[] > faceIndices( new unsigned int[ dimension * numTopo ] );
@@ -109,8 +113,18 @@ namespace Dune
             faceAxes[ faceIndices[ topologyId*dimension + i ] ] = i;
         }
 
+        update();
+      }
+
+      void update()
+      {
         if constexpr ( isCartesian )
         {
+          // do nothing if up to date
+          const int dmSequence = dofManager_.sequence();
+          if( sequence_ == dmSequence )
+            return ;
+
           const auto& mapper = gridPart().indexSet();
           neighbors_.resize( mapper.size(0) );
 
@@ -138,7 +152,10 @@ namespace Dune
               }
             }
           }
-        }
+
+          // update sequence counter
+          sequence_ = dmSequence;
+        } // end isCartesian
       }
 
       template< class Entity, class Mapper, class Vector >
@@ -289,6 +306,7 @@ namespace Dune
 
     private:
       const GridPartType& gridPart_;
+      const DofManagerType& dofManager_;
       BoundaryValue boundaryValue_;
       Real tolerance_;
       LP lp_;
@@ -296,6 +314,8 @@ namespace Dune
       std::array< GlobalCoordinate, GridPartType::dimension*2 > centerDiff_;
       std::vector< std::array< int, GridPartType::dimension*2 > > neighbors_;
       mutable DifferencesVectorType differences_;
+
+      int sequence_;
     };
 
 

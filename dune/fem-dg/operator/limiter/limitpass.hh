@@ -822,6 +822,12 @@ namespace Fem
       // compute all average values at once for LinearProgramming and CartesianReconstruction
       if( linProg_ || cartesianTVD_ )
       {
+        if( cartesianTVD_ )
+          cartesianTVD_->update();
+
+        if( linProg_ )
+          linProg_->update();
+
         values_.resize( size );
         valuesComputed_.resize( size );
 
