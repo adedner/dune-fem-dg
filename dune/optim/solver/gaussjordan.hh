@@ -116,7 +116,7 @@ namespace Dune
       {
         template< class A >
         Inverse ( const A &a, Real epsilon )
-          : matrix_( a ), epsilon_( epsilon ), pivot_()
+          : matrix_( a ), pivot_(), epsilon_( epsilon )
         {
           invertGaussJordan( matrix_, epsilon_, pivot_ );
         }
