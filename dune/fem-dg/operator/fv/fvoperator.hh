@@ -107,6 +107,8 @@ namespace detail
       numFlux_( numFlux ),
       time_( 0 ),
       dtEst_( 0 ),
+      cartCellVolume_( 0 ),
+      invCartCellVolume_( 0 ),
       jacLeft_( 0 ),
       jacRight_( 0 ),
       center_( 0 ),
@@ -206,12 +208,28 @@ namespace detail
             }
           }
 
+          cartCellVolume_ = 0.0;
+
           // compute update vector and optimum dt in one grid traversal
           const auto endit = iterators.end();
           for( auto it = iterators.begin(); it != endit; ++it )
           {
             const auto& entity = *it;
             const auto enIndex = index( entity );
+
+            ctype cellVolume = entity.geometry().volume();
+            if( cartCellVolume_ > 0 )
+            {
+              if( std::abs(cartCellVolume_ - cellVolume ) > 1e-12 )
+              {
+                DUNE_THROW(InvalidStateException,"FVOperator::updateComputeFlux: Cartesian grid not equal volume grid");
+              }
+            }
+            else
+            {
+              cartCellVolume_ = cellVolume;
+            }
+
             // run through all intersections with neighbors and boundary
             const auto iitend = gridPart().iend( entity );
             for( auto iit = gridPart().ibegin( entity ); iit != iitend; ++iit )
@@ -233,6 +251,7 @@ namespace detail
                 }
               }
             }
+            invCartCellVolume_ = 1.0/cartCellVolume_;
           }
           sequence_ = space().sequence();
         }
@@ -278,6 +297,9 @@ namespace detail
     NumFluxType  numFlux_;
     double time_;
     mutable double dtEst_;
+
+    mutable double cartCellVolume_;
+    mutable double invCartCellVolume_;
 
     JacobianRangeType jacLeft_, jacRight_;
     DomainType center_;
@@ -341,15 +363,20 @@ namespace detail
 
     auto enIndex = index( entity );
 
-    const Geometry &geo = entity.geometry();
-
     static const bool higherOrder = value ;
 
     // cell volume
-    const ctype enVolume = geo.volume();
-
-    // 1 over cell volume
-    const ctype enVolume_1 = 1.0/enVolume;
+    ctype enVolume, enVolume_1;
+    if constexpr ( isCartesian )
+    {
+      enVolume = cartCellVolume_;
+      enVolume_1 = invCartCellVolume_;
+    }
+    else
+    {
+      enVolume = entity.geometry().volume();
+      enVolume_1 = 1.0/enVolume;
+    }
 
     RangeType uLeft;
     RangeType uRight;
