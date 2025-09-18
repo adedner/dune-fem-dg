@@ -30,6 +30,7 @@
 #include <dune/optim/solver/gaussjordan.hh>
 
 #include <dune/fem/gridpart/common/capabilities.hh>
+#include <dune/fem-dg/operator/common/cartesianneighbors.hh>
 
 
 namespace Dune
@@ -90,10 +91,12 @@ namespace Dune
       typedef Optim::LinearProgramming< Solver, false > LP;
 
       typedef std::vector< std::pair< GlobalCoordinate, StateVector > > DifferencesVectorType;
+      typedef Dune::Fem::CartesianNeighbors< GridPartType >  CartesianNeighborsType;
+
     public:
       LPReconstruction ( const GridPartType &gp, BoundaryValue boundaryValue, Real tolerance )
         : gridPart_( gp ),
-          dofManager_( DofManagerType :: instance( gridPart_.grid() ) ),
+          neighbors_( gridPart_ ),
           boundaryValue_( std::move( boundaryValue ) ),
           tolerance_( std::move( tolerance ) ),
           lp_( tolerance_ ),
@@ -120,55 +123,7 @@ namespace Dune
       {
         if constexpr ( isCartesian )
         {
-          // do nothing if up to date
-          const int dmSequence = dofManager_.sequence();
-          if( sequence_ == dmSequence )
-            return ;
-
-          const auto& mapper = gridPart().indexSet();
-          neighbors_.resize( mapper.size(0) );
-
-          Dune::FieldVector< Field, dimension > h( 0 );
-
-          const auto end = gridPart().template end< 0, Dune::InteriorBorder_Partition >();
-          for( auto it = gridPart().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
-          {
-            const auto& element = *it ;
-            const std::size_t elIndex = mapper.index( element );
-            auto& neighbors = neighbors_[ elIndex ];
-
-            const GlobalCoordinate elCenter = element.geometry().center();
-
-            const auto iend = gridPart().iend( element );
-            for( auto iit = gridPart().ibegin( element ); iit != iend; ++iit )
-            {
-              const auto intersection = *iit;
-
-              if( intersection.neighbor() )
-              {
-                const auto neighbor = intersection.outside();
-                const std::size_t nbIndex = mapper.index( neighbor );
-                neighbors[ intersection.indexInInside() ] = nbIndex;
-                const GlobalCoordinate nbCenter = neighbor.geometry().center();
-                centerDiff_[ intersection.indexInInside() ] = nbCenter - elCenter;
-
-                const int d = intersection.indexInInside() / dimension;
-                if( h[ d ] > 0.0 )
-                {
-                  if( std::abs( h[ d ] - std::abs(centerDiff_[ d*2 ][ d ]) )> 1e-10 )
-                    DUNE_THROW(InvalidStateException, "LPReconstruction::update: different dx detected in one direction");
-                }
-                else
-                {
-                  // compute h
-                  h[ d ] = std::abs(centerDiff_[ d*2 ][ d ]);
-                }
-              }
-            }
-          }
-
-          // update sequence counter
-          sequence_ = dmSequence;
+          neighbors_.update();
         } // end isCartesian
       }
 
@@ -185,6 +140,9 @@ namespace Dune
 
         const std::size_t elIndex = mapper.index( element );
         const GlobalCoordinate elCenter = element.geometry().center();
+
+        const auto& neighbors = neighbors_.indices();
+        const auto& centerDiff = neighbors_.centerDifferences();
 
         std::array< unsigned int, dimension+1 > select;
         const std::vector< unsigned int > &faceAxes = faceAxes_[ LocalGeometryTypeIndex::index( element.type() ) ];
@@ -208,7 +166,7 @@ namespace Dune
             {
               if constexpr ( isCartesian )
               {
-                differences.emplace_back( centerDiff_[ intersection.indexInInside() ], u[ neighbors_[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
+                differences.emplace_back( centerDiff[ intersection.indexInInside() ], u[ neighbors[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
               }
               else
               {
@@ -241,7 +199,7 @@ namespace Dune
             {
               if constexpr ( isCartesian )
               {
-                differences.emplace_back( centerDiff_[ intersection.indexInInside() ], u[ neighbors_[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
+                differences.emplace_back( centerDiff[ intersection.indexInInside() ], u[ neighbors[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
               }
               else
               {
@@ -320,13 +278,11 @@ namespace Dune
 
     private:
       const GridPartType& gridPart_;
-      const DofManagerType& dofManager_;
+      CartesianNeighborsType neighbors_;
       BoundaryValue boundaryValue_;
       Real tolerance_;
       LP lp_;
       std::vector< std::vector< unsigned int > > faceAxes_;
-      std::array< GlobalCoordinate, GridPartType::dimension*2 > centerDiff_;
-      std::vector< std::array< int, GridPartType::dimension*2 > > neighbors_;
       mutable DifferencesVectorType differences_;
 
       int sequence_;

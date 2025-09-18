@@ -24,7 +24,7 @@
 #include <dune/fem/gridpart/common/capabilities.hh>
 
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
-
+#include <dune/fem-dg/operator/common/cartesianneighbors.hh>
 
 namespace Dune
 {
@@ -52,8 +52,6 @@ namespace Dune
 
       typedef StateVector RangeType;
 
-      typedef Dune::Fem::DofManager< typename GridPartType::GridType > DofManagerType;
-
       typedef FieldVector< typename GridPartType::ctype, GridPartType::dimensionworld > GlobalCoordinate;
 
       typedef typename GridPartType::Intersection Intersection;
@@ -62,6 +60,8 @@ namespace Dune
       typedef typename FieldTraits< StateVector >::real_type Real;
       typedef FieldMatrix< Field, StateVector::dimension, GlobalCoordinate::dimension > Jacobian;
 
+      typedef Dune::Fem::CartesianNeighbors< GridPartType >  CartesianNeighborsType;
+
       static const int dimension = GridPartType::dimension;
       static const bool isCartesian = Dune::Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
       static_assert( isCartesian, "TVDReconstruction requires a Cartesian grid");
@@ -69,12 +69,9 @@ namespace Dune
       static const int numFunc = 3;
     public:
       TVDReconstruction ( const GridPartType &gp, BoundaryValue boundaryValue, Real tolerance )
-        : gridPart_( gp ),
-          dofManager_( DofManagerType :: instance( gridPart_.grid() ) ),
+        : neighbors_( gp ),
           boundaryValue_( std::move( boundaryValue ) ),
-          h_( 0 ),
-          limiterFunction_(),
-          sequence_( -1 )
+          limiterFunction_()
       {
         //         inside
         //   1       0       2
@@ -104,61 +101,7 @@ namespace Dune
 
       void update()
       {
-        // do nothing if up to date
-        const int dmSequence = dofManager_.sequence();
-        if( sequence_ == dmSequence )
-          return ;
-
-        const auto& mapper = gridPart().indexSet();
-        neighbors_.resize( mapper.size(0) );
-
-        h_ = 0;
-
-        const auto end = gridPart().template end< 0, Dune::InteriorBorder_Partition >();
-        for( auto it = gridPart().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
-        {
-          const auto& element = *it ;
-          const std::size_t elIndex = mapper.index( element );
-          auto& neighbors = neighbors_[ elIndex ];
-
-          const GlobalCoordinate elCenter = element.geometry().center();
-
-          const auto iend = gridPart().iend( element );
-          for( auto iit = gridPart().ibegin( element ); iit != iend; ++iit )
-          {
-            const auto intersection = *iit;
-
-            if( intersection.neighbor() )
-            {
-              const auto neighbor = intersection.outside();
-              const std::size_t nbIndex = mapper.index( neighbor );
-              neighbors[ intersection.indexInInside() ] = nbIndex;
-
-              const GlobalCoordinate nbCenter = neighbor.geometry().center();
-              centerDiff_[ intersection.indexInInside() ] = nbCenter - elCenter;
-
-              const int d = intersection.indexInInside() / dimension;
-              if( h_[ d ] > 0.0 )
-              {
-                if( std::abs( h_[ d ] - std::abs(centerDiff_[ d*2 ][ d ]) )> 1e-10 )
-                  DUNE_THROW(InvalidStateException, "TVDReconstruction::update: different dx detected in one direction");
-              }
-              else
-              {
-                // compute h
-                h_[ d ] = std::abs(centerDiff_[ d*2 ][ d ]);
-              }
-            }
-            else if ( intersection.boundary() )
-            {
-              // for boundary faces set inside element index
-              neighbors[ intersection.indexInInside() ] = elIndex;
-            }
-          }
-        }
-
-        // update sequence counter
-        sequence_ = dmSequence;
+        neighbors_.update();
       }
 
       template< class Entity, class Mapper, class Vector >
@@ -170,9 +113,11 @@ namespace Dune
         static const int dim = dimension;
         static const int dimRange = Jacobian::rows;
 
-        const std::size_t elIndex = mapper.index( element );
+        const auto& elIndex = mapper.index( element );
 
-        const auto& neighs = neighbors_[ elIndex ];
+        const auto& neighs = neighbors_.indices()[ elIndex ];
+        const auto& h_ = neighbors_.gridWidth();
+
         const RangeType &enVal = u[ elIndex ];
 
         // neighboring values
@@ -180,7 +125,7 @@ namespace Dune
         bool hasBoundary = false ;
         for( int i=0; i<2*dim; ++i)
         {
-          const std::size_t nbIndex = neighs[ i ];
+          const auto& nbIndex = neighs[ i ];
           if( nbIndex != elIndex )
             values_[ i ] = u[ nbIndex ];
           else
@@ -190,8 +135,9 @@ namespace Dune
         // if boundary present use intersection iterator to fill values
         if( hasBoundary )
         {
-          const auto iend = gridPart().iend( element );
-          for( auto iit = gridPart().ibegin( element ); iit != iend; ++iit )
+          const auto& gridPart = neighbors_.gridPart();
+          const auto iend = gridPart.iend( element );
+          for( auto iit = gridPart.ibegin( element ); iit != iend; ++iit )
           {
             const auto intersection = *iit;
 
@@ -319,36 +265,25 @@ namespace Dune
       {
         du.resize( u.size() );
 
-        const auto end = gridPart().template end< 0, Dune::InteriorBorder_Partition >();
-        for( auto it = gridPart().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
+        const auto& gridPart = neighbors_.gridPart();
+        const auto end = gridPart.template end< 0, Dune::InteriorBorder_Partition >();
+        for( auto it = gridPart.template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
         {
           const auto element = *it;
           applyLocal( element, mapper, u, du[ mapper.index( element ) ] );
         }
       }
 
-      const GridPartType &gridPart () const { return gridPart_; }
-
-      [[deprecated]]
-      const GridPartType &gridView () const { return gridPart_; }
-
-    private:
-      const GridPartType& gridPart_;
-      const DofManagerType& dofManager_;
+    protected:
+      CartesianNeighborsType neighbors_;
       BoundaryValue boundaryValue_;
-      Dune::FieldVector< Field, dimension > h_;
 
       std::array< std::array< int8_t, 2>, numFunc > combos_;
       std::array< std::vector< int8_t >, numFunc > testset_;
 
-      std::array< GlobalCoordinate, GridPartType::dimension*2 > centerDiff_;
-      std::vector< std::array< int, GridPartType::dimension*2 > > neighbors_;
-
       //Dune::Fem::VanLeerLimiter< Field > limiterFunction_;
       //Dune::Fem::SuperBeeLimiter< Field > limiterFunction_;
       Dune::Fem::MinModLimiter< Field > limiterFunction_;
-
-      int sequence_;
     };
 
 
