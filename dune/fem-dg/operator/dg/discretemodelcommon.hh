@@ -123,15 +123,13 @@ namespace Fem
      */
     AdvectionModel(const ModelType& mod,
                    const AdvectionFluxType& numf)
-      : model_(mod),
-        numflux_( numf )
+      : numflux_( numf )
     {
     }
 
     //! copy constructor (for thread parallel progs mainly)
     AdvectionModel( const AdvectionModel& other )
       : BaseType( other ),
-        model_( other.model_ ),
         numflux_( other.numflux_ )
     {
     }
@@ -139,10 +137,18 @@ namespace Fem
     void setEntity( const EntityType& entity )
     {
       BaseType::setEntity( entity );
-      model_.setEntity( entity );
+      numflux_.setEntity( entity );
     }
 
-    void setTime ( double time ) { const_cast< ModelType & >( model_ ).setTime( time ); }
+    void setNeighbor( const EntityType& entity )
+    {
+      BaseType::setNeighbor( entity );
+
+      // numerical flux also stores a model that might need the neighbor here
+      numflux_.setNeighbor( entity );
+    }
+
+    void setTime ( double time ) { const_cast< ModelType & >( model() ).setTime( time ); }
 
     //! dummy method
     void switchUpwind() const {}
@@ -150,14 +156,14 @@ namespace Fem
     //! return true if source term is present
     inline bool hasSource() const
     {
-      return model_.hasNonStiffSource();
+      return model().hasNonStiffSource();
     }
 
     //! return true if flux term is present
     inline bool hasFlux() const { return advection; }
 
     //! return true if the mass term is not the identity
-    inline bool hasMass() const { return model_.hasMass(); }
+    inline bool hasMass() const { return model().hasMass(); }
 
     /**
      * \brief Stiff source associated with advection
@@ -166,7 +172,7 @@ namespace Fem
     inline double source( const LocalEvaluation& local,
                           RangeType& s ) const
     {
-      return model_.nonStiffSource( local, local.values()[uVar], s );
+      return model().nonStiffSource( local, local.values()[uVar], s );
     }
 
     template <class LocalEvaluationVec >
@@ -258,7 +264,7 @@ namespace Fem
         else
         {
           // returns advection wave speed
-          return model_.boundaryFlux( left, left.values()[uVar], left.jacobians()[uVar], gLeft );
+          return model().boundaryFlux( left, left.values()[uVar], left.jacobians()[uVar], gLeft );
         }
       }
       else
@@ -276,7 +282,7 @@ namespace Fem
                          JacobianRangeType& f ) const
     {
       if constexpr ( advection )
-        model_.advection( local, local.values()[uVar],local.jacobians()[uVar], f);
+        model().advection( local, local.values()[uVar],local.jacobians()[uVar], f);
       else
         f = 0;
     }
@@ -286,22 +292,22 @@ namespace Fem
                RangeType& m ) const
     {
       assert( hasMass() );
-      model_.mass( local, local.values()[uVar], m );
+      model().mass( local, local.values()[uVar], m );
     }
 
     const ModelType& model() const
     {
-      return model_;
+      return numflux_.model();
     }
 
   protected:
     template <class LocalEvaluation>
     bool boundaryValue(const LocalEvaluation& left) const
     {
-      const bool hasBndValue = model_.hasBoundaryValue( left ) || model_.hasRobinBoundaryValue( left );
+      const bool hasBndValue = model().hasBoundaryValue( left ) || model().hasRobinBoundaryValue( left );
       if( hasBndValue )
       {
-        model_.boundaryValue( left, left.values()[uVar], uBnd_ );
+        model().boundaryValue( left, left.values()[uVar], uBnd_ );
       }
       else
         // do something bad to uBnd_ as it shouldn't be used
@@ -313,8 +319,8 @@ namespace Fem
     // store an instance here so that for thread parallel
     // runs class variables are thread private since discrete models
     // are thread private
-    ModelType  model_;
 
+    // use model also from numflux to avoid double initialization
     AdvectionFluxType numflux_;
     mutable RangeType uBnd_;
   };                                              /*@LST0E@*/
@@ -382,6 +388,8 @@ namespace Fem
     // type of thread filter in thread parallel runs
     typedef Fem::DomainFilter<GridPartType> ThreadDomainFilterType;
 
+    using BaseType :: model;
+
   public:
     /**
      * \brief constructor
@@ -411,7 +419,6 @@ namespace Fem
     void setEntity( const EntityType& entity )
     {
       BaseType::setEntity( entity );
-      model_.setEntity( entity );
 
       if( adaptation_ )
         enIndicator_ = adaptation_->localIndicator( entity );
@@ -483,7 +490,7 @@ namespace Fem
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      if( ! model_.allowsRefinement( left ) )
+      if( ! model().allowsRefinement( left ) )
         return 0.;
 
       double ldt = BaseType::numericalFlux( left, gLeft, gRight, gDiffLeft, gDiffRight );
@@ -546,15 +553,9 @@ namespace Fem
       return BaseType::boundaryFlux( left, gLeft, gDiffLeft );
     }
 
-    const ModelType& model() const
-    {
-      return model_;
-    }
-
   protected:
     using BaseType::inside ;
     using BaseType::outside ;
-    using BaseType::model_ ;
     using BaseType::numflux_ ;
 
     AdaptationType*  adaptation_;

@@ -21,9 +21,9 @@ namespace Fem
    */
   template <class ModelImp>
   class UpwindFlux
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, false >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, false >
                                                   BaseType;
 
     static const int dimRange = ModelImp::dimRange;
@@ -37,7 +37,8 @@ namespace Fem
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
 
-    using BaseType::model_;
+    using BaseType::model;
+
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
@@ -72,7 +73,7 @@ namespace Fem
       const DomainType normal = left.intersection().integrationOuterNormal(x);
 
       // get velocity
-      const DomainType v = model_.velocity( left, uLeft );
+      const DomainType v = model().velocity( left, uLeft );
       const auto upwind = normal * v;
 
       if (upwind > 0)

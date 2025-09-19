@@ -43,13 +43,13 @@ namespace detail
   };
 
   // FVOperatorImpl
-  template< class DiscreteFunction, class Model, class NumFlux >
+  template< class DiscreteFunction, class NumFlux >
   class FVOperatorImpl
   {
 
   public:
-    typedef Model     ModelType;
     typedef NumFlux   NumFluxType;
+    typedef typename NumFluxType :: ModelType ModelType;
 
     // first we extract some types
     typedef DiscreteFunction             DiscreteFunctionType;
@@ -63,7 +63,7 @@ namespace detail
     typedef typename GridPartType::Grid Grid;
     static const int dim = GridPartType::dimension;
     static const int dimworld = GridPartType::dimensionworld;
-    static const int dimRange = Model::dimRange;
+    static const int dimRange = ModelType::dimRange;
     typedef typename Grid::ctype ctype;
     static const bool isCartesian = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
 
@@ -99,11 +99,10 @@ namespace detail
     /** \brief constructor
      *
      *  \param[in]  gridPart  gridPart to operate on
-     *  \param[in]  model       discretization of the Model
+     *  \param[in]  numFlux   numerical flux (also includes model)
      */
-    FVOperatorImpl ( const DiscreteFunctionSpaceType& space, const Model &model, const NumFluxType& numFlux )
+    FVOperatorImpl ( const DiscreteFunctionSpaceType& space, const NumFluxType& numFlux )
     : space_( space ),
-      model_( model ),
       numFlux_( numFlux ),
       time_( 0 ),
       dtEst_( 0 ),
@@ -159,6 +158,8 @@ namespace detail
     {
       return space_;
     }
+
+    const ModelType& model() const { return numFlux_.model(); }
 
     void setTime( const double time )
     {
@@ -293,7 +294,6 @@ namespace detail
 
     const DiscreteFunctionSpaceType& space_;
     // copy model and numFlux for thread safety
-    ModelType    model_;
     NumFluxType  numFlux_;
     double time_;
     mutable double dtEst_;
@@ -315,9 +315,9 @@ namespace detail
 
   }; // end FVOperatorImpl
 
-  template< class DiscreteFunction, class Model, class NumFlux >
+  template< class DiscreteFunction, class NumFlux >
   template< class GridFunction, class Iterators, class Functor, bool value >
-  inline void FVOperatorImpl< DiscreteFunction, Model, NumFlux >
+  inline void FVOperatorImpl< DiscreteFunction, NumFlux >
     ::applyImpl( const GridFunction& u, const Iterators& iterators,
                  Functor& addLocalDofs, std::integral_constant< bool, value > higherOrder ) const
   {
@@ -345,9 +345,9 @@ namespace detail
     // return  ws;
   }
 
-  template< class DiscreteFunction, class Model, class NumFlux >
+  template< class DiscreteFunction, class NumFlux >
   template< class GridFunction, class Functor, class LocalFunction, bool value >
-  inline double FVOperatorImpl< DiscreteFunction, Model, NumFlux >
+  inline double FVOperatorImpl< DiscreteFunction, NumFlux >
     ::applyLocal ( const GridFunction& u,
                    const Entity &entity,
                    Functor& addLocalDofs,
@@ -357,7 +357,7 @@ namespace detail
                  ) const
   {
     // initialize model
-    model_.setEntity( entity );
+    numFlux_.setEntity( entity );
 
     double dt = prevDt;
 
@@ -394,20 +394,20 @@ namespace detail
       uEn.init( entity );
     }
 
-    if( model_.hasNonStiffSource() )
+    if( model().hasNonStiffSource() )
     {
       LocalEvalEntityType left( entity, center_, center_, enVolume );
       if constexpr ( higherOrder )
       {
         uEn.evaluate( center_, uLeft );
       }
-      model_.nonStiffSource( left, uLeft, jacLeft_, enUpdate );
+      model().nonStiffSource( left, uLeft, jacLeft_, enUpdate );
     }
 
     Entity nbStorage;
 
     // the following only makes sense if the model has a flux implemented
-    if ( model_.hasFlux() )
+    if ( model().hasFlux() )
     {
       // run through all intersections with neighbors and boundary
       const auto iitend = gridPart().iend( entity );
@@ -448,6 +448,7 @@ namespace detail
               nbStorage = intersection.outside();
 
             const Entity &neighbor = nbStorage;
+            numFlux_.setNeighbor( neighbor );
 
             const ctype nbVolume   = ( isCartesian ) ? enVolume   : neighbor.geometry().volume();
             const ctype nbVolume_1 = ( isCartesian ) ? enVolume_1 : 1.0/nbVolume;
@@ -535,20 +536,20 @@ namespace detail
             }
           }
 
-          const bool hasBndValue = model_.hasBoundaryValue( left );
+          const bool hasBndValue = model().hasBoundaryValue( left );
           RangeType fluxLeft;
           double waveSpeed ;
           if( hasBndValue )
           {
             RangeType fluxRight;
-            model_.boundaryValue( left, uLeft, uRight );
+            model().boundaryValue( left, uLeft, uRight );
             // apply numerical flux
             waveSpeed = numFlux_.numericalFlux( left, left, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
           }
           else
           {
             // use boundary flux from model
-            waveSpeed = model_.boundaryFlux( left, uLeft, jacLeft_, fluxLeft );
+            waveSpeed = model().boundaryFlux( left, uLeft, jacLeft_, fluxLeft );
           }
 
           // apply update
@@ -614,7 +615,7 @@ public:
   typedef typename Traits::DestinationType DestinationType;
   typedef typename DestinationType::DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
 
-  typedef detail::FVOperatorImpl< DestinationType, ModelType, AdvectionFluxType >    FVOperatorType;
+  typedef detail::FVOperatorImpl< DestinationType, AdvectionFluxType >    FVOperatorType;
 
   // threading types
   typedef Fem::ThreadIterator< GridPartType >                ThreadIteratorType;
@@ -641,7 +642,7 @@ public:
     , space_( gridPart_ )
     , iterators_( gridPart_ )
     , reconstruction_()
-    , impl_( space_, model, numFlux )
+    , impl_( space_, numFlux )
     , wTmp_()
     , numberOfElements_( 0 )
     , counter_(0)

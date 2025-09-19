@@ -16,9 +16,10 @@ namespace Fem
    */
   template <class ModelImp>
   class LLFAdvFlux
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, true >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+    // true means that right model is enabled
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, true >
                                                   BaseType;
 
     typedef typename ModelImp::Traits             Traits;
@@ -32,7 +33,9 @@ namespace Fem
   public:
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
-    using BaseType::model_;
+
+    using BaseType::leftModel;
+    using BaseType::rightModel;
 
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
@@ -75,22 +78,18 @@ namespace Fem
 
       FluxRangeType anaflux;
 
-      // assume that model is set to left entity
-      model_.setEntity( left.entity() );
-
-      model_.advection( left, uLeft, jacLeft, anaflux );
+      leftModel().advection( left, uLeft, jacLeft, anaflux );
       // set gLeft
       anaflux.mv( normal, gLeft );
 
-      model_.maxWaveSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+      leftModel().maxWaveSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
 
-      model_.setEntity( right.entity() );
-
-      model_.advection( right, uRight, jacRight, anaflux );
+      const ModelType& rModel = rightModel( left, right );
+      rModel.advection( right, uRight, jacRight, anaflux );
       // add to gLeft
       anaflux.umv( normal, gLeft );
 
-      model_.maxWaveSpeed( right, normal, uRight, viscparar, maxspeedr );
+      rModel.maxWaveSpeed( right, normal, uRight, viscparar, maxspeedr );
 
       const double maxspeed = std::max( maxspeedl, maxspeedr);
       const double viscpara = std::max( viscparal, viscparar);

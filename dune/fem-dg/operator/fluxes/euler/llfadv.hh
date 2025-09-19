@@ -30,9 +30,9 @@ namespace Fem
     */
   template< class ModelImp >
   class EulerLLFFlux
-   : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+   : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, true >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >   BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, true >   BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     static const int dimRange = ModelImp::dimRange;
@@ -45,7 +45,9 @@ namespace Fem
   public:
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
-    using BaseType::model_;
+
+    using BaseType::leftModel;
+    using BaseType::rightModel;
 
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
@@ -87,19 +89,21 @@ namespace Fem
       RangeType visc;
       FluxRangeType anaflux;
 
-      model_.advection( left, uLeft, jacLeft, anaflux );
+      double maxspeedl, maxspeedr, maxspeed;
+      double viscparal, viscparar, viscpara;
+
+      leftModel().advection( left, uLeft, jacLeft, anaflux );
 
       // set gLeft
       anaflux.mv( normal, gLeft );
 
-      model_.advection( right, uRight, jacRight, anaflux );
+      leftModel().maxWaveSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+
+      const ModelType& rModel = rightModel( left, right );
+      rModel.advection( right, uRight, jacRight, anaflux );
       anaflux.umv( normal, gLeft );
 
-      double maxspeedl, maxspeedr, maxspeed;
-      double viscparal, viscparar, viscpara;
-
-      model_.maxWaveSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
-      model_.maxWaveSpeed( right, normal, uRight, viscparar, maxspeedr );
+      rModel.maxWaveSpeed( right, normal, uRight, viscparar, maxspeedr );
 
       maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
       viscpara = (viscparal > viscparar) ? viscparal : viscparar;
@@ -121,8 +125,8 @@ namespace Fem
       // calculate num. flux for pressure
       double pInside, TInside;
       double pOutside, TOutside;
-      model_.pressAndTemp( uLeft, pInside, TInside );
-      model_.pressAndTemp( uRight, pOutside, TOutside );
+      leftModel().pressAndTemp( uLeft, pInside, TInside );
+      rightModel().pressAndTemp( uRight, pOutside, TOutside );
       const double pNumFlux = 0.5*(pInside + pOutside);
 
       const double rhoAvg = 0.5*(uLeft[0] + uRight[0]);
