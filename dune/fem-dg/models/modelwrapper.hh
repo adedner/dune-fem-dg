@@ -185,7 +185,6 @@ namespace Fem
 
     using BaseType :: time;
     using BaseType :: hasMass;
-    using BaseType :: velocity ;
 
     // default constructor called by DGOperator
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel, const ProblemType& problem )
@@ -475,7 +474,7 @@ namespace Fem
     // velocity method for Upwind flux
     template< class LocalEvaluation >
     inline DomainType velocity (const LocalEvaluation& local,
-                                RangeType& u) const
+                                const RangeType& u) const
     {
       return advection().velocity( time(), local.entity(), local.quadraturePoint(), u );
     }
