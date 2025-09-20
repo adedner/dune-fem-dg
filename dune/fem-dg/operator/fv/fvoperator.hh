@@ -113,6 +113,8 @@ namespace detail
       center_( 0 ),
       faceCenters_(),
       localFaceCenter_( 0.5 ),
+      computeFlux_(),
+      faceQuadratures_(),
       numberOfElements_( 0 ),
       sequence_( -1 )
     {
@@ -136,6 +138,30 @@ namespace detail
         assert( geomTypes.size() == 1 );
         localFaceCenter_ = Dune::referenceElement<ctype, GridPartType::dimension-1>( geomTypes[ 0 ] ).position( 0, 0 );
       }
+
+      if( isCartesian && faceQuadratures_.empty() )
+      {
+        faceQuadratures_.resize( dim*2 );
+        // compute update vector and optimum dt in one grid traversal
+        const auto endit = space_.end();
+        for( auto it = space_.begin(); it != endit; ++it )
+        {
+          const auto& entity = *it;
+          const auto enIndex = index( entity );
+          // run through all intersections with neighbors and boundary
+          const auto iitend = gridPart().iend( entity );
+          for( auto iit = gridPart().ibegin( entity ); iit != iitend; ++iit )
+          {
+            const Intersection& intersection = *iit;
+            faceQuadratures_[ intersection.indexInInside() ].reset(
+                new FaceQuadratureType(gridPart(), intersection, 0 /* faceQuadOrder */,
+                                       FaceQuadratureType::INSIDE) );
+          }
+
+          break; // only one element needed
+        }
+      }
+
     }
 
     template <class GridFunction, class Iterators>
@@ -185,29 +211,6 @@ namespace detail
           computeFlux_.resize( indexSet.size( 0 ) );
           for( auto& item : computeFlux_ )
             item = false ;
-
-          if( faceQuadratures_.empty() )
-          {
-            faceQuadratures_.resize( dim*2 );
-            // compute update vector and optimum dt in one grid traversal
-            const auto endit = iterators.end();
-            for( auto it = iterators.begin(); it != endit; ++it )
-            {
-              const auto& entity = *it;
-              const auto enIndex = index( entity );
-              // run through all intersections with neighbors and boundary
-              const auto iitend = gridPart().iend( entity );
-              for( auto iit = gridPart().ibegin( entity ); iit != iitend; ++iit )
-              {
-                const Intersection& intersection = *iit;
-                faceQuadratures_[ intersection.indexInInside() ].reset(
-                    new FaceQuadratureType(gridPart(), intersection, 0 /* faceQuadOrder */,
-                                           FaceQuadratureType::INSIDE) );
-              }
-
-              break; // only one element needed
-            }
-          }
 
           cartCellVolume_ = 0.0;
 
