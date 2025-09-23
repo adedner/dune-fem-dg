@@ -513,9 +513,9 @@ namespace Fem
   template <class ModelImp,
             class FluxImp>
   class EulerFluxImpl
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, false >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters > BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters, false > BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     typedef typename ModelImp::Traits::GridType   GridType;
@@ -531,6 +531,8 @@ namespace Fem
     typedef FluxImp                               FluxType;
 
   public:
+    using BaseType::model;
+
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
 
@@ -539,7 +541,7 @@ namespace Fem
      */
     EulerFluxImpl (const ModelImp& mod, const ParameterType& parameter = ParameterType() )
       : BaseType( mod ),
-        numFlux_( mod )
+        numFlux_( model() )
     {}
 
     /**

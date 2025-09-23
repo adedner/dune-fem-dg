@@ -195,19 +195,21 @@ namespace Fem
     typedef typename ImplExplOperatorSelectorType::ExplicitOperatorType      ExplicitOperatorType;
   };
 
-  template< class OperatorTraits, AdvectionLimiter::Enum op>
-  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::fv, op >
+  template< class OperatorTraits, AdvectionLimiter::Enum limiter>
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::fv, limiter >
   {
     static const bool advection = OperatorTraits::ModelType::hasAdvection;
     //static const bool diffusion = OperatorTraits::ModelType::hasDiffusion;
     static const bool diffusion = false; // OperatorTraits::ModelType::hasDiffusion;
+
+    static const bool hasLimiter = (limiter == AdvectionLimiter::Enum::limited);
     //static_assert( OperatorTraits::ModelType::hasDiffusion == false , "This is not implemented for FV" );
     //typedef DGAdvectionDiffusionOperator< OperatorTraits >   DgType;
     //typedef DGAdvectionOperator< OperatorTraits >            DgAdvectionType;
     //typedef DGDiffusionOperator< OperatorTraits >            DgDiffusionType;
-    typedef FVOperator< OperatorTraits >              DgType;
-    typedef FVOperator< OperatorTraits >              DgAdvectionType;
-    typedef FVOperator< OperatorTraits >              DgDiffusionType;
+    typedef FVOperator< OperatorTraits, hasLimiter >           DgType;
+    typedef FVOperator< OperatorTraits, hasLimiter >           DgAdvectionType;
+    typedef FVOperator< OperatorTraits, hasLimiter >           DgDiffusionType;
     typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
                                                                           ImplExplOperatorSelectorType;
   public:

@@ -234,6 +234,12 @@ def femDGOperator(Model, space,
 
     includes = []
 
+    # check verbosity level
+    if parameterReader.exists("fem.verbositylevel"):
+        verbose = bool(parameterReader["fem.verbositylevel"])
+    else:
+        verbose = False
+
     if threading == "default":
         threading = dune.fem.threading.use>1
 
@@ -270,10 +276,13 @@ def femDGOperator(Model, space,
     limiterstr = limiter
     if limiter.lower() == "default":
         # check for limiter interface implementation
-        if not hasLimiterInterface:
-            print("\nfemDGOperator: Limiter selected but limiter interface (jump,velocity,physical) missing in Model!", flush=True)
-            print("femDGOperator: Falling back to unlimited!\n", flush=True)
-            limiter = "unlimited"
+        if not hasLimiterInterface and space.order>0:
+            if hasScalingInterface:
+                limiter = "scaling"
+            else:
+                print("\nfemDGOperator: Limiter selected but limiter interface (jump,velocity,physical) missing in Model!", flush=True)
+                print("femDGOperator: Falling back to unlimited!\n", flush=True)
+                limiter = "unlimited"
         else:
             # default is minmod which can be either lp-minmod or muscl-minmod
             limiter = "minmod"
@@ -306,11 +315,11 @@ def femDGOperator(Model, space,
               "femDGOperator: ScalingLimiter selected but scaling limiter interface (lowerBound,upperBound,physical) missing in Model!\n")
     elif limiter.lower() != "unlimited":
         # check for limiter interface
-        if not hasLimiterInterface:
+        if not hasLimiterInterface and space.order>0:
             raise KeyError(\
               "femDGOperator: MUSCL type stabilization selected but limiter interface (jump,velocity,physical) missing in Model!\n")
 
-    if space.gridView.comm.rank == 0:
+    if space.gridView.comm.rank == 0 and verbose:
         limiterstr = "default(" + limiterstr + ")" if defaultLimiter else limiterstr
         print("femDGOperator: Limiter =",limiterstr)
 

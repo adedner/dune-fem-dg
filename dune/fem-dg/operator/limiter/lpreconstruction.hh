@@ -29,6 +29,10 @@
 #include <dune/optim/lp.hh>
 #include <dune/optim/solver/gaussjordan.hh>
 
+#include <dune/fem/gridpart/common/capabilities.hh>
+#include <dune/fem-dg/operator/common/cartesianneighbors.hh>
+
+
 namespace Dune
 {
 
@@ -56,25 +60,28 @@ namespace Dune
      * }
      * \endcode
      **/
-    template< class GV, class SV, class BV >
+    template< class GP, class SV, class BV >
     class LPReconstruction
     {
-      typedef LPReconstruction< GV, SV, BV > This;
+      typedef LPReconstruction< GP, SV, BV > This;
 
     public:
-      typedef GV GridView;
+      typedef GP GridPartType;
       typedef SV StateVector;
       typedef BV BoundaryValue;
 
-      typedef FieldVector< typename GridView::ctype, GridView::dimensionworld > GlobalCoordinate;
+      typedef FieldVector< typename GridPartType::ctype, GridPartType::dimensionworld > GlobalCoordinate;
 
-      typedef typename GridView::Intersection Intersection;
+      typedef typename GridPartType::Intersection Intersection;
+
+      typedef Dune::Fem::DofManager< typename GridPartType::GridType > DofManagerType;
 
       typedef typename FieldTraits< StateVector >::field_type Field;
       typedef typename FieldTraits< StateVector >::real_type Real;
       typedef FieldMatrix< Field, StateVector::dimension, GlobalCoordinate::dimension > Jacobian;
 
-      static const int dimension = GridView::dimension;
+      static const int dimension = GridPartType::dimension;
+      static const bool isCartesian = Dune::Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
 
     private:
       typedef Optim::LinearConstraint< GlobalCoordinate > Constraint;
@@ -84,13 +91,17 @@ namespace Dune
       typedef Optim::LinearProgramming< Solver, false > LP;
 
       typedef std::vector< std::pair< GlobalCoordinate, StateVector > > DifferencesVectorType;
+      typedef Dune::Fem::CartesianNeighbors< GridPartType >  CartesianNeighborsType;
+
     public:
-      LPReconstruction ( const GridView &gridView, BoundaryValue boundaryValue, Real tolerance )
-        : gridView_( gridView ),
+      LPReconstruction ( const GridPartType &gp, BoundaryValue boundaryValue, Real tolerance )
+        : gridPart_( gp ),
+          neighbors_( gridPart_ ),
           boundaryValue_( std::move( boundaryValue ) ),
           tolerance_( std::move( tolerance ) ),
           lp_( tolerance_ ),
-          faceAxes_( LocalGeometryTypeIndex::size( dimension ) )
+          faceAxes_( LocalGeometryTypeIndex::size( dimension ) ),
+          sequence_( -1 )
       {
         const unsigned int numTopo = Impl::numTopologies( dimension );
         std::unique_ptr< unsigned int[] > faceIndices( new unsigned int[ dimension * numTopo ] );
@@ -104,6 +115,16 @@ namespace Dune
           for( int i = 0; i < dimension; ++i )
             faceAxes[ faceIndices[ topologyId*dimension + i ] ] = i;
         }
+
+        update();
+      }
+
+      void update()
+      {
+        if constexpr ( isCartesian )
+        {
+          neighbors_.update();
+        } // end isCartesian
       }
 
       template< class Entity, class Mapper, class Vector >
@@ -120,12 +141,15 @@ namespace Dune
         const std::size_t elIndex = mapper.index( element );
         const GlobalCoordinate elCenter = element.geometry().center();
 
+        const auto& neighbors = neighbors_.indices();
+        const auto& centerDiff = neighbors_.centerDifferences();
+
         std::array< unsigned int, dimension+1 > select;
         const std::vector< unsigned int > &faceAxes = faceAxes_[ LocalGeometryTypeIndex::index( element.type() ) ];
         if( !faceAxes.empty() )
         {
-          const auto iend = gridView().iend( element );
-          for( auto iit = gridView().ibegin( element ); iit != iend; ++iit )
+          const auto iend = gridPart().iend( element );
+          for( auto iit = gridPart().ibegin( element ); iit != iend; ++iit )
           {
             const auto intersection = *iit;
 
@@ -140,9 +164,16 @@ namespace Dune
             }
             else if( intersection.neighbor() )
             {
-              const auto neighbor = intersection.outside();
-              const GlobalCoordinate nbCenter = neighbor.geometry().center();
-              differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              if constexpr ( isCartesian )
+              {
+                differences.emplace_back( centerDiff[ intersection.indexInInside() ], u[ neighbors[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
+              }
+              else
+              {
+                const auto neighbor = intersection.outside();
+                const GlobalCoordinate nbCenter = neighbor.geometry().center();
+                differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              }
             }
           }
         }
@@ -150,8 +181,8 @@ namespace Dune
         {
           Dune::ReservedVector< GlobalCoordinate, dimension > onb;
 
-          const auto iend = gridView().iend( element );
-          for( auto iit = gridView().ibegin( element ); iit != iend; ++iit )
+          const auto iend = gridPart().iend( element );
+          for( auto iit = gridPart().ibegin( element ); iit != iend; ++iit )
           {
             const auto intersection = *iit;
 
@@ -166,9 +197,16 @@ namespace Dune
             }
             else if( intersection.neighbor() )
             {
-              const auto neighbor = intersection.outside();
-              const GlobalCoordinate nbCenter = neighbor.geometry().center();
-              differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              if constexpr ( isCartesian )
+              {
+                differences.emplace_back( centerDiff[ intersection.indexInInside() ], u[ neighbors[ elIndex ][ intersection.indexInInside() ] ] - u[ elIndex ] );
+              }
+              else
+              {
+                const auto neighbor = intersection.outside();
+                const GlobalCoordinate nbCenter = neighbor.geometry().center();
+                differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+              }
             }
 
             if( onb.size() < dimension )
@@ -222,26 +260,32 @@ namespace Dune
       {
         du.resize( u.size() );
 
-        const auto end = gridView().template end< 0, Dune::InteriorBorder_Partition >();
-        for( auto it = gridView().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
+        const auto end = gridPart().template end< 0, Dune::InteriorBorder_Partition >();
+        for( auto it = gridPart().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
         {
           const auto element = *it;
           applyLocal( element, mapper, u, du[ mapper.index( element ) ] );
         }
 
         //auto handle = vectorCommDataHandle( mapper, du, [] ( Jacobian a, Jacobian b ) { return b; } );
-        //gridView().communicate( handle, InteriorBorder_All_Interface, ForwardCommunication );
+        //gridPart().communicate( handle, InteriorBorder_All_Interface, ForwardCommunication );
       }
 
-      const GridView &gridView () const { return gridView_; }
+      const GridPartType &gridPart () const { return gridPart_; }
+
+      [[deprecated]]
+      const GridPartType &gridView () const { return gridPart_; }
 
     private:
-      GridView gridView_;
+      const GridPartType& gridPart_;
+      CartesianNeighborsType neighbors_;
       BoundaryValue boundaryValue_;
       Real tolerance_;
       LP lp_;
       std::vector< std::vector< unsigned int > > faceAxes_;
       mutable DifferencesVectorType differences_;
+
+      int sequence_;
     };
 
 
@@ -249,10 +293,10 @@ namespace Dune
     // lpReconstruction
     // ----------------
 
-    template< class SV, class GV, class BV >
-    inline static LPReconstruction< GV, SV, BV > lpReconstruction ( const GV &gridView, BV boundaryValue, typename FieldTraits< SV >::real_type tolerance )
+    template< class SV, class GP, class BV >
+    inline static LPReconstruction< GP, SV, BV > lpReconstruction ( const GP &gridPart, BV boundaryValue, typename FieldTraits< SV >::real_type tolerance )
     {
-      return LPReconstruction< GV, SV, BV >( gridView, std::move( boundaryValue ), std::move( tolerance ) );
+      return LPReconstruction< GP, SV, BV >( gridPart, std::move( boundaryValue ), std::move( tolerance ) );
     }
 
   } // namespace FV

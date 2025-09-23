@@ -429,7 +429,7 @@ namespace Fem
       assert( timeProvider_.timeStepValid() );
 
       // take CPU time of solution process
-      Dune::Timer timer ;
+      //Dune::Timer timer ;
 
       // switch upwind direction
       //operator_.switchupwind();
@@ -497,7 +497,7 @@ namespace Fem
       }
 
       // store needed time
-      monitor.odeSolveTime_     = timer.elapsed();
+      //monitor.odeSolveTime_     = timer.elapsed();
       monitor.operatorTime_     = operatorTime();
       monitor.numberOfElements_ = numberOfElements();
 

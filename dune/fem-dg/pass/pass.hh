@@ -12,8 +12,6 @@
 #include <tuple>
 #include <type_traits>
 
-#include <dune/common/timer.hh>
-
 #include <dune/fem/common/memory.hh>
 #include <dune/fem/common/tupleutility.hh>
 #include <dune/fem/operator/common/operator.hh>
@@ -481,9 +479,6 @@ namespace Dune
         // if pass was disable, don't do computation
         if( ! active() ) return ;
 
-        // get stopwatch
-        Dune::Timer timer;
-
         prepare(arg, dest);
 
         numberOfElements_ = 0 ;
@@ -494,9 +489,6 @@ namespace Dune
         }
 
         finalize(arg, dest);
-
-        // accumulate time
-        computeTime_ += timer.elapsed();
       }
 
     protected:

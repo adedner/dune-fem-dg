@@ -38,7 +38,7 @@ namespace Fem
     using BaseType::uVar;
     using BaseType::inside;
     using BaseType::outside;
-    using BaseType::model_;
+    using BaseType::model;
     using BaseType::uBnd_;
 
   public:
@@ -98,16 +98,16 @@ namespace Fem
     inline bool hasSource() const
     {
       if( advection == diffusion )
-        return model_.hasStiffSource() || model_.hasNonStiffSource() ;
+        return model().hasStiffSource() || model().hasNonStiffSource() ;
       else if ( advection && ! diffusion )
-        return model_.hasNonStiffSource() ;
+        return model().hasNonStiffSource() ;
       else
-        return model_.hasStiffSource() ;
+        return model().hasStiffSource() ;
     }
 
     inline bool hasFlux() const
     {
-      return (advection || diffusion) && model_.hasFlux();
+      return (advection || diffusion) && model().hasFlux();
     }
 
     /**
@@ -121,16 +121,16 @@ namespace Fem
 
       double dtEst = std::numeric_limits< double >::max();
 
-      if ( model_.hasStiffSource() )
+      if ( model().hasStiffSource() )
       {
-        const double dtStiff = model_.stiffSource( local, local.values()[uVar], local.jacobians()[uVar], s );
+        const double dtStiff = model().stiffSource( local, local.values()[uVar], local.jacobians()[uVar], s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
       }
 
-      if ( model_.hasNonStiffSource() )
+      if ( model().hasNonStiffSource() )
       {
         RangeType sNonStiff (0);
-        const double dtNon = model_.nonStiffSource( local, local.values()[uVar], local.jacobians()[uVar], sNonStiff );
+        const double dtNon = model().nonStiffSource( local, local.values()[uVar], local.jacobians()[uVar], sNonStiff );
 
         // add to source
         s += sNonStiff;
@@ -171,8 +171,8 @@ namespace Fem
           // use unsigned int, otherwise operator [] on LocalEvaluation has
           // different meaning
           unsigned int qp = 0;
-          const bool hasBoundaryValue = model_.hasBoundaryValue( local[ qp ] );
-          const bool hasRobinBoundaryValue = model_.hasRobinBoundaryValue( local[ qp ] );
+          const bool hasBoundaryValue = model().hasBoundaryValue( local[ qp ] );
+          const bool hasRobinBoundaryValue = model().hasRobinBoundaryValue( local[ qp ] );
 
           const unsigned int quadNop = local.quadrature().nop();
           if( uBndVec_.size() < quadNop )
@@ -180,11 +180,11 @@ namespace Fem
 
           for(; qp < quadNop; ++qp)
           {
-            assert( hasBoundaryValue == model_.hasBoundaryValue( local[qp] ) );
-            assert( hasRobinBoundaryValue == model_.hasRobinBoundaryValue( local[qp] ) );
+            assert( hasBoundaryValue == model().hasBoundaryValue( local[qp] ) );
+            assert( hasRobinBoundaryValue == model().hasRobinBoundaryValue( local[qp] ) );
 
             if( hasBoundaryValue || hasRobinBoundaryValue )
-              model_.boundaryValue(local[qp], local[qp].values()[uVar], uBndVec_[qp] );
+              model().boundaryValue(local[qp], local[qp].values()[uVar], uBndVec_[qp] );
             else
               // do something bad to uBndVec as it shouldn't be used
               uBndVec_[qp] = std::numeric_limits< double >::quiet_NaN();
@@ -265,8 +265,8 @@ namespace Fem
        ****************************/
       double diffusionWaveSpeed = 0.0;
 
-      const bool hasBoundaryValue = model_.hasBoundaryValue( left );
-      const bool hasRobinBoundaryValue = model_.hasRobinBoundaryValue( left );
+      const bool hasBoundaryValue = model().hasBoundaryValue( left );
+      const bool hasRobinBoundaryValue = model().hasRobinBoundaryValue( left );
 
 
       if( diffusion )
@@ -286,7 +286,7 @@ namespace Fem
         if( !hasBoundaryValue )
         {
           RangeType diffBndFlux ( 0 );
-          model_.diffusionBoundaryFlux( left,
+          model().diffusionBoundaryFlux( left,
                                         left.values()[uVar], left.jacobians()[uVar], diffBndFlux );
           gLeft += diffBndFlux;
         }
@@ -316,7 +316,7 @@ namespace Fem
       if( diffusion && hasFlux() )
       {
         JacobianRangeType diffmatrix;
-        model_.diffusion( local,
+        model().diffusion( local,
                           local.values()[ uVar ], local.jacobians()[ uVar ], diffmatrix);
         // primal case
         f -= diffmatrix;
@@ -472,10 +472,11 @@ namespace Fem
     using BaseType::uVar;
     using BaseType::inside;
     using BaseType::outside;
-    using BaseType::model_;
     using BaseType::uBnd_;
 
   public:
+    using BaseType::model;
+
     static const bool advection = enableAdvection; // true if advection is enabled
     static const bool diffusion = enableDiffusion; // this should be disabled for LDG
 
@@ -525,7 +526,7 @@ namespace Fem
 #if 0
       // do not take into account part of the domain which is not
       // of computation significance (i.e. a damping layer)
-      if( ! model_.allowsRefinement( left ) )
+      if( ! model().allowsRefinement( left ) )
         return 0.;
 
       // call numerical flux of base type
@@ -541,14 +542,14 @@ namespace Fem
 
         // G(u-)grad(u-) for multiplication with phi
         // call on inside
-        model_.diffusion( inside(), time, faceQuadInner.point( quadPoint ),
+        model().diffusion( inside(), time, faceQuadInner.point( quadPoint ),
                           uLeft[uVar], jacLeft[uVar], diffmatrix );
 
         diffmatrix.mv( normal, error );
 
         // G(u+)grad(u+) for multiplication with phi
         // call on outside
-        model_.diffusion( outside(), time, faceQuadOuter.point( quadPoint ),
+        model().diffusion( outside(), time, faceQuadOuter.point( quadPoint ),
                           uRight[uVar], jacRight[uVar], diffmatrix );
 
         diffmatrix.mmv( normal, error );

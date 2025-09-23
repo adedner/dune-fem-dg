@@ -8,12 +8,16 @@
 #include <dune/grid/common/geometry.hh>
 
 #include <dune/fem/gridpart/common/capabilities.hh>
+#include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
 
 #include <dune/grid/common/gridenums.hh>
 #include <dune/fem/space/finitevolume.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 #include <dune/fem-dg/pass/context.hh>
+
+#include <dune/fem-dg/operator/limiter/limitermodel.hh>
+#include <dune/fem-dg/operator/limiter/limiter.hh>
 
 namespace Dune
 {
@@ -39,13 +43,13 @@ namespace detail
   };
 
   // FVOperatorImpl
-  template< class DiscreteFunction, class Model, class NumFlux >
+  template< class DiscreteFunction, class NumFlux >
   class FVOperatorImpl
   {
 
   public:
-    typedef Model     ModelType;
     typedef NumFlux   NumFluxType;
+    typedef typename NumFluxType :: ModelType ModelType;
 
     // first we extract some types
     typedef DiscreteFunction             DiscreteFunctionType;
@@ -59,7 +63,7 @@ namespace detail
     typedef typename GridPartType::Grid Grid;
     static const int dim = GridPartType::dimension;
     static const int dimworld = GridPartType::dimensionworld;
-    static const int dimRange = Model::dimRange;
+    static const int dimRange = ModelType::dimRange;
     typedef typename Grid::ctype ctype;
     static const bool isCartesian = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
 
@@ -87,23 +91,32 @@ namespace detail
     typedef PointContext< Entity >                LocalEvalEntityType;
     typedef PointContext< Entity, Intersection >  LocalEvalIntersectionType;
 
+    // use IntersectionQuadrature to create appropriate face quadratures
+    typedef Fem::IntersectionQuadrature< FaceQuadratureType, true /* conforming */ > IntersectionQuadratureType;
+    typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
+
   public:
     /** \brief constructor
      *
      *  \param[in]  gridPart  gridPart to operate on
-     *  \param[in]  model       discretization of the Model
+     *  \param[in]  numFlux   numerical flux (also includes model)
      */
-    FVOperatorImpl ( const DiscreteFunctionSpaceType& space, const Model &model, const NumFluxType& numFlux )
+    FVOperatorImpl ( const DiscreteFunctionSpaceType& space, const NumFluxType& numFlux )
     : space_( space ),
-      model_( model ),
       numFlux_( numFlux ),
       time_( 0 ),
       dtEst_( 0 ),
+      cartCellVolume_( 0 ),
+      invCartCellVolume_( 0 ),
       jacLeft_( 0 ),
       jacRight_( 0 ),
       center_( 0 ),
       faceCenters_(),
-      localFaceCenter_( 0.5 )
+      localFaceCenter_( 0.5 ),
+      computeFlux_(),
+      faceQuadratures_(),
+      numberOfElements_( 0 ),
+      sequence_( -1 )
     {
       typedef typename GridPartType::ctype ctype;
       {
@@ -125,6 +138,30 @@ namespace detail
         assert( geomTypes.size() == 1 );
         localFaceCenter_ = Dune::referenceElement<ctype, GridPartType::dimension-1>( geomTypes[ 0 ] ).position( 0, 0 );
       }
+
+      if( isCartesian && faceQuadratures_.empty() )
+      {
+        faceQuadratures_.resize( dim*2 );
+        // compute update vector and optimum dt in one grid traversal
+        const auto endit = space_.end();
+        for( auto it = space_.begin(); it != endit; ++it )
+        {
+          const auto& entity = *it;
+          const auto enIndex = index( entity );
+          // run through all intersections with neighbors and boundary
+          const auto iitend = gridPart().iend( entity );
+          for( auto iit = gridPart().ibegin( entity ); iit != iitend; ++iit )
+          {
+            const Intersection& intersection = *iit;
+            faceQuadratures_[ intersection.indexInInside() ].reset(
+                new FaceQuadratureType(gridPart(), intersection, 0 /* faceQuadOrder */,
+                                       FaceQuadratureType::INSIDE) );
+          }
+
+          break; // only one element needed
+        }
+      }
+
     }
 
     template <class GridFunction, class Iterators>
@@ -148,6 +185,8 @@ namespace detail
       return space_;
     }
 
+    const ModelType& model() const { return numFlux_.model(); }
+
     void setTime( const double time )
     {
       time_ = time;
@@ -161,10 +200,75 @@ namespace detail
     size_t numberOfElements () const { return numberOfElements_; }
 
   protected:
+    template <class Iterators>
+    void updateComputeFlux(const Iterators& iterators) const
+    {
+      if constexpr ( isCartesian )
+      {
+        if ( sequence_ != space().sequence() )
+        {
+          const auto& indexSet = gridPart().indexSet();
+          computeFlux_.resize( indexSet.size( 0 ) );
+          for( auto& item : computeFlux_ )
+            item = false ;
+
+          cartCellVolume_ = 0.0;
+
+          // compute update vector and optimum dt in one grid traversal
+          const auto endit = iterators.end();
+          for( auto it = iterators.begin(); it != endit; ++it )
+          {
+            const auto& entity = *it;
+            const auto enIndex = index( entity );
+
+            ctype cellVolume = entity.geometry().volume();
+            if( cartCellVolume_ > 0 )
+            {
+              if( std::abs(cartCellVolume_ - cellVolume ) > 1e-12 )
+              {
+                DUNE_THROW(InvalidStateException,"FVOperator::updateComputeFlux: Cartesian grid not equal volume grid");
+              }
+            }
+            else
+            {
+              cartCellVolume_ = cellVolume;
+            }
+
+            // run through all intersections with neighbors and boundary
+            const auto iitend = gridPart().iend( entity );
+            for( auto iit = gridPart().ibegin( entity ); iit != iitend; ++iit )
+            {
+              const Intersection& intersection = *iit;
+
+              // handle interior face
+              if( intersection.neighbor() )
+              {
+                // access neighbor
+                const Entity &neighbor = intersection.outside();
+
+                auto nbIndex = index( neighbor );
+                // mark compute flux from one side only
+                if( neighbor.partitionType() != InteriorEntity ||
+                    enIndex < nbIndex )
+                {
+                  computeFlux_[ enIndex ][ intersection.indexInInside() ] = true ;
+                }
+              }
+            }
+            invCartCellVolume_ = 1.0/cartCellVolume_;
+          }
+          sequence_ = space().sequence();
+        }
+      }
+    }
+
     template <class GridFunction, class Iterators, class Functor>
     void evaluate( const GridFunction& u, DestinationType& w, const Iterators& iterators, Functor& addLocalDofs ) const
     {
-      if( u.space().order() > 0 )
+      updateComputeFlux( iterators );
+
+      // check for linear reconstructions
+      if ( u.space().order() > 0 )
       {
         // higher order needs more sophisticated eval
         applyImpl( u, iterators, addLocalDofs, std::true_type() );
@@ -193,23 +297,30 @@ namespace detail
 
     const DiscreteFunctionSpaceType& space_;
     // copy model and numFlux for thread safety
-    ModelType    model_;
     NumFluxType  numFlux_;
     double time_;
     mutable double dtEst_;
+
+    mutable double cartCellVolume_;
+    mutable double invCartCellVolume_;
 
     JacobianRangeType jacLeft_, jacRight_;
     DomainType center_;
     std::vector< DomainType > faceCenters_;
     FaceDomainType localFaceCenter_;
 
+    mutable std::vector< Dune::FieldVector< bool, dim*2 > > computeFlux_;
+    mutable std::vector< std::shared_ptr< FaceQuadratureType > > faceQuadratures_;
+
     mutable size_t numberOfElements_;
+
+    mutable int sequence_;
 
   }; // end FVOperatorImpl
 
-  template< class DiscreteFunction, class Model, class NumFlux >
+  template< class DiscreteFunction, class NumFlux >
   template< class GridFunction, class Iterators, class Functor, bool value >
-  inline void FVOperatorImpl< DiscreteFunction, Model, NumFlux >
+  inline void FVOperatorImpl< DiscreteFunction, NumFlux >
     ::applyImpl( const GridFunction& u, const Iterators& iterators,
                  Functor& addLocalDofs, std::integral_constant< bool, value > higherOrder ) const
   {
@@ -237,9 +348,9 @@ namespace detail
     // return  ws;
   }
 
-  template< class DiscreteFunction, class Model, class NumFlux >
+  template< class DiscreteFunction, class NumFlux >
   template< class GridFunction, class Functor, class LocalFunction, bool value >
-  inline double FVOperatorImpl< DiscreteFunction, Model, NumFlux >
+  inline double FVOperatorImpl< DiscreteFunction, NumFlux >
     ::applyLocal ( const GridFunction& u,
                    const Entity &entity,
                    Functor& addLocalDofs,
@@ -249,21 +360,26 @@ namespace detail
                  ) const
   {
     // initialize model
-    model_.setEntity( entity );
+    numFlux_.setEntity( entity );
 
     double dt = prevDt;
 
     auto enIndex = index( entity );
 
-    const Geometry &geo = entity.geometry();
-
     static const bool higherOrder = value ;
 
     // cell volume
-    const ctype enVolume = geo.volume();
-
-    // 1 over cell volume
-    const ctype enVolume_1 = 1.0/enVolume;
+    ctype enVolume, enVolume_1;
+    if constexpr ( isCartesian )
+    {
+      enVolume = cartCellVolume_;
+      enVolume_1 = invCartCellVolume_;
+    }
+    else
+    {
+      enVolume = entity.geometry().volume();
+      enVolume_1 = 1.0/enVolume;
+    }
 
     RangeType uLeft;
     RangeType uRight;
@@ -281,18 +397,20 @@ namespace detail
       uEn.init( entity );
     }
 
-    if( model_.hasNonStiffSource() )
+    if( model().hasNonStiffSource() )
     {
       LocalEvalEntityType left( entity, center_, center_, enVolume );
       if constexpr ( higherOrder )
       {
         uEn.evaluate( center_, uLeft );
       }
-      model_.nonStiffSource( left, uLeft, jacLeft_, enUpdate );
+      model().nonStiffSource( left, uLeft, jacLeft_, enUpdate );
     }
 
+    Entity nbStorage;
+
     // the following only makes sense if the model has a flux implemented
-    if ( model_.hasFlux() )
+    if ( model().hasFlux() )
     {
       // run through all intersections with neighbors and boundary
       const auto iitend = gridPart().iend( entity );
@@ -306,37 +424,87 @@ namespace detail
         // handle interior face
         if( intersection.neighbor() )
         {
-          // access neighbor
-          const Entity &neighbor = intersection.outside();
+          bool computeFlux = false;
 
-          auto nbIndex = index( neighbor );
-          // compute flux from one side only
-          if( neighbor.partitionType() != InteriorEntity ||
-              enIndex < nbIndex )
+          if constexpr ( isCartesian )
           {
+            computeFlux = computeFlux_[ enIndex ][ intersection.indexInInside() ];
+          }
+          else
+          {
+            nbStorage = intersection.outside();
+            // access neighbor
+            const Entity &neighbor = nbStorage;
+
+            auto nbIndex = index( neighbor );
+            // compute flux from one side only
+            if( neighbor.partitionType() != InteriorEntity ||
+                enIndex < nbIndex )
+            {
+              computeFlux = true ;
+            }
+          }
+
+          if( computeFlux )
+          {
+            if constexpr ( isCartesian )
+              nbStorage = intersection.outside();
+
+            const Entity &neighbor = nbStorage;
+            numFlux_.setNeighbor( neighbor );
+
             const ctype nbVolume   = ( isCartesian ) ? enVolume   : neighbor.geometry().volume();
             const ctype nbVolume_1 = ( isCartesian ) ? enVolume_1 : 1.0/nbVolume;
 
             // local context neighbor
             LocalEvalIntersectionType right( neighbor, intersection, faceCenters_[ intersection.indexInOutside() ], localFaceCenter_, nbVolume );
 
+            // apply numerical flux
+            RangeType fluxLeft, fluxRight;
+            double waveSpeed = 0;
+
             // evaluate data for higher order
             if constexpr ( higherOrder )
             {
-              uNb.init( neighbor );
-              std::abort();
-              // TODO: need face center here
-              uEn.evaluate( center_, uLeft );
-              uNb.evaluate( center_, uRight );
-            }
-            else
-            {
-              u.getLocalDofs( neighbor, uRight );
-            }
+              // otherwise adjust quadrature
+              assert( intersection.conforming() );
 
-            // apply numerical flux
-            RangeType fluxLeft, fluxRight;
-            const double waveSpeed = numFlux_.numericalFlux( left, right, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
+              uNb.init( neighbor );
+              if constexpr ( isCartesian )
+              {
+                // get appropriate references
+                const auto& faceQuadInner = *(faceQuadratures_[ intersection.indexInInside() ]);
+                const auto& faceQuadOuter = *(faceQuadratures_[ intersection.indexInOutside() ]);
+
+                uEn.evaluate( faceQuadInner[0], uLeft );
+                uNb.evaluate( faceQuadOuter[0], uRight );
+              }
+              else
+              {
+                // create intersection quadrature (without neighbor check)
+                IntersectionQuadratureType interQuad( gridPart(), intersection, 0 /* faceQuadOrder */, true /* noNbCheck */);
+
+                // get appropriate references
+                const auto& faceQuadInner = interQuad.inside();
+                const auto& faceQuadOuter = interQuad.outside();
+
+                assert( faceQuadInner.nop() == 1 );
+
+                uEn.evaluate( faceQuadInner[0], uLeft );
+                uNb.evaluate( faceQuadOuter[0], uRight );
+              }
+
+              // compute numerical flux (2nd order)
+              waveSpeed = numFlux_.numericalFlux( left, right, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
+            }
+            else // low order scheme
+            {
+              // evaluate u on neighbor
+              u.getLocalDofs( neighbor, uRight );
+
+              // compute numerical flux (low order)
+              waveSpeed = numFlux_.numericalFlux( left, right, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
+            }
 
             // calc update of entity
             enUpdate.axpy( -enVolume_1, fluxLeft );
@@ -355,24 +523,36 @@ namespace detail
           // evaluate data for higher order
           if constexpr ( higherOrder )
           {
-            // evaluate data
-            uEn.evaluate( center_, uLeft );
+            if constexpr ( isCartesian )
+            {
+              const auto& faceQuadInner = *(faceQuadratures_[ intersection.indexInInside() ]);
+              // evaluate data
+              uEn.evaluate( faceQuadInner[0], uLeft );
+            }
+            else
+            {
+
+              FaceQuadratureType faceQuadInner(gridPart(), intersection, 0 /* faceQuadOrder */,
+                                               FaceQuadratureType::INSIDE);
+              // evaluate data
+              uEn.evaluate( faceQuadInner[0], uLeft );
+            }
           }
 
-          const bool hasBndValue = model_.hasBoundaryValue( left );
+          const bool hasBndValue = model().hasBoundaryValue( left );
           RangeType fluxLeft;
           double waveSpeed ;
           if( hasBndValue )
           {
             RangeType fluxRight;
-            model_.boundaryValue( left, uLeft, uRight );
+            model().boundaryValue( left, uLeft, uRight );
             // apply numerical flux
             waveSpeed = numFlux_.numericalFlux( left, left, uLeft, uRight, jacLeft_, jacRight_, fluxLeft, fluxRight );
           }
           else
           {
             // use boundary flux from model
-            waveSpeed = model_.boundaryFlux( left, uLeft, jacLeft_, fluxLeft );
+            waveSpeed = model().boundaryFlux( left, uLeft, jacLeft_, fluxLeft );
           }
 
           // apply update
@@ -401,7 +581,7 @@ namespace detail
  * \ingroup PassBased
  * \ingroup PassOperator
  */
-template< class Traits >
+template< class Traits, bool limiter >
 class FVOperator :
   public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
 {
@@ -438,10 +618,12 @@ public:
   typedef typename Traits::DestinationType DestinationType;
   typedef typename DestinationType::DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
 
-  typedef detail::FVOperatorImpl< DestinationType, ModelType, AdvectionFluxType >    FVOperatorType;
+  typedef detail::FVOperatorImpl< DestinationType, AdvectionFluxType >    FVOperatorType;
 
   // threading types
   typedef Fem::ThreadIterator< GridPartType >                ThreadIteratorType;
+
+  typedef Dune::Fem::LimitedReconstruction< ModelType, DestinationType, threading >  LimitedReconstructionType;
 
 public:
   template< class ExtraParameterTupleImp >
@@ -462,7 +644,8 @@ public:
     : gridPart_( gridPart )
     , space_( gridPart_ )
     , iterators_( gridPart_ )
-    , impl_( space_, model, numFlux )
+    , reconstruction_()
+    , impl_( space_, numFlux )
     , wTmp_()
     , numberOfElements_( 0 )
     , counter_(0)
@@ -474,6 +657,11 @@ public:
       wTmp_.clear();
       for( size_t i=0; i<threadM1; ++i )
         wTmp_.emplace_back( DestinationType( "wTmp", space_ ) );
+    }
+
+    if constexpr ( limiter )
+    {
+      reconstruction_.reset( new LimitedReconstructionType( model, space_ ) );
     }
   }
 
@@ -594,6 +782,23 @@ protected:
   template <class GridFunction>
   void evaluate( const GridFunction& u, DestinationType& w ) const
   {
+    if constexpr( limiter )
+    {
+      // compute reconstruction
+      reconstruction_->update( u );
+
+      // use reconstruction to compute fluxes
+      evaluateFV( reconstruction_->function(), w );
+    }
+    else
+    {
+      evaluateFV( u, w );
+    }
+  }
+
+  template <class GridFunction>
+  void evaluateFV( const GridFunction& u, DestinationType& w ) const
+  {
     // update counter
     called();
 
@@ -637,7 +842,9 @@ protected:
   GridPartType&                       gridPart_;
   DiscreteFunctionSpaceType           space_;
   mutable ThreadIteratorType          iterators_;
+  mutable std::shared_ptr< LimitedReconstructionType > reconstruction_;
   ThreadSafeValue< FVOperatorType >   impl_;
+
   mutable std::vector< DestinationType >  wTmp_;
   mutable double                      timeStepEstimate_;
   mutable size_t                      numberOfElements_;

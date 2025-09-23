@@ -189,9 +189,9 @@ def model2dgufl(Model,space):
         else:
             def alpha(u, n):
                 return Model.dimRange*[0.]
-        ho += HyperbolicOperator(space.cell(), space, dbc, F_c,
-                                 LocalLaxFriedrichs(alpha))
-        lhs += eo.generate_fem_formulation(u, v)
+        ho = HyperbolicOperator(space.cell(), space, dbc, F_c,
+                                LocalLaxFriedrichs(alpha))
+        lhs += ho.generate_fem_formulation(u, v)
     if hasattr(Model,"F_v"):
         def F_v(u, grad_u):
             return Model.F_v(t,x,u,grad_u)

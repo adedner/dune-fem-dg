@@ -19,13 +19,14 @@ namespace Fem
    * \tparam ModelImp type of the analytical model
    * \tparam FluxParameterImp type of the flux parameters
    */
-  template <class ModelImp, class FluxParameterImp >
+  template <class ModelImp, class FluxParameterImp, bool enableRightModel = false >
   class DGAdvectionFluxBase
   {
   public:
     typedef ModelImp  ModelType;
 
     static const int dimRange = ModelType::dimRange;
+
     typedef typename ModelType::DomainType         DomainType;
     typedef typename ModelType::RangeType          RangeType;
     typedef typename ModelType::JacobianRangeType  JacobianRangeType;
@@ -35,6 +36,19 @@ namespace Fem
     typedef FluxParameterImp                       ParameterType;
     typedef typename ParameterType::IdEnum         IdEnum;
 
+  protected:
+
+    struct EmptyModel
+    {
+      EmptyModel( const ModelType& ) {}
+      template <class Entity>
+      void setEntity( const Entity& ) const {}
+    };
+
+    typedef typename std::conditional< enableRightModel,
+            ModelType, EmptyModel> :: type RightModelType;
+
+  public:
     /**
      * \brief Constructor
      *
@@ -43,7 +57,8 @@ namespace Fem
      */
     DGAdvectionFluxBase (const ModelType& mod,
                          const Dune::Fem::ParameterReader& parameter = Dune::Fem::Parameter::container() )
-      : model_(mod),
+      : model_( mod ),
+        rightModel_( mod ),
         param_( parameter )
     {}
 
@@ -55,7 +70,8 @@ namespace Fem
      */
     DGAdvectionFluxBase (const ModelType& mod,
                          const ParameterType& parameter )
-      : model_(mod),
+      : model_( mod ),
+        rightModel_( mod ),
         param_( parameter )
     {}
 
@@ -68,6 +84,32 @@ namespace Fem
      * \brief Returns the analytical model.
      */
     const ModelType& model () const { return model_; }
+
+    /**
+     * \brief Returns the analytical model (left side).
+     */
+    const ModelType& leftModel () const { return model(); }
+
+    /**
+     * \brief Returns the analytical model (right side).
+     */
+    template <class LocalEvaluation>
+    const ModelType& rightModel (const LocalEvaluation& left, const LocalEvaluation& right ) const
+    {
+      if constexpr ( enableRightModel )
+      {
+        if( &left != &right )
+        {
+          return rightModel_;
+        }
+        else
+        {
+          return model();
+        }
+      }
+      else
+        return model();
+    }
 
     /**
      * \brief Returns the parameters of the flux.
@@ -103,10 +145,28 @@ namespace Fem
       abort();
       return 0.0;
     }
+
+    template <class Entity>
+    void setEntity( const Entity& entity ) const
+    {
+      model_.setEntity( entity );
+    }
+
+    template <class Entity>
+    void setNeighbor( const Entity& entity ) const
+    {
+      if constexpr ( enableRightModel )
+      {
+        rightModel_.setEntity( entity );
+      }
+    }
+
   protected:
     // NOTE: model is stored as object for various reasons
     // such as thread safety and model states
-    ModelType model_;
+    mutable ModelType model_;
+    mutable RightModelType rightModel_;
+
     const ParameterType param_;
   };
 
