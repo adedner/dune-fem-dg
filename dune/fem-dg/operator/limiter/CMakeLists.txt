@@ -1,4 +1,5 @@
 dune_install(
+  cartesiantvd.hh
   indicatorbase.hh
   limiterdiscretemodel.hh
   limiter.hh
