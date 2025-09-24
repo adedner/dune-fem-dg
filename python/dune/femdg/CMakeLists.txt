@@ -8,3 +8,4 @@ add_python_targets(fem-dg
   rk
   testing
 )
+add_subdirectory(landlab)
