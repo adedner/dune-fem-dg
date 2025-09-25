@@ -4,7 +4,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-import dolfin_dg as dg
+# import dolfin_dg as dg
+import dune.femdg.dolfin_dg as dg
 
 from landlab import Component
 from landlab import LinkStatus
