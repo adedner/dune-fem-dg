@@ -8,4 +8,5 @@ add_python_targets(fem-dg
   rk
   testing
 )
+add_subdirectory(dolfin_dg)
 add_subdirectory(landlab)
