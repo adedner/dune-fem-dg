@@ -1,4 +1,4 @@
 add_python_targets(fem-dg-dolfin
-aero.py   dg_form.py  fluxes.py    __init__.py  operators.py
-block.py  dg_ufl.py   hdg_form.py  nitsche.py
+aero   dg_form  fluxes    __init__  operators
+block  dg_ufl   hdg_form  nitsche
 )
