@@ -2,7 +2,7 @@ import abc
 
 import ufl
 
-from dolfin_dg import hyper_tensor_product, hyper_tensor_T_product, \
+from .dolfin_dg import hyper_tensor_product, hyper_tensor_T_product, \
     DGDirichletBC
 
 
@@ -83,7 +83,7 @@ class HDGClassicalFirstOrder:
         def interior_facet_int(integrand):
             return facet_integral(integrand, dInt, 0)
 
-        import dolfin_dg.fluxes
+        import .dolfin_dg.fluxes
         evs_u = self.H_flux.flux_jacobian_eigenvalues(u, n)
         if not isinstance(evs_u, (tuple, list)):
             evs_u = (evs_u,)
