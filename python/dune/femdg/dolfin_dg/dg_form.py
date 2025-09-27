@@ -5,7 +5,7 @@ import ufl
 from ufl import (
     as_matrix, outer, inner, replace, grad, variable, diff, dot, curl, div)
 
-from dolfin_dg.dg_ufl import (
+from .dg_ufl import (
     apply_dg_operators, avg, tensor_jump, jump, tangent_jump, dg_cross)
 
 

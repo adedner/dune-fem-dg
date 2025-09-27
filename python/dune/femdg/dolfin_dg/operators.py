@@ -6,11 +6,11 @@ from ufl import (
     Measure, FacetNormal
 )
 
-from dolfin_dg import aero, generate_default_sipg_penalty_term
-from dolfin_dg.dg_form import (
+from .dolfin_dg import aero, generate_default_sipg_penalty_term
+from .dolfin_dg.dg_form import (
     DGFemTerm, homogeneity_tensor, DGFemCurlTerm, DGFemSIPG, DGFemStokesTerm
 )
-from dolfin_dg.fluxes import LocalLaxFriedrichs, ModifiedLocalLaxFriedrichs
+from .dolfin_dg.fluxes import LocalLaxFriedrichs, ModifiedLocalLaxFriedrichs
 
 
 class DGBC:
