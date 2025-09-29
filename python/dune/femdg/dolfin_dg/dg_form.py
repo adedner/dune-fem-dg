@@ -71,7 +71,7 @@ def hyper_tensor_product(G, tau):
             raise IndexError("G is scalar, tau has shape: %s"
                              + str(tau.ufl_shape))
         return G*tau
-    elif ufl.rank(tau) > 1 and tau.ufl_shape[0] == 1:
+    elif ufl.rank(tau) > 1 and tau.ufl_shape[0] == 1 and len(G.ufl_shape)==2:
         return dot(G, tau.T).T
     elif ufl.rank(tau) == 1:
         return dot(G, tau)
@@ -109,7 +109,7 @@ def hyper_tensor_T_product(G, tau):
             raise IndexError("G^T is scalar, tau has shape: %s"
                              + str(tau.ufl_shape))
         return G*tau
-    elif ufl.rank(tau) > 1 and tau.ufl_shape[0] == 1:
+    elif ufl.rank(tau) > 1 and tau.ufl_shape[0] == 1 and len(G.ufl_shape)==2:
         return dot(G.T, tau)
     elif ufl.rank(tau) == 1:
         return dot(G.T, tau)

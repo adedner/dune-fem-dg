@@ -153,8 +153,10 @@ def model2dgufl(Model,space):
                       dx, ds, dot )
     from dune.femdg.boundary import splitBoundary
     from dune.ufl import Constant
-    from dolfin_dg import ( HyperbolicOperator, DGDirichletBC, LocalLaxFriedrichs,
-                            EllipticOperator, DGFemNIPG, DGFemBO, DGFemSIPG )
+    from dune.femdg.dolfin_dg import (
+            HyperbolicOperator, DGDirichletBC, LocalLaxFriedrichs,
+            EllipticOperator, DGFemNIPG, DGFemBO, DGFemSIPG
+        )
     t = Constant(0,"time")
     x = SpatialCoordinate(space.cell())
     n = FacetNormal(space.cell())
