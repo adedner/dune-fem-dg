@@ -5,7 +5,7 @@ from dune.grid import cartesianDomain
 try:
     from dune.spgrid import spGrid as gridView
 except ImportError:
-    print("Using fallback 'yaspGrid'. To avoid this install the 'dune-spgrid' module!")
+    print("DuneLandlabAdapter: Using fallback 'yaspGrid'. To avoid this install the 'dune-spgrid' module!")
     from dune.grid import yaspGrid as gridView
 
 from dune.fem.space import lagrange, finiteVolume, raviartThomas
