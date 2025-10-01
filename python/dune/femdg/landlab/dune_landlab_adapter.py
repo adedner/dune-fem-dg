@@ -1,7 +1,13 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from dune.grid import cartesianDomain
-from dune.spgrid import spGrid as gridView
+
+try:
+    from dune.spgrid import spGrid as gridView
+except ImportError:
+    print("Using fallback 'yaspGrid'. To avoid this install the 'dune-spgrid' module!")
+    from dune.grid import yaspGrid as gridView
+
 from dune.fem.space import lagrange, finiteVolume, raviartThomas
 
 import time
