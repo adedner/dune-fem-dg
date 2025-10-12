@@ -28,22 +28,11 @@ class BndValue(BoundaryCondition):
         else:
             num_args = len(inspect.signature(value).parameters)
             if num_args == 1:
-                def fct(x, *args):
-                    # only x or full signature t,x,u,n is allowed
-                    if len(args) > 0:
-                        assert len(args) == 3
-                        return value(args[0]) # t,x,u,n, so provided x is t
-                    else:
-                        return value(x)
-                super().__init__(fct)
+                super().__init__(lambda t,x,u,n: value(x))
             elif num_args == 2:
-                def fct(t,x,*args):
-                    return value(t, x)
-                super().__init__(fct)
+                super().__init__(lambda t,x,u,n: value(t, x))
             elif num_args == 3:
-                def fct(t,x,u,*args):
-                    return value(t, x, u)
-                super().__init__(fct)
+                super().__init__(lambda t,x,u,n: value(t, x, u))
             elif num_args == 4:
                 super().__init__(lambda t,x,u,n: value(t, x, u, n))
             elif num_args == 5: # this version is used in old setup
