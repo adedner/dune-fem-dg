@@ -455,8 +455,10 @@ class ExplSSP3: # 3rd order n^2 stage method (typically n=2 or s=4)
             self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
-        u *= (self.n-1)/(2*self.n-1)
-        u.axpy(self.n/(2*self.n-1), self.q2)
+        self.q2 -= u
+        u.axpy(self.n/(2*self.n-1),self.q2)
+        #u *= (self.n-1)/(2*self.n-1)
+        #u.axpy(self.n/(2*self.n-1), self.q2)
         while i <= self.stages:
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
