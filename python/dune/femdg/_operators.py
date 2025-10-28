@@ -672,9 +672,10 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
     stages = Method('stages', '&DuneType::stages')
+    order  = Method('order', '&DuneType::order')
 
     return load(includes, typeName,
-                constructor, solve, setTimeStepSize, deltaT, stages,
+                constructor, solve, setTimeStepSize, deltaT, stages, order,
                 codegen=fullOperator.codegen).\
             Operator( fullOperator.fullOperator,
                       fullOperator.explicitOperator,

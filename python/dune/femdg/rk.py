@@ -23,6 +23,10 @@ class FemDGStepper:
     def stages(self):
         return self.rkScheme.stages()
 
+    @property
+    def order(self):
+        return self.rkScheme.order()
+
 def femdgStepper(*,order=None,rkType=None,operator=None,cfl=0.45,parameters=True):
     if parameters is True: parameters = {}
     elif parameters is False: parameters = None
@@ -428,7 +432,9 @@ class ExplSSP3: # 3rd order n^2 stage method (typically n=2 or s=4)
         self.tmp    = op.space.function(name="ExplSSP3::tmp")
         self.cfl    = 0.45 * stages*(1-1/self.n) if cfl is None else cfl
         self.dt     = None
-    def c(self,i):
+        self.c = [self._c(i) for i in range(0, self.stages+1)]
+
+    def _c(self,i):
         return (i-1)/(self.n*self.n-self.n) \
                if i<=(self.n+2)*(self.n-1)/2+1 \
                else (i-self.n-1)/(self.n*self.n-self.n)
@@ -443,14 +449,14 @@ class ExplSSP3: # 3rd order n^2 stage method (typically n=2 or s=4)
         fac = dt/self.r
         i = 1
         while i <= (self.n-1)*(self.n-2)/2:
-            self.op.stepTime(self.c(i),dt)
+            self.op.stepTime(self.c[i],dt)
             self.op(u,self.tmp)
             self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
         self.q2.assign(u)
         while i <= self.n*(self.n+1)/2:
-            self.op.stepTime(self.c(i),dt)
+            self.op.stepTime(self.c[i],dt)
             self.op(u,self.tmp)
             self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
@@ -460,7 +466,7 @@ class ExplSSP3: # 3rd order n^2 stage method (typically n=2 or s=4)
         #u *= (self.n-1)/(2*self.n-1)
         #u.axpy(self.n/(2*self.n-1), self.q2)
         while i <= self.stages:
-            self.op.stepTime(self.c(i),dt)
+            self.op.stepTime(self.c[i],dt)
             self.op(u,self.tmp)
             self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)

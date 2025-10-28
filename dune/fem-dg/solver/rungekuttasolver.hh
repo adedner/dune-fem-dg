@@ -406,6 +406,7 @@ namespace Fem
     double time()   const { return timeProvider_.time(); }
 
     int stages() const { return ( odeSolver_ ) ? odeSolver_->stages() : -1; }
+    int order() const { return ( odeSolver_ ) ? odeSolver_->order() : -1; }
 
     //! solver the ODE
     void step( DestinationType& U ) const
