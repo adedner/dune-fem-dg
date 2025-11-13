@@ -1,6 +1,11 @@
 import ufl
 from ufl.algorithms.map_integrands import map_integrand_dags
-from ufl.algorithms.multifunction import MultiFunction
+
+try:
+    from ufl.algorithms.multifunction import MultiFunction
+except ImportError:
+    from ufl.corealg.multifunction import MultiFunction
+
 from ufl.constantvalue import Zero
 from ufl.core.operator import Operator
 from ufl.core.ufl_type import ufl_type
