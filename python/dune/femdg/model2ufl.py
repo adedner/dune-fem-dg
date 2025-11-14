@@ -35,8 +35,8 @@ class DefaultConstant:
 def model_ufl(Model, space, t, DirichletBC, Constant):
     u = TrialFunction(space)
     v = TestFunction(space)
-    x = SpatialCoordinate(space.cell())
-    n = FacetNormal(space.cell())
+    x = SpatialCoordinate(space)
+    n = FacetNormal(space)
 
     f_c_model = None
     if hasattr(Model, "F_c"):
@@ -153,13 +153,15 @@ def model2dgufl(Model,space):
                       dx, ds, dot )
     from dune.femdg.boundary import splitBoundary
     from dune.ufl import Constant
+
     from dune.femdg.dolfin_dg import (
             HyperbolicOperator, DGDirichletBC, LocalLaxFriedrichs,
             EllipticOperator, DGFemNIPG, DGFemBO, DGFemSIPG
         )
+
     t = Constant(0,"time")
-    x = SpatialCoordinate(space.cell())
-    n = FacetNormal(space.cell())
+    x = SpatialCoordinate(space)
+    n = FacetNormal(space)
     u = TrialFunction(space)
     v = TestFunction(space)
 
@@ -191,13 +193,13 @@ def model2dgufl(Model,space):
         else:
             def alpha(u, n):
                 return Model.dimRange*[0.]
-        ho = HyperbolicOperator(space.cell(), space, dbc, F_c,
+        ho = HyperbolicOperator(space, space, dbc, F_c,
                                 LocalLaxFriedrichs(alpha))
         lhs += ho.generate_fem_formulation(u, v)
     if hasattr(Model,"F_v"):
         def F_v(u, grad_u):
             return Model.F_v(t,x,u,grad_u)
-        eo = EllipticOperator(space.cell(), space, dbc, F_v)
+        eo = EllipticOperator(space, space, dbc, F_v)
         lhs += eo.generate_fem_formulation(u, v, vt = DGFemSIPG)
 
     return lhs == rhs

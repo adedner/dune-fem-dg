@@ -1,5 +1,7 @@
 import ufl
-from ufl import dot, Max, Min
+from ufl import dot
+from ufl import max_value as Max
+from ufl import min_value as Min
 
 
 def max_abs_of_sequence(a):
