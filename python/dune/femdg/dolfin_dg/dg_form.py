@@ -204,7 +204,12 @@ def _get_ufl_element_degree(u):
     First terminal operands approximating polynomial degree
     """
     if isinstance(u, (ufl.Coefficient, ufl.FunctionSpace, ufl.Argument)):
-        return u.ufl_element().degree()
+        # see if degree method is available (ufl 2022.2.0)
+        # otherwise access attribute  _degree  (ufl 2024 and beyond)
+        try:
+            return u.ufl_element().degree()
+        except AttributeError:
+            return u.ufl_element()._degree
     if isinstance(u, ufl.tensors.ListTensor):
         return _get_ufl_element_degree(_get_terminal_operand_coefficient(u))
     else:
