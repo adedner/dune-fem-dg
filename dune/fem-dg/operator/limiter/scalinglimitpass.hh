@@ -459,6 +459,7 @@ namespace Fem
         assert( qP < int(tmpVal_.size() ));
         // copy value
         value = tmpVal_[ qP ];
+        //std::cout << "Evalute (theta = " << theta_[ 0 ] << ") " << value << std::endl;
 
         // \tilde{p}(x) = \theta (p(x) - \bar{u}) + \bar{u}
         // limitedRange contains all components that should be modified
@@ -467,6 +468,7 @@ namespace Fem
         {
           value[ d ] = theta_[ d ] * ( value[ d ] - enVal_[ d ]) + enVal_[ d ];
         }
+        //std::cout << "scaled " << value << std::endl;
       }
     };
 
@@ -643,7 +645,6 @@ namespace Fem
       assert( uEn_ );
       auto guard = bindGuard( *uEn_, en );
       const LocalFunctionType& uEn = *uEn_;
-      auto interpolGuard = bindGuard( interpolEn_, en );
 
       // get reference to cell average
       RangeType& enVal = scaledFunction_.enVal_;
@@ -657,6 +658,15 @@ namespace Fem
         limiter = true;
       }
 
+      // nothing to be done for piecewise constant polynomials
+      if( scaledFunction_.order() < 1 )
+      {
+        // if average is out of bounds we are lost
+        assert( ! limiter );
+        return ;
+      }
+
+      auto interpolGuard = bindGuard( interpolEn_, en );
       RangeType& theta = scaledFunction_.resetTheta();
 
       CornerPointSetType cornerquad( en );
@@ -681,11 +691,26 @@ namespace Fem
         }
       }
 
-      // evaluate uEn on all interior quadrature points
-      VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
-      if( ! checkPhysicalQuad( quad, uEn, enVal, theta ) )
+      const int volQuadOrd = volumeQuadratureOrder( en );
       {
-        limiter = true;
+        VolumeQuadratureType quad( en, volQuadOrd );
+        if( ! checkPhysicalQuad( quad, uEn, enVal, theta ) )
+        {
+          limiter = true;
+        }
+      }
+
+      const int scaledFctProjectOrder = scaledFunction_.order() * 2;
+      if( volQuadOrd != scaledFctProjectOrder )
+      {
+        // evaluate uEn on all interior quadrature points used for interpolation
+        // Note: This also stores the functions values in scaledFunction_.values_
+        // for the following interpolation
+        VolumeQuadratureType quad( en, scaledFctProjectOrder );
+        if( ! checkPhysicalQuad( quad, uEn, enVal, theta ) )
+        {
+          limiter = true;
+        }
       }
 
       for (auto t : theta)
