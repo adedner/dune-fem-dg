@@ -52,6 +52,15 @@ namespace Fem
                                                                    typename DiscreteFunction::FunctionSpaceType >,
                                          passId
                                        >;
+
+    template <class DiscreteFunction, int passId >
+    using DefaultLimiterDiscreteModelAdjusted =
+      Fem::LimiterDefaultDiscreteModel < LimiterTraits< DiscreteFunction >,
+                                         Fem::LimiterDefaultModel< typename DiscreteFunction::GridType,
+                                                                   typename DiscreteFunction::FunctionSpaceType,
+                                                                   true >,
+                                         passId
+                                       >;
   }
 
   /**
@@ -227,11 +236,19 @@ namespace Fem
     std::unique_ptr< const ModelType > modelPtr_;
   };
 
+  //! Scaling Limiter, no adjustment of averages
   template <class DomainFunction, class RangeFunction = DomainFunction,
             class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModel< DomainFunction, 0 >,
             bool threading = false
            >
   using ScalingLimiter = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, threading, true>;
+
+  //! Scaling Limiter, with adjustment of averages
+  template <class DomainFunction, class RangeFunction = DomainFunction,
+            class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModelAdjusted< DomainFunction, 0 >,
+            bool threading = false
+           >
+  using ScalingLimiterAdjusted = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, threading, true>;
 
   /**
    * \brief Limited reconstruction.

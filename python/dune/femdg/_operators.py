@@ -26,13 +26,14 @@ from dune.fem.utility import FemThreadPoolExecutor
 
 # limiter can be ScalingLimiter or FV based limiter with FV type reconstructions for troubled cells
 def createLimiter(domainSpace, rangeSpace=None,
-                  bounds = [1e-12,1.], limiter='scaling'):
+                  bounds = [1e-12,1.], limiter='scaling',
+                  enableAverageAdjustment = False):
     """
     Parameters:
         domainSpace  discrete space the domain function belongs to
         rangeSpace   discrete space the range function belongs to (default is None which means same as domainSpace)
         bounds       list of lists containing lower and upper bounds for each component. If a entry is none the component will not be limited.
-        limiter      type of limiter, i.e. 'fv' or 'scaling'.
+        limiter      type of limiter, i.e. 'fv', 'scaling' or 'scalingadjusted'.
 
     Returns:
         Limiter object as fem operator.
@@ -70,10 +71,12 @@ def createLimiter(domainSpace, rangeSpace=None,
     includes += domainSpace.cppIncludes + domainSpace.storage.includes
     includes += rangeSpace.cppIncludes + rangeSpace.storage.includes
 
-    typeName = 'Dune::Fem::ScalingLimiter< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
-    # FV type limiter where FV based reconstructions are done
-    if limiter == 'fv':
-        typeName = 'Dune::Fem::Limiter< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
+    available = {'fv': 'Dune::Fem::Limiter',  # FV type limiter where FV based reconstructions are done
+                 'scaling': 'Dune::Fem::ScalingLimiter', # scaling limiter
+                 'scalingadjusted': 'Dune::Fem::ScalingLimiterAdjusted' # scaling limiter with adjustment of averages
+                }
+
+    typeName = available[ limiter ] + '< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
 
     constructor = Constructor(['const '+domainSpaceType + ' &dSpace, const '+rangeSpaceType + ' &rSpace, const std::vector<int>& components, const std::vector< std::vector<double> >& bounds'],
                               ['return new ' + typeName + '(dSpace, rSpace, components, bounds);'],
