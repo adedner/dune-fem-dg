@@ -51,7 +51,7 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridImp, class FunctionSpace >
+  template< class GridImp, class FunctionSpace, bool enableAverageAdjustment = false >
   class LimiterDefaultModel :
     public DefaultModel< LimiterDefaultModelTraits< GridImp, FunctionSpace > >
   {
@@ -305,18 +305,22 @@ namespace Fem
                              const DomainType& xLocal,
                              RangeType& u ) const
     {
-      bool notAdjusted = true;
-      for( const auto& d : limitedRange_ )
+      if constexpr ( enableAverageAdjustment )
       {
-        if( u[ d ] < lower_[ d ])
+        bool notAdjusted = true;
+        for( const auto& d : limitedRange_ )
         {
-          u[ d ] = lower_[ d ] + 1e-14 ;
-          notAdjusted = false ;
+          if( u[ d ] < lower_[ d ])
+          {
+            u[ d ] = lower_[ d ] + 1e-14 ;
+            notAdjusted = false ;
+          }
         }
+        // nothing to be done here for this test case
+        return notAdjusted;
       }
-
-      // nothing to be done here for this test case
-      return notAdjusted;
+      // true for not adjusted
+      return true;
     }
 
     // calculate jump between left and right value
