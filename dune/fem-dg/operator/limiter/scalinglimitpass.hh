@@ -719,22 +719,52 @@ namespace Fem
           limiter = true;
       }
 
-      // scale function
+      // scale function (modification to avoid numerical issues with small theta values)
       if( limiter )
       {
-        // get local funnction for limited values
+        // get local function for limited values
         assert( limitEn_ );
         auto lguard = bindGuard( *limitEn_, en );
         DestLocalFunctionType& limitEn = *limitEn_;
 
-        // set all dofs to zero
-        limitEn.clear();
+        // For hierarchic P1 Legendre/onb on affine elements the scaling
+        //   \tilde{p}(x) = theta * (p(x) - ubar) + ubar
+        // translates directly to the DOFs:
+        //   d_0  unchanged  (carries the cell average)
+        //   d_i *= theta    for i >= 1 (oscillation modes)
+        // No L2 projection needed, which could cause floating errors
+        // the overshoot artifacts that interpolation can introduce.
+        if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType >::v
+            && localMassMatrix_.affine() )
+        {
+          // copy original DOFs from uEn into limitEn
+          const int numDofs = limitEn.numDofs();
+          for( int idx = 0; idx < numDofs; ++idx )
+            limitEn[ idx ] = uEn[ idx ];
 
-        interpolEn_( scaledFunction_, limitEn.localDofVector() );
+          // scale higher-order DOFs (i >= 1) by theta per component
+          const int numBasis = numDofs / dimRange;
+          for( const auto& d : discreteModel_.model().limitedRange() )
+          {
+            if( theta[ d ] < 1.0 )
+            {
+              for( int i = 1; i < numBasis; ++i )
+              {
+                const int dofIdx = dofConversion_.combinedDof( i, d );
+                limitEn[ dofIdx ] *= theta[ d ];
+              }
+            }
+          }
+        }
+        else
+        {
+          // General case: fall back to L2 projection of the scaled function
+          limitEn.clear();
+          interpolEn_( scaledFunction_, limitEn.localDofVector() );
+        }
 
-        // set indicator 1
-        discreteModel_.markIndicator();
-
+      // set indicator 1
+      discreteModel_.markIndicator();
         // increase number of limited elements
         ++limitedElements_;
       }
@@ -757,7 +787,8 @@ namespace Fem
       auto& tmpVal = scaledFunction_.getValues( quad );
 
       bool physical = true;
-
+      double avgTol = 1e-14; // Tolerance for the avg
+      double oscillationTol = 5e-16; // Tolerance for oscillations
       // evaluate uEn on all quadrature points
       uEn.evaluateQuadrature( quad , tmpVal );
 
@@ -766,17 +797,30 @@ namespace Fem
       {
         const RangeType& u = tmpVal[ l ];
 
-        for( const auto& d : discreteModel_.model().limitedRange() )
-        {
-          const double denominator = std::abs( enVal[ d ] - u[ d ] );
-          if( denominator < 1e-12 ) continue ;
+      for( const auto& d : discreteModel_.model().limitedRange() )
+      {
+         const double denominator = std::abs( enVal[ d ] - u[ d ] );
 
-          const double upper = std::min( std::abs( enVal[ d ] - globalMax_[ d ] ) / denominator, 1.0 );
-          const double lower = std::min( std::abs( enVal[ d ] - globalMin_[ d ] ) / denominator, 1.0 );
+         if( ( globalMax_[ d ] - enVal[ d ] ) < avgTol ||
+             ( enVal[ d ] - globalMin_[ d ] ) < avgTol )
+         {
+           theta[ d ] = 0.0; // If avg is smaller than threshhold we push it down to the avg
+           continue;
+         }
 
-          theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
-        }
+         if( denominator < oscillationTol )
+         {
+           theta[ d ] = 0.0;
+           continue;
+         }
 
+         const double upper = std::min( std::abs( enVal[ d ] -
+             globalMax_[ d ] ) / denominator, 1.0 );
+         const double lower = std::min( std::abs( enVal[ d ] -
+             globalMin_[ d ] ) / denominator, 1.0 );
+
+         theta[ d ] = std::min( std::min( upper, lower ), theta[ d ]);
+      }
         // check data
         if ( ! discreteModel_.physical( en, quad.point(l), u ) )
         {
