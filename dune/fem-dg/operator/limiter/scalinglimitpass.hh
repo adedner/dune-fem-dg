@@ -738,12 +738,10 @@ namespace Fem
             && localMassMatrix_.affine() )
         {
           // copy original DOFs from uEn into limitEn
-          const int numDofs = limitEn.numDofs();
-          for( int idx = 0; idx < numDofs; ++idx )
-            limitEn[ idx ] = uEn[ idx ];
+          limitEn.assign( uEn );
 
           // scale higher-order DOFs (i >= 1) by theta per component
-          const int numBasis = numDofs / dimRange;
+          const int numBasis = limitEn.numDofs() / dimRange;
           for( const auto& d : discreteModel_.model().limitedRange() )
           {
             if( theta[ d ] < 1.0 )
@@ -763,8 +761,9 @@ namespace Fem
           interpolEn_( scaledFunction_, limitEn.localDofVector() );
         }
 
-      // set indicator 1
-      discreteModel_.markIndicator();
+        // set indicator 1
+        discreteModel_.markIndicator();
+
         // increase number of limited elements
         ++limitedElements_;
       }
