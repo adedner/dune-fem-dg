@@ -292,7 +292,7 @@ def codeFemDg(self, *args, **kwargs):
                   'const Entity& entity', 'const Point &x',
                   'const DDomainType &normal',
                   'const DRangeType &u',
-                  'const DJacobianRangeType &jac',
+                  'const DJacobianRangeType &du',
                   'RRangeType &result'],
             targs=['class Entity, class Point'], const=True,inline=True,
             predefined=predefined)
