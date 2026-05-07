@@ -9,7 +9,8 @@ registry["scheme"] = {
         "rungekutta": rungeKuttaSolver
         }
 
-__cite_dune_module_as__ = """
+def _cite_dune_module_as():
+    return """
 @article{dunefemdg:21,
   title={{Extendible and Efficient Python Framework for Solving Evolution Equations
           with Stabilized Discontinuous Galerkin Methods}},
