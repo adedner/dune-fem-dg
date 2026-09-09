@@ -27,17 +27,23 @@ from dune.fem.utility import FemThreadPoolExecutor
 # limiter can be ScalingLimiter or FV based limiter with FV type reconstructions for troubled cells
 def createLimiter(domainSpace, rangeSpace=None,
                   bounds = [1e-12,1.], limiter='scaling',
-                  enableAverageAdjustment = False):
+                  enableAverageAdjustment = False,
+                  threading="default"):
     """
     Parameters:
-        domainSpace  discrete space the domain function belongs to
-        rangeSpace   discrete space the range function belongs to (default is None which means same as domainSpace)
-        bounds       list of lists containing lower and upper bounds for each component. If a entry is none the component will not be limited.
-        limiter      type of limiter, i.e. 'fv', 'scaling' or 'scalingadjusted'.
+        domainSpace: discrete space the domain function belongs to
+        rangeSpace:  discrete space the range function belongs to (default is None which means same as domainSpace)
+        bounds:      list of lists containing lower and upper bounds for each component. If a entry is none the component will not be limited.
+        limiter:     type of limiter, i.e. 'fv', 'scaling' or 'scalingadjusted'.
+        threading:   enable shared memory parallelization - default is that
+                     threading is turned on if `dune.fem.threading.use>1`
 
     Returns:
         Limiter object as fem operator.
     """
+
+    if threading == "default":
+        threading = dune.fem.threading.use>1
 
     if rangeSpace is None:
         rangeSpace = domainSpace
@@ -76,7 +82,10 @@ def createLimiter(domainSpace, rangeSpace=None,
                  'scalingadjusted': 'Dune::Fem::ScalingLimiterAdjusted' # scaling limiter with adjustment of averages
                 }
 
-    typeName = available[ limiter ] + '< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
+    typeName = available[ limiter ]
+    if threading:
+        typeName += 'Threaded'
+    typeName += '< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
 
     constructor = Constructor(['const '+domainSpaceType + ' &dSpace, const '+rangeSpaceType + ' &rSpace, const std::vector<int>& components, const std::vector< std::vector<double> >& bounds'],
                               ['return new ' + typeName + '(dSpace, rSpace, components, bounds);'],

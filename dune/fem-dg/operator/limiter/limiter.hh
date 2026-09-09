@@ -236,6 +236,11 @@ namespace Fem
     std::unique_ptr< const ModelType > modelPtr_;
   };
 
+  //! Limiter with threading
+  template <class DomainFunction, class RangeFunction = DomainFunction,
+            class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModel< DomainFunction, 0 > >
+  using LimiterThreaded = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, true /* threading */, false>;
+
   //! Scaling Limiter, no adjustment of averages
   template <class DomainFunction, class RangeFunction = DomainFunction,
             class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModel< DomainFunction, 0 >,
@@ -243,12 +248,22 @@ namespace Fem
            >
   using ScalingLimiter = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, threading, true>;
 
+  //! Scaling Limiter, no adjustment of averages
+  template <class DomainFunction, class RangeFunction = DomainFunction,
+            class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModel< DomainFunction, 0 > >
+  using ScalingLimiterThreaded = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, true /* threading */ , true>;
+
   //! Scaling Limiter, with adjustment of averages
   template <class DomainFunction, class RangeFunction = DomainFunction,
             class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModelAdjusted< DomainFunction, 0 >,
             bool threading = false
            >
   using ScalingLimiterAdjusted = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, threading, true>;
+
+  //! Scaling Limiter, with adjustment of averages
+  template <class DomainFunction, class RangeFunction = DomainFunction,
+            class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModelAdjusted< DomainFunction, 0 > >
+  using ScalingLimiterThreadedAdjusted = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, true /* threading */, true>;
 
   /**
    * \brief Limited reconstruction.
