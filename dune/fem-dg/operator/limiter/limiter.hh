@@ -263,7 +263,7 @@ namespace Fem
   //! Scaling Limiter, with adjustment of averages
   template <class DomainFunction, class RangeFunction = DomainFunction,
             class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModelAdjusted< DomainFunction, 0 > >
-  using ScalingLimiterThreadedAdjusted = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, true /* threading */, true>;
+  using ScalingLimiterAdjustedThreaded = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, true /* threading */, true>;
 
   /**
    * \brief Limited reconstruction.
