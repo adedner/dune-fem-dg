@@ -3,7 +3,7 @@
 #change appropriately, i.e. 2.8 or leave empty which refers to master
 # use latest-stable to get a recent stable version
 DUNEVERSION=
-UFLVERSION=2022.2.0
+UFLVERSION=2024.2.0
 
 # use ON or OFF
 USEVENV=ON
@@ -89,6 +89,7 @@ CMAKE_FLAGS=\"-DCMAKE_CXX_FLAGS=\\\"$FLAGS\\\"  \\
  -DADDITIONAL_PIP_PARAMS="-upgrade" \\
  -DCMAKE_LD_FLAGS=\\\"$PY_LDFLAGS\\\" \\
  -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
+ -DDUNE_ENABLE_PYTHONMODULE_PRECOMPILE=ON \\
  -DDISABLE_DOCUMENTATION=TRUE \\
  -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE \\
  -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE\" " > $WORKDIR/config.opts
@@ -189,8 +190,9 @@ source $ACTIVATE
 #################################################################
 
 DUNEBRANCH=
-URL=https://gitlab.dune-project.org
-EXT=core
+#URL=https://gitlab.dune-project.org
+URL=https://github.com/dune-project
+EXT=
 
 if [ "$DUNEVERSION" == "latest-stable" ] ; then
   # remove extension, this is not used on Lund server
