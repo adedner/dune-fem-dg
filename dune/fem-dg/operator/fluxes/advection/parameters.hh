@@ -136,6 +136,8 @@ namespace Fem
     const Dune::Fem::ParameterReader parameter_;
   };
 
+  // empty parameter class for user defined advection fluxes
+  struct EmptyUserAdvectionParameters {};
 
 }
 }

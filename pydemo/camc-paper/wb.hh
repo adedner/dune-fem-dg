@@ -2,17 +2,25 @@
 #include <dune/fem/function/localfunction/const.hh>
 #include <dune/fem-dg/operator/fluxes/advection/python.hh>
 
+// name needs to be classname_Parameters
+// can be any type that has been exported to Python
+// a list of values will be translated into std::vector
+typedef double WB_Parameters;
+
+// classname is WB
 template<class ModelImp>
-struct WB : public Dune::Fem::DGAdvectionFluxPythonUserDefine< ModelImp >
+struct WB : public Dune::Fem::DGAdvectionFluxPythonUserDefined< ModelImp >
 {
-  typedef Dune::Fem::DGAdvectionFluxPythonUserDefine< ModelImp > BaseType;
+  typedef Dune::Fem::DGAdvectionFluxPythonUserDefined< ModelImp > BaseType;
   typedef typename BaseType::RangeType          RangeType;
   typedef typename BaseType::JacobianRangeType  JacobianRangeType;
   typedef typename BaseType::FluxRangeType      FluxRangeType;
   typedef typename BaseType::DomainType         DomainType;
 
-  WB (const ModelImp& model, double g)
-  : BaseType(model), g_(g) {}
+  WB (const ModelImp& model, const WB_Parameters& params)
+  : BaseType(model), g_(params)
+  {
+  }
 
   template< class LocalContext >
   double
