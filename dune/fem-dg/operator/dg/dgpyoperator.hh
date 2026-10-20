@@ -82,8 +82,8 @@ namespace Fem
 
     static const bool fluxIsUserDefined = ( advFluxId == AdvectionFlux::Enum::userdefined );
 
-    typedef typename Additional::AdvectionFlux< ModelType > :: type       AdvectionFluxType;
-    typedef typename Additional::AdvectionFlux< ModelType > :: paramtype  UserDefinedAdvectionFluxParameters;
+    typedef typename Additional::template AdvectionFlux< ModelType > :: type       AdvectionFluxType;
+    typedef typename Additional::template AdvectionFlux< ModelType > :: paramtype  UserDefinedAdvectionFluxParameters;
 
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
