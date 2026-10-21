@@ -24,21 +24,21 @@ parameters = {"femdg.limiter.indicator":"jump",
               "femdg.limiter.admissiblefunctions":3
              }
 
-#Model = model(gridView, order, g=1, problem="LeVeque", wb=False)
+Model = model(gridView, order, g=1, problem="LeVeque", wb=False)
 #Model = model(gridView, order, g=1, problem="dambreak", wb=False)
-
-
 #Model = model(gridView, order, g=1, problem="dambreak", wb=True)
-#evolve.evolve(gridView, order, Model, "sw/minmod",  limiter="MinMod", maxLevel=-1, parameters=parameters)
+
+evolve.evolve(gridView, order, Model, "sw/minmod",  limiter="MinMod", maxLevel=-1, parameters=parameters)
 
 ################################################
 
 def dgOperator(Model, space, limiter, codegen=True, threading=False, defaultQuadrature=True, parameters=parameters):
-    models = femDGModels(Model,space)
-    clsName,includes = generateTypeName("WB",models[1])
-    flux = advectionNumericalFlux(clsName, [path(__file__)+"wb.hh"]+includes,
-                                  models[1], additionalArgs=[Model.gravity])
-    return femDGOperator(models, space, limiter=None, codegen=codegen, advectionFlux=flux)
+    # models = femDGModels(Model,space)
+    # clsName,includes = generateTypeName("WB",models[1])
+    #flux = advectionNumericalFlux(clsName, [path(__file__)+"wb.hh"]+includes,
+    #                              models[1], additionalArgs=[Model.gravity, gf])
+    advFlux = { "classname": "WB", "include": [path(__file__)+"wb.hh"], "args": Model.gravity}
+    return femDGOperator(Model, space, limiter=None, codegen=codegen, advectionFlux=advFlux)
 evolve.femDGOperator = dgOperator
 
 Model = model(gridView, order, g=1, problem="LeVeque", wb=True)

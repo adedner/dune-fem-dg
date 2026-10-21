@@ -19,13 +19,16 @@ namespace Dune
     {
       using pybind11::operator""_a;
       typedef Fem::DGOperator<DF,MA,MD,Add> Operator;
-      typedef typename Operator::AdvectionFluxType AdvectionFluxType;
+      typedef typename Operator::UserDefinedAdvectionFluxParameters  UserDefinedAdvectionFluxParameters;
       typedef typename DF::DiscreteFunctionSpaceType DFSpace;
       typedef typename Fem::SpaceOperatorInterface<DF> Base;
       typedef Base FullType;
       typedef Base ExplType;
       typedef Base ImplType;
+
       Dune::FemPy::detail::registerOperator< Operator >( module, cls );
+
+      // constructor 1, with parameters
       cls.def( pybind11::init( [] ( const DFSpace &space,
                const MA &advectionModel,
                const MD &diffusionModel,
@@ -37,6 +40,8 @@ namespace Dune
            pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
            pybind11::keep_alive< 1, 5 >()
            );
+
+      // constructor 2, no parameters
       cls.def( pybind11::init( [] ( const DFSpace &space,
                const MA &advectionModel,
                const MD &diffusionModel )
@@ -46,30 +51,37 @@ namespace Dune
            pybind11::keep_alive< 1, 2 >(),
            pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >()
            );
+
+      // constructor 3, with advFluxParams and parameters
       cls.def( pybind11::init( [] ( const DFSpace &space,
                const MA &advectionModel,
                const MD &diffusionModel,
-               const AdvectionFluxType &advectionFlux,
+               const UserDefinedAdvectionFluxParameters &advectionFluxParams,
                const pybind11::dict &parameters )
       {
-        return new Operator(space, advectionModel, diffusionModel, advectionFlux, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ) );
-      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "advectionFlux"_a, "parameters"_a,
+        return new Operator(space, advectionModel, diffusionModel, advectionFluxParams, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ) );
+      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "advectionFluxParams"_a, "parameters"_a,
            pybind11::keep_alive< 1, 2 >(),
            pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
            pybind11::keep_alive< 1, 5 >(),
            pybind11::keep_alive< 1, 6 >()
            );
+
+      // constructor 4, with advFluxParams
       cls.def( pybind11::init( [] ( const DFSpace &space,
                const MA &advectionModel,
                const MD &diffusionModel,
-               const AdvectionFluxType &advectionFlux )
+               const UserDefinedAdvectionFluxParameters &advectionFluxParams )
       {
-        return new Operator(space, advectionModel, diffusionModel, advectionFlux);
-      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "advectionFlux"_a,
+        return new Operator(space, advectionModel, diffusionModel, advectionFluxParams);
+      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "advectionFluxParams"_a,
            pybind11::keep_alive< 1, 2 >(),
            pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
            pybind11::keep_alive< 1, 5 >()
-           );
+          );
+
+      // additional methods
+
       cls.def( "applyLimiter", []( Operator &self, DF &u) { self.applyLimiter(u); } );
       // cls.def( "setTime", &Operator::setTime);
       cls.def( "_setTime", &Operator::setTime);

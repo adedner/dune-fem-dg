@@ -230,7 +230,12 @@ def femDGOperator(Model, space,
         limiter: choice of limiter stabilization, possible values are
                  none,default,minmod,vanleer,superbee,lp,scaling
         advectionFlux: choice of numerical flux for advective parts
-                    default is local Lax-Friedrichs
+                       default is local Lax-Friedrichs. This could also be a
+                       dict containing the following entries:
+                       - classname(str): Name of a user defined flux
+                       - include(str):  Include file name where flux is defined
+                       - args(optional): A parameter object (or list) which type needs to
+                               be defined within the file as `classname`_Parameters.
         diffusionScheme: choice of numerical flux for diffusive parts
                 possible choices are cdg2(default),cdg,br2,ip,nipg,bo
         threading: enable shared memory parallelization - default is that
@@ -386,25 +391,44 @@ def femDGOperator(Model, space,
         advectionFlux = Model.NumericalF_c
 
     advectionFluxIsCallable = False
+    # define empty struct for user defined advection flux
+    userAdvectionFlux = Struct("AdvectionFlux", targs=['class Model'])
+    advectionFluxArgs = None
     if hasAdvFlux:
         # default value is LLF
         advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
         # if flux choice is default check parameters
-        if callable(advectionFlux):
+        #if callable(advectionFlux):
+        #    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+        #    advectionFluxIsCallable = True
+        #    # wrong model class used here - EllipticModel with no Traits
+        #    # at the moment this is always the same type (depending on
+        #    # model.cppTypeName) so could be done by only providing the header
+        #    # file in the dg operator construction method
+        #    clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel.cppTypeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
+        #    advectionFlux = advectionFlux(advModel,clsName,includes)
+        #    includes += advectionFlux.cppIncludes
+        #elif hasattr(advectionFlux,"_typeName"):
+        #    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+        #    advectionFluxIsCallable = True
+        #    includes += advectionFlux.cppIncludes
+        if isinstance(advectionFlux, dict):
             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
             advectionFluxIsCallable = True
-            # wrong model class used here - EllipticModel with no Traits
-            # at the moment this is always the same type (depending on
-            # model.cppTypeName) so could be done by only providing the header
-            # file in the dg operator construction method
-            clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel.cppTypeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
-            advectionFlux = advectionFlux(advModel,clsName,includes)
-            includes += advectionFlux.cppIncludes
-        elif hasattr(advectionFlux,"_typeName"):
-            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
-            advectionFluxIsCallable = True
-            includes += advectionFlux.cppIncludes
+            advclsname = advectionFlux["classname"]
+            # set type of user defined advection flux based on model type from DG operator
+            userAdvectionFlux.append(TypeAlias("<Model>  type", advclsname))
+            includes += advectionFlux["include"]
+            if "args" in advectionFlux:
+                userAdvectionFlux.append("typedef "+advclsname+"_Parameters  paramtype;")
+                advectionFluxArgs = advectionFlux["args"]
+            else:
+                userAdvectionFlux.append("typedef Dune::Fem::EmptyUserAdvectionParameters paramtype;")
+
         else:
+            # use standard advection flux type
+            userAdvectionFlux.append("typedef Dune::Fem::DGAdvectionFlux<Model, advFluxId> type;");
+            userAdvectionFlux.append("typedef Dune::Fem::EmptyUserAdvectionParameters paramtype;")
             # if dgadvectionflux.method has been selected, then use general flux,
             # otherwise default to LLF flux
             if advectionFlux == "default":
@@ -507,6 +531,9 @@ def femDGOperator(Model, space,
         Variable("const bool", "defaultQuadrature"), initializer=defaultQuadrature,
         static=True)])
 
+    # append struct for user defined advection flux, empty if built-in is used
+    struct.append(userAdvectionFlux)
+
     writer = SourceWriter(StringWriter())
     writer.emit([struct])
 
@@ -555,31 +582,31 @@ def femDGOperator(Model, space,
         codegen = None
 
     if parameters is not None:
-        if advectionFluxIsCallable:
-            op = load(includes, typeName, *extraMethods,
-                     baseClasses=[base],
-                     codegen=codegen,
-                     preamble=writer.writer.getvalue()).\
-                     Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
-        else:
+        if advectionFluxArgs is None:
             op = load(includes, typeName,  *extraMethods,
                      baseClasses = [base],
                      codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, parameters=parameters )
-    else:
-        if advectionFluxIsCallable:
-            op = load(includes, typeName,  *extraMethods,
-                     baseClasses = [base],
+        else:
+            op = load(includes, typeName, *extraMethods,
+                     baseClasses=[base],
                      codegen=codegen,
                      preamble=writer.writer.getvalue()).\
-                     Operator( space, advModel, diffModel, advectionFlux )
-        else:
+                     Operator( space, advModel, diffModel, advectionFluxArgs, parameters=parameters )
+    else:
+        if advectionFluxArgs is None:
             op = load(includes, typeName,  *extraMethods,
                      baseClasses = [base],
                      codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel )
+        else:
+            op = load(includes, typeName,  *extraMethods,
+                     baseClasses = [base],
+                     codegen=codegen,
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel, advectionFluxArgs )
 
     op._t = Model._ufl["t"]
     op.time = Model._ufl["t"].value

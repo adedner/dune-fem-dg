@@ -10,58 +10,38 @@
 
 namespace Dune
 {
-namespace Fem
-{
-
-  template< class FunctionSpace >
-  struct EmptyAdditional
-  {
-    static const int limitedDimRange = FunctionSpace :: dimRange;
-    static const bool hasAdvection = true;
-    static const bool hasDiffusion = false;
-    static const bool hasStiffSource = false;
-    static const bool hasNonStiffSource = false;
-    static const bool hasFlux = true;
-  };
+ namespace Fem
+ {
 
   /**
-   * \brief Defines an interface for advective fluxes.
+   * \brief Defines an interface for advective fluxes passed from Python side.
    *
    * \ingroup AdvectionFluxes
    *
    * \tparam ModelImp type of the analytical model
    * \tparam FluxParameterImp type of the flux parameters
+   * \tparam enableRightModel true if two separate models are needed (left/right)
    */
-  template <class ModelImp, class Additional=EmptyAdditional<typename ModelImp::DFunctionSpaceType>,
-            class FluxParameterImp = AdvectionFluxParameters >
-  class DGAdvectionFluxPythonUserDefine
-    : public DGAdvectionFluxBase<
-           AdvectionModelWrapper< typename ModelImp::GridPartType::GridType,
-                                  ModelImp,
-                                  Additional,
-                                  NoLimiter< typename ModelImp::DFunctionSpaceType::DomainFieldType > >, FluxParameterImp >
+  template <class ModelImp,
+            class FluxParameterImp = AdvectionFluxParameters,
+            bool enableRightModel  = false >
+  class DGAdvectionFluxPythonUserDefined
+    : public DGAdvectionFluxBase< ModelImp, FluxParameterImp, enableRightModel >
   {
-    typedef AdvectionModelWrapper< typename ModelImp::GridPartType::GridType,
-                                   ModelImp,
-                                   Additional,
-                                   NoLimiter< typename ModelImp::DFunctionSpaceType::DomainFieldType > > ModelWrapperType;
-
   public:
-    typedef typename std::conditional< std::is_base_of< Dune::Fem::IsFemDGModel, ModelImp >::value,
-            ModelImp, ModelWrapperType > :: type ModelType;
-                    //typename AdvectionLimiterFunctionSelector< typename ModelImp::DFunctionSpaceType::DomainFieldType, limiterFunctionId > :: type >
+    typedef ModelImp ModelType;
 
-    typedef DGAdvectionFluxBase< ModelType, FluxParameterImp  > BaseType;
+    typedef DGAdvectionFluxBase< ModelType, FluxParameterImp, enableRightModel > BaseType;
 
-    static const int dimRange = ModelType::dimRange;
-    typedef typename ModelType::DomainType         DomainType;
-    typedef typename ModelType::RangeType          RangeType;
-    typedef typename ModelType::JacobianRangeType  JacobianRangeType;
-    typedef typename ModelType::FluxRangeType      FluxRangeType;
-    typedef typename ModelType::FaceDomainType     FaceDomainType;
+    //static const int dimRange = ModelType::dimRange;
+    //typedef typename ModelType::DomainType         DomainType;
+    //typedef typename ModelType::RangeType          RangeType;
+    //typedef typename ModelType::JacobianRangeType  JacobianRangeType;
+    //typedef typename ModelType::FluxRangeType      FluxRangeType;
+    //typedef typename ModelType::FaceDomainType     FaceDomainType;
 
     typedef FluxParameterImp                       ParameterType;
-    typedef typename ParameterType::IdEnum         IdEnum;
+    //typedef typename ParameterType::IdEnum         IdEnum;
 
     /**
      * \brief Constructor
@@ -69,9 +49,9 @@ namespace Fem
      * \param[in] mod analytical model
      * \param[in] parameters  parameter reader
      */
-    DGAdvectionFluxPythonUserDefine (const ModelImp& modelImp,
+    DGAdvectionFluxPythonUserDefined (const ModelImp& modelImp,
                                      const Dune::Fem::ParameterReader& parameter = Dune::Fem::Parameter::container() )
-      : DGAdvectionFluxPythonUserDefine( modelImp, ParameterType( parameter ) )
+      : DGAdvectionFluxPythonUserDefined( modelImp, ParameterType( parameter ) )
     {
     }
 
@@ -79,24 +59,10 @@ namespace Fem
      * \brief Constructor
      *
      * \param[in] mod analytical model
-     * \param[in] parameters  parameter reader
+     * \param[in] parameters  advection parameters
      */
-    DGAdvectionFluxPythonUserDefine (const ModelImp& modelImp,
-                                     const ParameterType& parameter )
-      //: BaseType( *(new ModelType(modelImp)), parameter )
-      : BaseType( modelImp, parameter )
-    {
-      //modelPtr_.reset( &this->model_ );
-    }
-
-    /**
-     * \brief Constructor
-     *
-     * \param[in] mod analytical model
-     * \param[in] parameters  parameter reader
-     */
-    DGAdvectionFluxPythonUserDefine (const ModelType& model,
-                                     const ParameterType& parameter )
+    DGAdvectionFluxPythonUserDefined (const ModelType& model,
+                                      const ParameterType& parameter )
       : BaseType( model, parameter )
     {
     }
@@ -106,15 +72,12 @@ namespace Fem
      *
      * \param[in] other  object to copy
      */
-    DGAdvectionFluxPythonUserDefine (const DGAdvectionFluxPythonUserDefine& other )
+    DGAdvectionFluxPythonUserDefined (const DGAdvectionFluxPythonUserDefined& other )
       : BaseType( other.model_ )
     {
     }
-
-  protected:
-    //std::unique_ptr< const ModelType > modelPtr_;
   };
 
-} // end namespace Fem
+ } // end namespace Fem
 } // end namespace Dune
 #endif

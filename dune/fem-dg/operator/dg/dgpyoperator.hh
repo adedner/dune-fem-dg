@@ -82,9 +82,8 @@ namespace Fem
 
     static const bool fluxIsUserDefined = ( advFluxId == AdvectionFlux::Enum::userdefined );
 
-    typedef typename std::conditional< fluxIsUserDefined,
-                                       DGAdvectionFlux< AdvectionModel, advFluxId >,
-                                       DGAdvectionFlux< ModelType, advFluxId > > :: type  AdvectionFluxType;
+    typedef typename Additional::template AdvectionFlux< ModelType > :: type       AdvectionFluxType;
+    typedef typename Additional::template AdvectionFlux< ModelType > :: paramtype  UserDefinedAdvectionFluxParameters;
 
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
@@ -142,7 +141,7 @@ namespace Fem
         problem_(),
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
-        advFlux_( advectionFlux( parameter, std::integral_constant< bool, fluxIsUserDefined >() )),
+        advFlux_( advectionFlux( parameter ) ),
         fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
         explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
         implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
@@ -153,7 +152,7 @@ namespace Fem
     DGOperator( const DiscreteFunctionSpaceType& space,
                 const AdvectionModel &advectionModel,
                 const DiffusionModel &diffusionModel,
-                const AdvectionFluxType& advFlux,
+                const UserDefinedAdvectionFluxParameters& userAdvFluxParams,
                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : space_( space ),
         indiSpace_(),
@@ -162,7 +161,7 @@ namespace Fem
         problem_(),
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
-        advFlux_( advFlux ),
+        advFlux_( advectionFlux( userAdvFluxParams, parameter ) ),
         fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
         explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
         implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
@@ -275,16 +274,48 @@ namespace Fem
     //// End Methods from SpaceOperatorInterface /////
 
   protected:
-    const AdvectionFluxType& advectionFlux( const Dune::Fem::ParameterReader &parameter, std::integral_constant< bool, false > ) const
+    const AdvectionFluxType& advectionFlux( const Dune::Fem::ParameterReader &parameter ) const
     {
-      advFluxPtr_.reset( new AdvectionFluxType( model_, parameter ) );
+      if constexpr ( fluxIsUserDefined )
+      {
+        if constexpr ( std::is_same< UserDefinedAdvectionFluxParameters, EmptyUserAdvectionParameters> ::value )
+        {
+          // this case is triggered for user defined fluxed without parameters
+          advFluxPtr_.reset( new AdvectionFluxType( model_ ) );
+        }
+        else
+        {
+          // this should not happen
+          DUNE_THROW(InvalidStateException,"DGOperator::DGOPerator: When advFluxId is userdefined this should not be called!");
+        }
+      }
+      else
+      {
+        // create default flux
+        advFluxPtr_.reset( new AdvectionFluxType( model_, parameter ) );
+      }
       return *advFluxPtr_;
     }
 
-    const AdvectionFluxType& advectionFlux( const Dune::Fem::ParameterReader &parameter, std::integral_constant< bool, true > ) const
+    const AdvectionFluxType& advectionFlux( const UserDefinedAdvectionFluxParameters& userAdvFluxParams,
+                                            const Dune::Fem::ParameterReader &parameter ) const
     {
-      DUNE_THROW(InvalidStateException,"DGOperator::DGOPerator: When advFluxId is userdefined, flux needs to be passed in constructor!");
-      return *((AdvectionFluxType *) 0);
+      if constexpr ( fluxIsUserDefined )
+      {
+        if constexpr ( std::is_same< UserDefinedAdvectionFluxParameters, EmptyUserAdvectionParameters> ::value )
+        {
+          advFluxPtr_.reset( new AdvectionFluxType( model_ ) );
+        }
+        else
+        {
+          advFluxPtr_.reset( new AdvectionFluxType( model_, userAdvFluxParams ) );
+        }
+      }
+      else
+      {
+        DUNE_THROW(InvalidStateException,"DGOperator::DGOPerator: When advFluxId is not userdefined this should not be called!");
+      }
+      return *advFluxPtr_;
     }
 
     const DiscreteFunctionSpaceType&      space_;
